@@ -6,6 +6,11 @@ general rules.
 > **Status:** preparation only – development has not started yet. Decisions
 > marked *(open)* are still to be made together with the maintainer.
 
+Open items and ideas are GitHub issues (`gh issue list`), not a file in the
+repo. Until the GitHub project exists they are collected in a local, untracked
+`ToDo.md` (excluded via `.git/info/exclude`, never committed); move them into
+issues once the repo is created, then delete the file.
+
 ## Collaboration
 
 - Talk to the maintainer **in German**; short, concrete, honest. Report
@@ -103,8 +108,11 @@ language only determines how they are implemented idiomatically.
   never overwrite unreadable ones. Caches may be discarded, user data not.
 - Version stored formats (field `version`) so later changes can be migrated.
 - **Secrets** (tokens, passwords, API keys in environments) never in plain text
-  in files meant for git; keep them separate (e.g. OS keychain or a
-  git-ignored secrets file) and mask them in the UI and in logs.
+  in files meant for git and masked in the UI and in logs. They are encrypted
+  with **[age](https://age-encryption.org/)** (Rust crate `age`), so a
+  collection can be encrypted for **multiple recipients** (team members, CI)
+  and the encrypted files can be committed safely. Private keys stay on the
+  user's machine, never in the collection folder.
 
 ## Network
 
@@ -231,23 +239,35 @@ language only determines how they are implemented idiomatically.
   HTTP APIs and want their collections versioned in git next to their code.
 - **Core ideas (planned):**
   - Collections as plain, human-readable text files in a folder (git-friendly,
-    diffable, one file per request) – no proprietary database.
+    diffable, one file per request) – no proprietary database. **Own file
+    format** (not bound to Bruno's `.bru`); versioned, documented in the repo,
+    compatibility with other tools only via import/export.
+  - **Scripting in Python** (pre-request, post-response, tests). The app
+    offers editor support like Bruno/Postman: a **checker** (syntax and lint
+    errors, unknown API names) and **code completion** for the script API
+    (`req`, `res`, `env` …). The script API is described once as typed stubs
+    (`.pyi`), used both by the checker/completion and as documentation.
+    Scripts run sandboxed: no file or network access beyond the provided API
+    unless the user allows it.
   - Requests: methods, URL with path/query params, headers, bodies (JSON,
     text, form, multipart, binary), auth (Basic, Bearer, API key, OAuth 2).
-  - Environments and variables with `{{variable}}` interpolation; secrets kept
-    out of git.
+  - Environments and variables with `{{variable}}` interpolation; secrets
+    encrypted with age.
   - Response viewer: status, timing, size, headers, pretty-printed body.
   - Import from Postman and Bruno collections, OpenAPI; export to cURL.
-  - Later: scripting/tests per request, GraphQL, WebSocket, gRPC, a CLI runner
-    for CI.
+  - Later: GraphQL, WebSocket, gRPC, a CLI runner for CI.
 - **Architecture (draft):** domain crate (collection, request, environment,
   variable resolution – no I/O), storage crate (file format, migration),
-  HTTP crate (sending, behind a trait), import/export crate, app crate (UI),
-  CLI crate.
+  secrets crate (age encryption, recipients), HTTP crate (sending, behind a
+  trait), scripting crate (Python runtime, sandbox, checker/completion behind
+  traits), import/export crate, app crate (UI), CLI crate.
 - **Open decisions** *(open)*: UI framework (e.g. egui, Iced, Slint, Tauri),
-  file format of collections (own format vs. compatible with Bruno's `.bru`),
-  scripting language, license (e.g. MIT/Apache-2.0 dual or GPL-3.0), project
-  name.
+  license (e.g. MIT/Apache-2.0 dual or GPL-3.0), project name, Python runtime
+  (embedded pure-Rust interpreter such as RustPython vs. CPython via PyO3 –
+  trade-off: no system Python needed and easier sandboxing vs. full
+  compatibility and libraries) and the tooling for checker/completion (e.g.
+  Ruff for linting, a Python language server or own completion from the
+  stubs).
 - **Name caution:** "Bruno" and "Postman" are third-party names – use them only
   to describe compatibility/import, not as or in the project name or branding.
 - **Repository and branch:** local repository, branch `main`; no GitHub remote
