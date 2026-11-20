@@ -4,6 +4,8 @@
 // window through the Chrome DevTools Protocol and checks what the user sees:
 //   1. a request to a local test server shows status and formatted body,
 //   2. a request to a closed port shows a failure message,
+//   3. a collection (copy of the storage test fixture) opens as a tree; a
+//      request in it is edited, saved to its file and sent,
 // and the program is still running after each send.
 //
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
@@ -17,7 +19,7 @@
 // without it the test would fail while the app is open on the same machine.
 
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { cpSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import http from 'node:http';
 import net from 'node:net';
 import os from 'node:os';
@@ -36,6 +38,12 @@ const steps = [];
 let output = '';
 let exitCode = null;
 const webviewData = mkdtempSync(path.join(os.tmpdir(), 'api-client-e2e-'));
+/** A copy of the example collection the test may change. */
+const collections = mkdtempSync(path.join(os.tmpdir(), 'api-client-e2e-collection-'));
+const collectionDir = path.join(collections, 'shop-api');
+cpSync(path.join(ROOT, 'crates/ac_storage/src/tests/fixtures/shop-api'), collectionDir, {
+  recursive: true,
+});
 let app;
 let server;
 
@@ -52,6 +60,7 @@ function finish(failure) {
   server?.close();
   // WebView2 may hold files a moment longer; leftovers in %TEMP% are harmless.
   rmSync(webviewData, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  rmSync(collections, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
   console.log(failure ? 'E2E smoke test FAILED' : 'E2E smoke test passed');
   process.exit(failure ? 1 : 0);
 }
@@ -216,5 +225,50 @@ const failure = await waitFor(text('.response__failure'), 'failure message');
 check(failure.length > 0, `failure shown: ${failure.slice(0, 60)}…`);
 await sleep(500);
 check(exitCode === null, 'program still running after a failed send');
+
+// --- 3. A saved request in a collection ---------------------------------------
+
+/** Clicks the tree entry whose text contains `name`; true if found. */
+const clickTreeEntry = (name) => `(() => {
+  const entry = [...document.querySelectorAll('.tree-node__main')]
+    .find((button) => button.textContent.includes(${JSON.stringify(name)}));
+  entry?.click();
+  return Boolean(entry);
+})()`;
+
+// The app reopens remembered collections on start: remember the copy, reload.
+await evaluate(`(() => {
+  localStorage.setItem('openCollections', ${JSON.stringify(JSON.stringify([collectionDir]))});
+  setTimeout(() => location.reload(), 0);
+  return true;
+})()`);
+await sleep(500);
+await waitFor(clickTreeEntry('Health'), 'request "Health" in the collection tree');
+steps.push('collection reopened as a tree, request opened');
+await waitFor(
+  `document.querySelector('.request-editor__input')?.value === 'Health'`,
+  'request "Health" in the editor',
+);
+
+const savedUrl = `${okUrl}?saved=1`;
+await evaluate(`(() => {
+  const input = document.querySelector('.url-bar__input');
+  input.value = ${JSON.stringify(savedUrl)};
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  document.querySelector('.request-editor__header button').click();
+})()`);
+const healthFile = path.join(collectionDir, 'health.toml');
+let saved = '';
+for (let attempt = 0; attempt < 40 && !saved.includes(savedUrl); attempt++) {
+  await sleep(250);
+  saved = readFileSync(healthFile, 'utf8');
+}
+check(saved.includes(`url = "${savedUrl}"`), 'edited URL saved to health.toml');
+check(saved.includes('name = "Health"'), 'saved file keeps the request name');
+
+await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);
+const savedStatus = await waitFor(text('.response__status'), 'response of the saved request');
+check(savedStatus.startsWith('200'), `saved request sent: ${savedStatus}`);
+check(exitCode === null, 'program still running after saving and sending');
 
 finish(null);

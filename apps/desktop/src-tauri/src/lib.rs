@@ -80,6 +80,8 @@ pub fn export_bindings(path: &Path) -> Result<(), specta_typescript::Error> {
 pub fn run() {
     let builder = specta_builder();
     tauri::Builder::default()
+        // Native folder picker for opening and creating collections.
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(builder.invoke_handler())
         .setup(move |tauri_app| {
             builder.mount_events(tauri_app);

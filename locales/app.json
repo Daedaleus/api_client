@@ -30,6 +30,60 @@
     "en": "Preview truncated to the first {size}."
   },
   "response.failed": { "de": "Request fehlgeschlagen", "en": "Request failed" },
+  "sidebar.title": { "de": "Collections", "en": "Collections" },
+  "sidebar.open": { "de": "Öffnen", "en": "Open" },
+  "sidebar.create": { "de": "Neu", "en": "New" },
+  "sidebar.empty": {
+    "de": "Noch keine Collection geöffnet. Einen Ordner öffnen oder eine neue Collection anlegen.",
+    "en": "No collection open yet. Open a folder or create a new collection."
+  },
+  "sidebar.problems": {
+    "de": "Nicht geladen ({count}):",
+    "en": "Not loaded ({count}):"
+  },
+  "collection.new_request": { "de": "Neuer Request", "en": "New request" },
+  "collection.new_folder": { "de": "Neuer Ordner", "en": "New folder" },
+  "collection.rename": { "de": "Umbenennen", "en": "Rename" },
+  "collection.delete": { "de": "Löschen", "en": "Delete" },
+  "collection.close": { "de": "Collection schließen", "en": "Close collection" },
+  "collection.read_only": { "de": "nur lesbar", "en": "read-only" },
+  "tab.list": { "de": "Offene Requests", "en": "Open requests" },
+  "tab.untitled": { "de": "Neuer Request", "en": "New request" },
+  "tab.new": { "de": "Neuer Tab", "en": "New tab" },
+  "tab.close": { "de": "Tab schließen", "en": "Close tab" },
+  "tab.unsaved": { "de": "ungespeicherte Änderungen", "en": "unsaved changes" },
+  "editor.name": { "de": "Name", "en": "Name" },
+  "editor.save": { "de": "Speichern", "en": "Save" },
+  "editor.saving": { "de": "Wird gespeichert …", "en": "Saving …" },
+  "editor.read_only": {
+    "de": "Diese Datei stammt aus einer neueren Version und kann nicht gespeichert werden.",
+    "en": "This file comes from a newer version and cannot be saved."
+  },
+  "editor.scratch": {
+    "de": "Nicht gespeichert. Requests zum Speichern in einer Collection anlegen.",
+    "en": "Not saved. Create requests in a collection to save them."
+  },
+  "dialog.name": { "de": "Name", "en": "Name" },
+  "dialog.ok": { "de": "OK", "en": "OK" },
+  "dialog.cancel": { "de": "Abbrechen", "en": "Cancel" },
+  "dialog.new_collection": { "de": "Neue Collection", "en": "New collection" },
+  "dialog.new_request": { "de": "Neuer Request", "en": "New request" },
+  "dialog.new_folder": { "de": "Neuer Ordner", "en": "New folder" },
+  "dialog.rename": { "de": "Umbenennen", "en": "Rename" },
+  "dialog.delete": { "de": "Löschen", "en": "Delete" },
+  "dialog.delete_request": {
+    "de": "Request „{name}“ in den Papierkorb verschieben?",
+    "en": "Move request “{name}” to the trash?"
+  },
+  "dialog.delete_folder": {
+    "de": "Ordner „{name}“ mit allem Inhalt in den Papierkorb verschieben?",
+    "en": "Move folder “{name}” with all its contents to the trash?"
+  },
+  "dialog.discard": { "de": "Änderungen verwerfen?", "en": "Discard changes?" },
+  "dialog.discard_message": {
+    "de": "Es gibt ungespeicherte Änderungen. Trotzdem schließen?",
+    "en": "There are unsaved changes. Close anyway?"
+  },
   "error.url_empty": { "de": "Bitte eine URL eingeben.", "en": "Please enter a URL." },
   "error.url_invalid": { "de": "Ungültige URL: {reason}", "en": "Invalid URL: {reason}" },
   "error.url_scheme": {

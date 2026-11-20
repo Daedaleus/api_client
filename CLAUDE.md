@@ -3,7 +3,7 @@
 Project-specific rules (section "Project" at the end) take precedence over the
 general rules.
 
-> **Status:** milestone M1 (walking skeleton). Architecture, crates,
+> **Status:** milestone M2 (collections on disk). Architecture, crates,
 > milestones and spikes: [docs/architecture.md](docs/architecture.md).
 > Building and conventions: [CONTRIBUTING.md](CONTRIBUTING.md). Decisions
 > marked *(open)* are still to be made together with the maintainer.
