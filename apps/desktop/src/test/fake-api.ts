@@ -1,0 +1,133 @@
+// A fake backend for UI tests: records what the UI asks for and answers
+// from a queue, or with sensible defaults.
+
+import type { Api } from '../lib/api';
+import type {
+  AppEvent,
+  CollectionView,
+  Command,
+  CommandAck,
+  Query,
+  QueryResult,
+  RequestDraft,
+  RunOutcome,
+} from '../lib/types';
+
+/** A queued answer: an acknowledgement, or a failure to reject with. */
+export type Answer = CommandAck | { fail: unknown };
+export type QueryAnswer = QueryResult | { fail: unknown };
+
+export const OK: RunOutcome = {
+  kind: 'completed',
+  status: 200,
+  reason: 'OK',
+  statusClass: 'success',
+  elapsedMs: 12,
+  sizeBytes: 2,
+  headers: [],
+  body: { text: 'ok', pretty: false, truncated: false, binary: false },
+};
+
+/** `Shop` with folder `Auth` (request `Login`) and request `Health`. */
+export function shop(): CollectionView {
+  return {
+    id: 'c1',
+    name: 'Shop',
+    root: 'C:\\apis\\shop',
+    problems: [],
+    items: [
+      {
+        kind: 'folder',
+        id: 'f1',
+        name: 'Auth',
+        readOnly: false,
+        items: [{ kind: 'request', id: 'r1', name: 'Login', method: 'POST', readOnly: false }],
+      },
+      { kind: 'request', id: 'r2', name: 'Health', method: 'GET', readOnly: false },
+    ],
+  };
+}
+
+export function draft(
+  id: string,
+  name: string,
+  overrides: Partial<RequestDraft> = {},
+): RequestDraft {
+  return {
+    id,
+    name,
+    method: 'GET',
+    url: `https://example.com/${id}`,
+    headers: [],
+    body: { kind: 'none' },
+    readOnly: false,
+    ...overrides,
+  };
+}
+
+export function changed(collection: CollectionView, createdId: string | null = null): CommandAck {
+  return { type: 'collectionChanged', collection, createdId };
+}
+
+export class FakeApi implements Api {
+  commands: Command[] = [];
+  queries: Query[] = [];
+  answers: Answer[] = [];
+  queryAnswers: QueryAnswer[] = [];
+  handler: ((event: AppEvent) => void) | null = null;
+  unsubscribed = false;
+  nextRun = 1;
+  /** What the folder picker returns. */
+  folder: string | null = null;
+  /** Emitted before `execute` resolves, to simulate a very fast response. */
+  emitBeforeAck: RunOutcome | null = null;
+
+  async execute(command: Command): Promise<CommandAck> {
+    this.commands.push(command);
+    const answer = this.answers.shift();
+    if (answer && 'fail' in answer) throw answer.fail;
+    if (answer) return answer;
+    if (command.type === 'sendRequest') {
+      const runId = this.nextRun++;
+      if (this.emitBeforeAck) this.emit(runId, this.emitBeforeAck);
+      return { type: 'runStarted', runId };
+    }
+    throw new Error(`no answer queued for ${command.type}`);
+  }
+
+  async query(query: Query): Promise<QueryResult> {
+    this.queries.push(query);
+    const answer = this.queryAnswers.shift();
+    if (answer && 'fail' in answer) throw answer.fail;
+    if (answer) return answer;
+    if (query.type === 'request') {
+      return { type: 'request', request: draft(query.requestId, `Request ${query.requestId}`) };
+    }
+    throw new Error(`no answer queued for ${query.type}`);
+  }
+
+  async onEvent(handler: (event: AppEvent) => void) {
+    this.handler = handler;
+    return () => {
+      this.unsubscribed = true;
+    };
+  }
+
+  async pickFolder(): Promise<string | null> {
+    return this.folder;
+  }
+
+  emit(runId: number, outcome: RunOutcome) {
+    this.handler?.({ type: 'runFinished', runId, outcome });
+  }
+}
+
+/** In-memory storage for the remembered collections. */
+export function memoryStorage(initial: Record<string, string> = {}) {
+  const data = new Map(Object.entries(initial));
+  return {
+    getItem: (key: string) => data.get(key) ?? null,
+    setItem: (key: string, value: string) => void data.set(key, value),
+    data,
+  };
+}

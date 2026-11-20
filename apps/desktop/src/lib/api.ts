@@ -1,8 +1,9 @@
 import type { AppEvent, Command, CommandAck, Query, QueryResult } from './types';
 
 /**
- * Everything the UI needs from the backend. The Tauri implementation lives in
- * `tauri.ts`; tests use a fake. Components never call Tauri directly.
+ * Everything the UI needs from the backend and the host. The Tauri
+ * implementation lives in `tauri.ts`; tests use a fake. Components never call
+ * Tauri directly.
  */
 export interface Api {
   /** Carries out a command; rejects with a `UserText` if it cannot. */
@@ -11,4 +12,6 @@ export interface Api {
   query(query: Query): Promise<QueryResult>;
   /** Calls `handler` for every application event; resolves to an unsubscribe function. */
   onEvent(handler: (event: AppEvent) => void): Promise<() => void>;
+  /** Lets the user pick a folder; resolves to its path, or `null` if cancelled. */
+  pickFolder(): Promise<string | null>;
 }

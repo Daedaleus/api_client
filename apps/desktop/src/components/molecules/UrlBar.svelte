@@ -1,7 +1,7 @@
 <script lang="ts">
   import Button from '../atoms/Button.svelte';
   import { i18n } from '../../lib/i18n/i18n.svelte';
-  import { METHODS } from '../../lib/request.svelte';
+  import { METHODS } from '../../lib/http';
   import type { UserText } from '../../lib/types';
 
   interface Props {
@@ -14,6 +14,11 @@
 
   let { method = $bindable(), url = $bindable(), sending, error, onsend }: Props = $props();
 
+  // A saved request may use another method (e.g. PROPFIND): offer it too.
+  let methods = $derived<readonly string[]>(
+    (METHODS as readonly string[]).includes(method) ? METHODS : [...METHODS, method],
+  );
+
   function submit(event: SubmitEvent) {
     event.preventDefault();
     onsend();
@@ -25,7 +30,7 @@
     <label class="url-bar__method">
       <span class="url-bar__label">{i18n.t('request.method')}</span>
       <select class="url-bar__select" bind:value={method}>
-        {#each METHODS as option (option)}
+        {#each methods as option (option)}
           <option value={option}>{option}</option>
         {/each}
       </select>

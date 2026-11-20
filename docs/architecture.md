@@ -81,7 +81,13 @@ switch also covers messages that are already shown.
   Tauri's tokio runtime is the single background runtime.
 - `apps/desktop/src`: Svelte 5 + Vite + TypeScript (strict), components by
   Atomic Design, BEM CSS, design tokens for light/dark, CodeMirror 6 as
-  editor.
+  editor (planned).
+- UI state lives in plain classes with Svelte runes in `src/lib/workspace/`:
+  `TabsState` (editor tabs, routing run results to the tab that started the
+  run), `CollectionsState` (open trees, remembered for the next start),
+  `Dialogs` (questions to the user, awaited as promises) and `Workspace`
+  (actions that touch several of them). Components only render and call
+  them; tests drive them through a fake `Api`.
 - **Typed boundary:** `tauri-specta` generates `src/lib/bindings.ts` from the
   Rust types (behind an optional `specta` feature in `ac_app`). The program
   `ac_desktop --bin bindings` writes it (`mise run bindings`) or checks it
