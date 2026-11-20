@@ -3,7 +3,9 @@
 Project-specific rules (section "Project" at the end) take precedence over the
 general rules.
 
-> **Status:** preparation only – development has not started yet. Decisions
+> **Status:** milestone M0 (repository foundation). Architecture, crates,
+> milestones and spikes: [docs/architecture.md](docs/architecture.md).
+> Building and conventions: [CONTRIBUTING.md](CONTRIBUTING.md). Decisions
 > marked *(open)* are still to be made together with the maintainer.
 
 Open items and ideas are GitHub issues (`gh issue list`), not a file in the
@@ -131,6 +133,14 @@ language only determines how they are implemented idiomatically.
   test server or a fake; time via an injectable clock; temporary folders.
 - Contract tests against real services allowed only as `#[ignore]` / manual.
 - Test data and helpers central (`testutil/`), tests separated per module.
+- **Frontend (TypeScript/Svelte) is tested too:** `svelte-check` with strict
+  TypeScript, ESLint/Prettier, Vitest for logic (stores, i18n, editor glue;
+  also ≥ 90 % lines) and Testing Library for component behaviour; the Rust
+  side is replaced by Tauri's `mockIPC`. A few end-to-end flows via
+  WebdriverIO + `tauri-driver`.
+- **Tool versions are pinned:** Rust in `rust-toolchain.toml`, Node in
+  `.node-version` (+ `engines`), npm packages via committed lock file and
+  `npm ci`, Tauri CLI as dev dependency; CI reads the same files.
 
 ## Before every commit
 
@@ -271,8 +281,9 @@ language only determines how they are implemented idiomatically.
 - **UI framework (current direction):** Tauri 2 with a web frontend and
   CodeMirror 6 as script editor; egui remains the fallback for a pure-Rust UI.
   Not final until a prototype has been evaluated.
-- **Open decisions** *(open)*: final UI framework,
-  license (e.g. MIT/Apache-2.0 dual or GPL-3.0), project name, Python runtime
+- **License:** MIT OR Apache-2.0 (dual). Dependencies must be compatible
+  (checked by `cargo-deny`, `deny.toml`).
+- **Open decisions** *(open)*: final UI framework, project name, Python runtime
   (embedded pure-Rust interpreter such as RustPython vs. CPython via PyO3 –
   trade-off: no system Python needed and easier sandboxing vs. full
   compatibility and libraries) and the tooling for checker/completion (e.g.

@@ -1,0 +1,60 @@
+name: Bug report
+description: Something does not work or shows wrong results.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Please check the
+        [open issues](https://github.com/Daedaleus/api_client/issues) first.
+        Security problems please report privately, see
+        [SECURITY.md](https://github.com/Daedaleus/api_client/blob/main/SECURITY.md).
+        **Never paste real tokens, passwords or private keys.**
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where?
+      options:
+        - Sending requests / responses
+        - Collections and files
+        - Environments and variables
+        - Secrets (age)
+        - Scripts and tests (Python)
+        - Import / export
+        - Interface / language
+        - Command line
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Release name (e.g. v0.1.0) or commit, if you built it yourself.
+      placeholder: v0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - Linux
+        - macOS
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Steps, error messages, sample request
+      description: |
+        Anything that helps to reproduce it, e.g. the request file or a cURL
+        command. Remove hosts, tokens and other data you do not want to share.

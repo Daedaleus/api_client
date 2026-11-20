@@ -1,0 +1,6 @@
+# Pinned Rust version for everyone: rustup installs it automatically on the
+# first cargo call, CI reads the same file. Update deliberately via PR.
+[toolchain]
+channel = "1.100.0"
+components = ["rustfmt", "clippy", "llvm-tools-preview"]
+profile = "minimal"

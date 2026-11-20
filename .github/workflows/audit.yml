@@ -1,0 +1,28 @@
+# Checks dependencies with cargo-deny: known vulnerabilities (RustSec),
+# licenses compatible with MIT OR Apache-2.0, and allowed sources. Runs on
+# dependency changes and weekly, because new advisories appear without own
+# changes.
+name: Audit
+
+on:
+  push:
+    branches: [main]
+    paths: ['**/Cargo.toml', Cargo.lock, deny.toml, .github/workflows/audit.yml]
+  pull_request:
+    paths: ['**/Cargo.toml', Cargo.lock, deny.toml, .github/workflows/audit.yml]
+  schedule:
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deny:
+    name: Dependencies (cargo-deny)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check advisories licenses bans sources
