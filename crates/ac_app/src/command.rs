@@ -8,7 +8,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::view::{
-    BodyDraft, CollectionView, EnvironmentDraft, EnvironmentRef, HeaderDraft, RequestDraft,
+    BodyDraft, CollectionView, EnvironmentDraft, EnvironmentRef, HeaderDraft, RecipientsView,
+    RequestDraft,
 };
 
 /// Something the user wants the application to do.
@@ -109,6 +110,15 @@ pub enum Command {
         /// The edited environment (identified by its id).
         environment: EnvironmentDraft,
     },
+    /// Set who the collection's secrets are encrypted for and re-encrypt
+    /// the secrets of every environment. Nothing changes if any of them
+    /// cannot be decrypted.
+    SetRecipients {
+        /// The collection.
+        collection_id: String,
+        /// Public keys (`age1…`, `ssh-ed25519 …`, `ssh-rsa …`).
+        recipients: Vec<String>,
+    },
 }
 
 /// Identifies one sending of a request, so the UI can match the result.
@@ -166,6 +176,12 @@ pub enum Query {
         /// The request.
         request_id: String,
     },
+    /// Who the collection's secrets are encrypted for, and the user's own
+    /// public key (created on first use).
+    Recipients {
+        /// The collection.
+        collection_id: String,
+    },
 }
 
 /// Answer to a [`Query`].
@@ -186,5 +202,10 @@ pub enum QueryResult {
     Request {
         /// The request.
         request: RequestDraft,
+    },
+    /// The recipients.
+    Recipients {
+        /// The recipients and the user's own key.
+        recipients: RecipientsView,
     },
 }

@@ -19,7 +19,7 @@ pub(crate) fn parse_all(lines: &[String]) -> Result<Vec<Box<dyn Recipient + Send
     lines.iter().map(|line| parse(line.trim())).collect()
 }
 
-fn parse(line: &str) -> Result<Box<dyn Recipient + Send>, SecretError> {
+pub(crate) fn parse(line: &str) -> Result<Box<dyn Recipient + Send>, SecretError> {
     let invalid = || SecretError::InvalidRecipient(line.to_owned());
     if line.starts_with(AGE_PREFIX) {
         let recipient: x25519::Recipient = line.parse().map_err(|_| invalid())?;

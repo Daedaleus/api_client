@@ -91,11 +91,12 @@ pub trait CollectionStore: Send + Sync + 'static {
     /// If the list exists but cannot be read.
     fn recipients(&self, root: &Path) -> Result<Vec<String>, StoreError>;
 
-    /// Sets up the list of recipients of a collection that has none yet.
+    /// Sets the recipients of a collection (keeping comments of a list
+    /// edited by hand).
     ///
     /// # Errors
-    /// If it exists already or cannot be written.
-    fn create_recipients(&self, root: &Path, recipients: &[String]) -> Result<(), StoreError>;
+    /// If the list cannot be read or written.
+    fn write_recipients(&self, root: &Path, recipients: &[String]) -> Result<(), StoreError>;
 }
 
 impl<T: CollectionStore> CollectionStore for Arc<T> {
@@ -139,8 +140,8 @@ impl<T: CollectionStore> CollectionStore for Arc<T> {
     fn recipients(&self, root: &Path) -> Result<Vec<String>, StoreError> {
         T::recipients(self, root)
     }
-    fn create_recipients(&self, root: &Path, recipients: &[String]) -> Result<(), StoreError> {
-        T::create_recipients(self, root, recipients)
+    fn write_recipients(&self, root: &Path, recipients: &[String]) -> Result<(), StoreError> {
+        T::write_recipients(self, root, recipients)
     }
 }
 

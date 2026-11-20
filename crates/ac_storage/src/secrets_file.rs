@@ -76,23 +76,40 @@ pub fn read_recipients(root: &Path) -> Result<Vec<String>, StorageError> {
     }
 }
 
-/// Creates `.age-recipients` with `recipients`; an existing file is never
-/// replaced (it may have been edited by hand).
+/// Sets the recipients in `.age-recipients`. A new file gets an explaining
+/// comment; in an existing one comments and blank lines stay, removed keys
+/// go and new keys are appended – hand edits survive.
 ///
 /// # Errors
-/// If the file already exists or cannot be written.
-pub fn create_recipients(root: &Path, recipients: &[String]) -> Result<(), StorageError> {
+/// If the existing file cannot be read or the file cannot be written.
+pub fn write_recipients(root: &Path, recipients: &[String]) -> Result<(), StorageError> {
     let path = root.join(RECIPIENTS_FILE);
-    if path.exists() {
-        return Err(StorageError::io(
-            &path,
-            std::io::Error::from(std::io::ErrorKind::AlreadyExists),
-        ));
-    }
-    let mut text = RECIPIENTS_HEADER.to_owned();
-    for recipient in recipients {
-        text.push_str(recipient);
+    let existing = match std::fs::read_to_string(&path) {
+        Ok(text) => text,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => RECIPIENTS_HEADER.to_owned(),
+        Err(error) => return Err(StorageError::io(&path, error)),
+    };
+    let mut kept: Vec<&str> = Vec::new();
+    let mut text = String::new();
+    for line in existing.lines() {
+        let key = line.trim();
+        let is_key = !key.is_empty() && !key.starts_with('#');
+        if is_key && (kept.contains(&key) || !recipients.iter().any(|r| r.trim() == key)) {
+            continue;
+        }
+        if is_key {
+            kept.push(key);
+        }
+        text.push_str(line);
         text.push('\n');
+    }
+    for recipient in recipients {
+        let recipient = recipient.trim();
+        if !kept.contains(&recipient) {
+            kept.push(recipient);
+            text.push_str(recipient);
+            text.push('\n');
+        }
     }
     document::write_atomically(&path, &text)
 }

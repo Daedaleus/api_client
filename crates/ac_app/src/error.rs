@@ -35,6 +35,15 @@ pub enum AppError {
         /// Why it cannot be decrypted.
         reason: SecretError,
     },
+    /// Recipients not changed: the secrets of an environment cannot be
+    /// decrypted for re-encrypting.
+    #[error("secrets of {environment:?} not re-encrypted: {reason}")]
+    NotReencrypted {
+        /// The environment.
+        environment: String,
+        /// Why they cannot be decrypted.
+        reason: SecretError,
+    },
     /// Encrypting or decrypting secrets failed.
     #[error(transparent)]
     Secret(#[from] SecretError),
@@ -80,8 +89,15 @@ impl AppError {
                 name,
                 reason: SecretError::NoKey,
             } => UserText::new(keys::SECRET_UNAVAILABLE).with("name", name.clone()),
-            Self::SecretUnavailable { reason, .. } => reason.user_text(),
-            Self::Secret(error) => error.user_text(),
+            Self::NotReencrypted {
+                environment,
+                reason: SecretError::NoKey,
+            } => {
+                UserText::new(keys::SECRET_NOT_REENCRYPTED).with("environment", environment.clone())
+            }
+            Self::SecretUnavailable { reason, .. }
+            | Self::NotReencrypted { reason, .. }
+            | Self::Secret(reason) => reason.user_text(),
             Self::UnknownCollection => UserText::new(keys::UNKNOWN_COLLECTION),
             Self::UnknownItem => UserText::new(keys::UNKNOWN_ITEM),
             Self::NotAFolder => UserText::new(keys::NOT_A_FOLDER),

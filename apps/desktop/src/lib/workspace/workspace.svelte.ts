@@ -9,6 +9,7 @@ import type { CollectionView, EnvironmentDraft, TreeItemView } from '../types';
 import { CollectionsState } from './collections.svelte';
 import { Dialogs } from './dialogs.svelte';
 import { EnvironmentChoice } from './environments.svelte';
+import { RecipientsState } from './recipients.svelte';
 import type { RequestTab } from './request-tab.svelte';
 import { TabsState } from './tabs.svelte';
 import { baseName } from './tree';
@@ -24,6 +25,8 @@ export class Workspace {
   readonly tabs: TabsState;
   readonly dialogs = new Dialogs();
   readonly environments: EnvironmentChoice;
+  /** Who secrets are encrypted for (dialog). */
+  readonly recipients: RecipientsState;
   /** The environment being edited, if the editor is open. */
   editing = $state<EnvironmentEdit | null>(null);
   readonly #api: Api;
@@ -33,6 +36,7 @@ export class Workspace {
     this.collections = new CollectionsState(api, storage);
     this.tabs = new TabsState(api);
     this.environments = new EnvironmentChoice(storage);
+    this.recipients = new RecipientsState(api, this.collections);
   }
 
   /** The collection a tab's request belongs to (none for scratch tabs). */

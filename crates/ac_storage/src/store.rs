@@ -118,8 +118,8 @@ impl CollectionStore for FileStore {
         secrets_file::read_recipients(root).map_err(store_error)
     }
 
-    fn create_recipients(&self, root: &Path, recipients: &[String]) -> Result<(), StoreError> {
-        secrets_file::create_recipients(root, recipients).map_err(store_error)
+    fn write_recipients(&self, root: &Path, recipients: &[String]) -> Result<(), StoreError> {
+        secrets_file::write_recipients(root, recipients).map_err(store_error)
     }
 }
 

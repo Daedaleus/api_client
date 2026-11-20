@@ -17,6 +17,12 @@ pub trait SecretVault: Send + Sync + 'static {
     /// If the key cannot be read or created.
     fn own_recipient(&self) -> Result<String, SecretError>;
 
+    /// Checks that `recipient` is a public key this vault can encrypt for.
+    ///
+    /// # Errors
+    /// [`SecretError::InvalidRecipient`] if it is not.
+    fn check_recipient(&self, recipient: &str) -> Result<(), SecretError>;
+
     /// Encrypts `values` for every one of `recipients` (public keys as
     /// written in `.age-recipients`).
     ///
@@ -74,6 +80,9 @@ impl SecretError {
 impl<T: SecretVault> SecretVault for std::sync::Arc<T> {
     fn own_recipient(&self) -> Result<String, SecretError> {
         T::own_recipient(self)
+    }
+    fn check_recipient(&self, recipient: &str) -> Result<(), SecretError> {
+        T::check_recipient(self, recipient)
     }
     fn encrypt(
         &self,

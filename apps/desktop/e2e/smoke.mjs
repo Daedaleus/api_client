@@ -12,6 +12,8 @@
 //      previewed and resolved when sending,
 //   6. a secret variable: saved encrypted (never in plain text on disk or in
 //      the window), masked in the preview and resolved when sending,
+//   7. a team member added as recipient: the list is saved, the secrets are
+//      re-encrypted and still work for the user,
 // and the program is still running after each send.
 //
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
@@ -462,5 +464,51 @@ const withSecret = await waitFor(
 );
 check(withSecret.includes(`token=${secretValue}`), 'secret decrypted and sent');
 check(exitCode === null, 'program still running after sending a secret');
+
+// --- 7. Recipients ----------------------------------------------------------------
+
+/** A throwaway public key (its private key was never kept). */
+const teamKey =
+  'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOcrctpxeDVU0DQbIWlXheSUkd5TRgpltLt6mDZYjBzg test';
+await evaluate(`[...document.querySelectorAll('.environment-picker .icon-button')].at(-1).click()`);
+const ownKey = await waitFor(
+  `document.querySelector('.recipients-dialog__input--own')?.value || null`,
+  'recipients dialog with the own key',
+);
+check(recipients.includes(ownKey), 'dialog shows the own key from .age-recipients');
+await evaluate(`(() => {
+  const input = [...document.querySelectorAll('.recipients-dialog__input')].at(-1);
+  input.value = ${JSON.stringify(teamKey)};
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+})()`);
+await waitFor(
+  `document.querySelectorAll('.recipients-dialog__item').length === 2`,
+  'team key in the list',
+);
+await evaluate(`document.querySelector('.recipients-dialog [type=submit]').click()`);
+await waitFor(`!document.querySelector('.recipients-dialog')`, 'recipients saved');
+const recipientsAfter = readFileSync(path.join(collectionDir, '.age-recipients'), 'utf8');
+check(
+  recipientsAfter.includes(ownKey) && recipientsAfter.includes(teamKey),
+  'team key added to .age-recipients',
+);
+const reencrypted = readFileSync(secretsFile, 'utf8');
+check(
+  reencrypted !== encrypted && reencrypted.startsWith('-----BEGIN AGE ENCRYPTED FILE-----'),
+  'secrets re-encrypted for the new list',
+);
+
+await evaluate(setValue('.url-bar__input', '{{baseUrl}}/echo?again=1&token={{token}}'));
+await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);
+const afterChange = await waitFor(
+  `(() => {
+    const body = document.querySelector('.response__body')?.textContent ?? '';
+    return body.includes('again=1') ? body : null;
+  })()`,
+  'echo after re-encrypting',
+);
+check(afterChange.includes(`token=${secretValue}`), 'secret still decrypts after re-encrypting');
+check(exitCode === null, 'program still running after changing recipients');
 
 finish(null);

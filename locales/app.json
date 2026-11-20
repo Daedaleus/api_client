@@ -97,6 +97,39 @@
     "de": "Diese Datei hat ein neueres Format und wird nur angezeigt.",
     "en": "This file has a newer format and is shown read-only."
   },
+  "env.recipients": {
+    "de": "Empfänger der Secrets",
+    "en": "Secret recipients"
+  },
+  "recipients.title": {
+    "de": "Empfänger der Secrets",
+    "en": "Secret recipients"
+  },
+  "recipients.intro": {
+    "de": "Die Secrets dieser Collection werden für diese öffentlichen Schlüssel verschlüsselt. Beim Speichern werden alle Secrets neu verschlüsselt.",
+    "en": "The secrets of this collection are encrypted for these public keys. Saving re-encrypts every secret."
+  },
+  "recipients.own": {
+    "de": "Dein öffentlicher Schlüssel",
+    "en": "Your public key"
+  },
+  "recipients.copy": { "de": "Kopieren", "en": "Copy" },
+  "recipients.copied": { "de": "Kopiert", "en": "Copied" },
+  "recipients.list": { "de": "Empfänger", "en": "Recipients" },
+  "recipients.you": { "de": "du", "en": "you" },
+  "recipients.remove": {
+    "de": "Empfänger entfernen",
+    "en": "Remove recipient"
+  },
+  "recipients.new": {
+    "de": "Öffentlicher Schlüssel (age1… oder ssh-ed25519 …)",
+    "en": "Public key (age1… or ssh-ed25519 …)"
+  },
+  "recipients.add": { "de": "Hinzufügen", "en": "Add" },
+  "recipients.without_you": {
+    "de": "Dein eigener Schlüssel fehlt – danach kannst du die Secrets nicht mehr entschlüsseln.",
+    "en": "Your own key is missing – afterwards you cannot decrypt the secrets any more."
+  },
   "env.no_variables": { "de": "Keine Variablen.", "en": "No variables." },
   "env.add_variable": { "de": "Variable hinzufügen", "en": "Add variable" },
   "env.remove_variable": {
@@ -176,6 +209,10 @@
   "error.secret_unavailable": {
     "de": "Das Secret „{name}“ hat keinen Wert oder lässt sich mit deinen Schlüsseln nicht entschlüsseln.",
     "en": "The secret “{name}” has no value or cannot be decrypted with your keys."
+  },
+  "error.secret_not_reencrypted": {
+    "de": "Empfänger nicht geändert: Die Secrets der Umgebung „{environment}“ kannst du nicht entschlüsseln, also auch nicht neu verschlüsseln.",
+    "en": "Recipients not changed: you cannot decrypt the secrets of the environment “{environment}”, so they cannot be re-encrypted."
   },
   "error.secret_no_key": {
     "de": "Keiner deiner Schlüssel kann die Secrets dieser Umgebung entschlüsseln. Bitte jemanden aus dem Team, dich in .age-recipients einzutragen und neu zu verschlüsseln.",
