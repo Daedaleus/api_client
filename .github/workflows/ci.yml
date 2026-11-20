@@ -1,7 +1,7 @@
 # Checks the workspace on Windows, Linux and macOS with the same mise tasks
 # developers run locally (mise.toml). Formatting and test coverage run once
-# (Linux); clippy and tests on all three systems; the end-to-end smoke test
-# drives the real release build on Windows. Release builds, virus scans,
+# (Linux); clippy and tests on all three systems. The end-to-end smoke test
+# runs locally only for now (`mise run e2e`); CI is issue #24. Release builds, virus scans,
 # checksums and the GitHub release join once there is a program to ship (see
 # CLAUDE.md, "Releases").
 name: CI
@@ -80,17 +80,3 @@ jobs:
       # Rust (without the desktop app) and frontend logic, at least 90 % each.
       - name: Measure coverage (at least 90 %)
         run: mise run coverage
-
-  e2e:
-    name: End-to-end (Windows)
-    runs-on: windows-latest
-    # Release build without cache takes a while on Windows.
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions-rust-lang/setup-rust-toolchain@v2
-      - uses: jdx/mise-action@v5
-      # Release build, then the real window: send to a local server and to a
-      # closed port, check what is shown and that the program keeps running.
-      - name: Smoke test of the release build
-        run: mise run e2e

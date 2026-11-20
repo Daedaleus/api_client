@@ -9,6 +9,9 @@
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
 // No network access beyond 127.0.0.1; ends within TIMEOUT_MS.
 //
+// Local only for now: on GitHub's Windows runner the DevTools port never
+// opens. Running it in CI (Linux via tauri-driver) is issue #24.
+//
 // The program gets its own temporary WebView2 data folder: WebView2 refuses
 // to share a folder between instances started with different options, so
 // without it the test would fail while the app is open on the same machine.
