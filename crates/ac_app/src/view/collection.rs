@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::error::AppError;
 use crate::ports::{Location, OpenedCollection, StoreError};
 use crate::text::UserText;
-use crate::view::EnvironmentDraft;
+use crate::view::{EnvironmentDraft, VariableDraft};
 
 /// An open collection.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -24,6 +24,8 @@ pub struct CollectionView {
     pub items: Vec<TreeItemView>,
     /// Environments, sorted by name.
     pub environments: Vec<EnvironmentDraft>,
+    /// Variables for every request of the collection.
+    pub variables: Vec<VariableDraft>,
     /// Files that could not be loaded.
     pub problems: Vec<UserText>,
 }
@@ -47,6 +49,8 @@ pub enum TreeItemView {
         read_only: bool,
         /// Contents in display order.
         items: Vec<TreeItemView>,
+        /// Variables for the requests in the folder.
+        variables: Vec<VariableDraft>,
     },
     /// A request.
     Request {
@@ -82,6 +86,7 @@ impl CollectionView {
                     EnvironmentDraft::from_environment(environment, read_only)
                 })
                 .collect(),
+            variables: VariableDraft::list(&collection.variables),
             problems: opened.problems.iter().map(StoreError::user_text).collect(),
         }
     }
@@ -102,6 +107,7 @@ fn tree(items: &[Item], opened: &OpenedCollection) -> Vec<TreeItemView> {
                 name: folder.name.clone(),
                 read_only: read_only(folder.id),
                 items: tree(&folder.items, opened),
+                variables: VariableDraft::list(&folder.variables),
             },
             Item::Request(request) => TreeItemView::Request {
                 id: request.id.to_string(),
@@ -130,6 +136,9 @@ pub struct RequestDraft {
     pub headers: Vec<HeaderDraft>,
     /// Body.
     pub body: BodyDraft,
+    /// Variables of this request only.
+    #[serde(default)]
+    pub variables: Vec<VariableDraft>,
     /// The file is never written (set by the app, ignored when saving).
     #[serde(default)]
     pub read_only: bool,
@@ -234,6 +243,7 @@ impl RequestDraft {
                 .map(HeaderDraft::from_entry)
                 .collect(),
             body: BodyDraft::from_body(&request.body),
+            variables: VariableDraft::list(&request.variables),
             read_only,
         }
     }
@@ -244,6 +254,7 @@ impl RequestDraft {
     /// If the id, name or method is not valid.
     pub fn to_request(&self) -> Result<Request, AppError> {
         Ok(Request {
+            variables: VariableDraft::to_plain_variables(&self.variables),
             id: self.id.parse().map_err(|_| AppError::UnknownItem)?,
             name: non_empty(&self.name)?.to_owned(),
             method: self.method.trim().parse()?,

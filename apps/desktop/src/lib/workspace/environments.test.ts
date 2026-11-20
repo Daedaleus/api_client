@@ -8,11 +8,9 @@ describe('EnvironmentChoice', () => {
     const storage = memoryStorage();
     const choice = new EnvironmentChoice(storage);
     expect(choice.of(shop())).toBeNull();
-    expect(choice.reference(shop())).toBeNull();
 
     choice.choose('c1', 'e1');
     expect(choice.of(shop())?.name).toBe('Dev');
-    expect(choice.reference(shop())).toEqual({ collectionId: 'c1', environmentId: 'e1' });
     expect(new EnvironmentChoice(storage).of(shop())?.name).toBe('Dev');
 
     choice.choose('c1', null);

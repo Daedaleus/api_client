@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { SECRET_MASK, hasPlaceholders, preview, variableValues } from './variables';
+import { SECRET_MASK, hasPlaceholders, preview, scopeValues, variableValues } from './variables';
 
 describe('variables', () => {
   it('takes enabled variables by trimmed name, later rows winning', () => {
@@ -29,6 +29,17 @@ describe('variables', () => {
     expect(hasPlaceholders('{{host}}/x')).toBe(true);
     expect(hasPlaceholders('{{host')).toBe(false);
     expect(hasPlaceholders('plain')).toBe(false);
+  });
+
+  it('lets stronger lists win', () => {
+    const row = (name: string, value: string) => ({ name, value, enabled: true, secret: false });
+    const values = scopeValues([
+      [row('host', 'collection'), row('a', '1')],
+      [row('host', 'environment')],
+      [],
+      [row('host', 'request')],
+    ]);
+    expect(Object.fromEntries(values)).toEqual({ host: 'request', a: '1' });
   });
 
   it('never shows secret values, not even ones just typed', () => {

@@ -15,9 +15,11 @@ fn send(fixture: &Fixture, url: &str, environment: Option<&str>) -> Result<Comma
         url: url.into(),
         headers: Vec::new(),
         body: BodyDraft::None,
-        environment: environment.map(|id| EnvironmentRef {
+        variables: Vec::new(),
+        context: Some(SendContext {
             collection_id: fixture.collection.clone(),
-            environment_id: id.into(),
+            request_id: None,
+            environment_id: environment.map(Into::into),
         }),
     })
 }

@@ -1,7 +1,16 @@
 <script lang="ts" module>
   // Stroke icons in the current text colour; decorative (labels sit on the button).
   export type IconName =
-    'plus' | 'folder-plus' | 'edit' | 'trash' | 'close' | 'chevron' | 'open' | 'lock' | 'key';
+    | 'plus'
+    | 'folder-plus'
+    | 'edit'
+    | 'trash'
+    | 'close'
+    | 'chevron'
+    | 'open'
+    | 'lock'
+    | 'key'
+    | 'braces';
 </script>
 
 <script lang="ts">
@@ -17,6 +26,8 @@
     chevron: 'M9 6l6 6-6 6',
     lock: 'M6 11h12v9H6zM8 11V7a4 4 0 0 1 8 0v4',
     key: 'M14 10a4 4 0 1 1-1.2-2.8L21 7v3h-2v2h-2v2l-2.2-2.2A4 4 0 0 1 14 10zM8 10h.01',
+    braces:
+      'M8 4H7a2 2 0 0 0-2 2v4l-2 2 2 2v4a2 2 0 0 0 2 2h1M16 4h1a2 2 0 0 1 2 2v4l2 2-2 2v4a2 2 0 0 1-2 2h-1',
     open: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
   };
 </script>

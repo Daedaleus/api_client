@@ -14,6 +14,8 @@
 //      the window), masked in the preview and resolved when sending,
 //   7. a team member added as recipient: the list is saved, the secrets are
 //      re-encrypted and still work for the user,
+//   8. a collection variable is saved and used; a request variable of the
+//      same name overrides it,
 // and the program is still running after each send.
 //
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
@@ -510,5 +512,77 @@ const afterChange = await waitFor(
 );
 check(afterChange.includes(`token=${secretValue}`), 'secret still decrypts after re-encrypting');
 check(exitCode === null, 'program still running after changing recipients');
+
+// --- 8. Variable precedence -----------------------------------------------------
+
+/** Waits for an echo whose URL contains `part` and returns the body. */
+const echoWith = (part, what) =>
+  waitFor(
+    `(() => {
+      const body = document.querySelector('.response__body')?.textContent ?? '';
+      return body.includes(${JSON.stringify(part)}) ? body : null;
+    })()`,
+    what,
+  );
+
+// Collection variable `path`, through the dialog of the collection header.
+await evaluate(`document.querySelectorAll('.sidebar__collection-header .icon-button')[2].click()`);
+await waitFor(`!!document.querySelector('.variables-dialog')`, 'collection variables dialog');
+await evaluate(`document.querySelector('.variables-dialog .rows-editor .button').click()`);
+await waitFor(
+  `document.querySelectorAll('.variables-dialog .rows-editor__input').length === 2`,
+  'collection variable row',
+);
+await evaluate(`(() => {
+  const [name, value] = document.querySelectorAll('.variables-dialog .rows-editor__input');
+  name.value = 'path';
+  name.dispatchEvent(new Event('input', { bubbles: true }));
+  value.value = 'from-collection';
+  value.dispatchEvent(new Event('input', { bubbles: true }));
+  document.querySelector('.variables-dialog [type=submit]').click();
+})()`);
+await waitFor(`!document.querySelector('.variables-dialog')`, 'collection variables saved');
+const collectionText = readFileSync(path.join(collectionDir, 'collection.toml'), 'utf8');
+check(
+  collectionText.includes('[[variables]]') && collectionText.includes('from-collection'),
+  'collection variable saved to collection.toml',
+);
+
+await evaluate(setValue('.url-bar__input', '{{baseUrl}}/echo?scope={{path}}'));
+await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);
+await echoWith('scope=from-collection', 'echo with the collection variable');
+steps.push('collection variable used when sending');
+
+// A request variable of the same name is stronger.
+await evaluate(`document.querySelectorAll('.request-editor__section')[2].click()`);
+await waitFor(`!!document.querySelector('.request-editor__panel .rows-editor')`, 'variables tab');
+await evaluate(`document.querySelector('.request-editor__panel .rows-editor .button').click()`);
+await waitFor(
+  `document.querySelectorAll('.request-editor__panel .rows-editor__input').length === 2`,
+  'request variable row',
+);
+await evaluate(`(() => {
+  const [name, value] = document.querySelectorAll('.request-editor__panel .rows-editor__input');
+  name.value = 'path';
+  name.dispatchEvent(new Event('input', { bubbles: true }));
+  value.value = 'from-request';
+  value.dispatchEvent(new Event('input', { bubbles: true }));
+})()`);
+await waitFor(
+  `(document.querySelector('.request-editor__preview')?.textContent ?? '').includes('scope=from-request')`,
+  'preview with the request variable',
+);
+await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);
+await echoWith('scope=from-request', 'echo with the request variable');
+steps.push('request variable overrides the collection variable');
+
+await evaluate(`document.querySelector('.request-editor__header .button').click()`);
+saved = '';
+for (let attempt = 0; attempt < 40 && !saved.includes('from-request'); attempt++) {
+  await sleep(250);
+  saved = readFileSync(healthFile, 'utf8');
+}
+check(saved.includes('[[request.variables]]'), 'request variable saved to health.toml');
+check(exitCode === null, 'program still running after sending with layered variables');
 
 finish(null);

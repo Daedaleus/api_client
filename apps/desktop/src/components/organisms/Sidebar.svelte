@@ -40,6 +40,11 @@
           onclick={() => workspace.newFolder(collection.id, collection.id)}
         />
         <IconButton
+          icon="braces"
+          label={i18n.t('collection.variables')}
+          onclick={() => workspace.variables.open(collection.id, collection.id)}
+        />
+        <IconButton
           icon="close"
           label={i18n.t('collection.close')}
           onclick={() => workspace.closeCollection(collection.id)}

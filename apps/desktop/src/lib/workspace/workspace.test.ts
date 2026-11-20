@@ -214,18 +214,20 @@ describe('Workspace', () => {
   it('sends saved requests with the chosen environment, scratch ones without', async () => {
     const { api, workspace } = await setup();
     await workspace.send(workspace.tabs.active!);
-    expect(api.commands.at(-1)).toMatchObject({ type: 'sendRequest', environment: null });
+    expect(api.commands.at(-1)).toMatchObject({ type: 'sendRequest', context: null });
 
     await workspace.openRequest('c1', 'r2');
     const tab = workspace.tabs.active!;
     expect(workspace.collectionOf(tab)?.name).toBe('Shop');
     await workspace.send(tab);
-    expect(api.commands.at(-1)).toMatchObject({ environment: null });
+    expect(api.commands.at(-1)).toMatchObject({
+      context: { collectionId: 'c1', requestId: 'r2', environmentId: null },
+    });
 
     workspace.environments.choose('c1', 'e1');
     await workspace.send(tab);
     expect(api.commands.at(-1)).toMatchObject({
-      environment: { collectionId: 'c1', environmentId: 'e1' },
+      context: { collectionId: 'c1', requestId: 'r2', environmentId: 'e1' },
     });
   });
 
@@ -307,6 +309,6 @@ describe('Workspace', () => {
     await deleting;
     expect(api.commands.at(-1)).toEqual({ type: 'deleteItem', collectionId: 'c1', itemId: 'e1' });
     expect(workspace.editing).toBeNull();
-    expect(workspace.environments.reference(shop())).toBeNull();
+    expect(workspace.environments.of(shop())).toBeNull();
   });
 });

@@ -87,9 +87,11 @@ export type CollectionView_Deserialize = {
 	/**  Collection folder. */
 	root: string,
 	/**  Top-level folders and requests in display order. */
-	items: TreeItemView[],
+	items: TreeItemView_Deserialize[],
 	/**  Environments, sorted by name. */
 	environments: EnvironmentDraft_Deserialize[],
+	/**  Variables for every request of the collection. */
+	variables: VariableDraft_Deserialize[],
 	/**  Files that could not be loaded. */
 	problems: UserText[],
 };
@@ -103,9 +105,11 @@ export type CollectionView_Serialize = {
 	/**  Collection folder. */
 	root: string,
 	/**  Top-level folders and requests in display order. */
-	items: TreeItemView[],
+	items: TreeItemView_Serialize[],
 	/**  Environments, sorted by name. */
 	environments: EnvironmentDraft_Serialize[],
+	/**  Variables for every request of the collection. */
+	variables: VariableDraft_Serialize[],
 	/**  Files that could not be loaded. */
 	problems: UserText[],
 };
@@ -162,11 +166,13 @@ url: string;
 headers?: HeaderDraft[]; 
 /**  Body; JSON and text get a `Content-Type` unless a header sets one. */
 body?: BodyDraft; 
+/**  The request's own variables, as in the editor (strongest). */
+variables?: VariableDraft_Deserialize[]; 
 /**
- *  Environment for `{{variables}}`; without one, placeholders are
- *  an error.
+ *  Where further `{{variables}}` come from: collection, folders and
+ *  environment. Without it only the request's own variables count.
  */
-environment?: EnvironmentRef | null } | 
+context?: SendContext_Deserialize | null } | 
 /**  Open the collection in a folder. */
 { type: "openCollection"; 
 /**  The collection folder. */
@@ -229,6 +235,14 @@ name: string } |
 collectionId: string; 
 /**  The edited environment (identified by its id). */
 environment: EnvironmentDraft_Deserialize } | 
+/**  Save the variables of the collection or of one of its folders. */
+{ type: "saveVariables"; 
+/**  The collection. */
+collectionId: string; 
+/**  The collection itself or a folder in it. */
+itemId: string; 
+/**  The variables in display order (no secrets). */
+variables: VariableDraft_Deserialize[] } | 
 /**
  *  Set who the collection's secrets are encrypted for and re-encrypt
  *  the secrets of every environment. Nothing changes if any of them
@@ -252,11 +266,13 @@ url: string;
 headers: HeaderDraft[]; 
 /**  Body; JSON and text get a `Content-Type` unless a header sets one. */
 body: BodyDraft; 
+/**  The request's own variables, as in the editor (strongest). */
+variables: VariableDraft_Serialize[]; 
 /**
- *  Environment for `{{variables}}`; without one, placeholders are
- *  an error.
+ *  Where further `{{variables}}` come from: collection, folders and
+ *  environment. Without it only the request's own variables count.
  */
-environment: EnvironmentRef | null } | 
+context: SendContext_Serialize | null } | 
 /**  Open the collection in a folder. */
 { type: "openCollection"; 
 /**  The collection folder. */
@@ -319,6 +335,14 @@ name: string } |
 collectionId: string; 
 /**  The edited environment (identified by its id). */
 environment: EnvironmentDraft_Serialize } | 
+/**  Save the variables of the collection or of one of its folders. */
+{ type: "saveVariables"; 
+/**  The collection. */
+collectionId: string; 
+/**  The collection itself or a folder in it. */
+itemId: string; 
+/**  The variables in display order (no secrets). */
+variables: VariableDraft_Serialize[] } | 
 /**
  *  Set who the collection's secrets are encrypted for and re-encrypt
  *  the secrets of every environment. Nothing changes if any of them
@@ -355,14 +379,6 @@ export type EnvironmentDraft_Serialize = {
 	variables: VariableDraft_Serialize[],
 	/**  The file is never written (set by the app, ignored when saving). */
 	readOnly: boolean,
-};
-
-/**  The environment to resolve `{{variables}}` with when sending. */
-export type EnvironmentRef = {
-	/**  The collection the environment belongs to. */
-	collectionId: string,
-	/**  The environment. */
-	environmentId: string,
 };
 
 /**  A header of a [`RequestDraft`]. */
@@ -461,6 +477,8 @@ export type RequestDraft_Deserialize = {
 	headers: HeaderDraft[],
 	/**  Body. */
 	body: BodyDraft,
+	/**  Variables of this request only. */
+	variables?: VariableDraft_Deserialize[],
 	/**  The file is never written (set by the app, ignored when saving). */
 	readOnly?: boolean,
 };
@@ -479,6 +497,8 @@ export type RequestDraft_Serialize = {
 	headers: HeaderDraft[],
 	/**  Body. */
 	body: BodyDraft,
+	/**  Variables of this request only. */
+	variables: VariableDraft_Serialize[],
 	/**  The file is never written (set by the app, ignored when saving). */
 	readOnly: boolean,
 };
@@ -550,6 +570,38 @@ export type RunOutcomeView_Serialize =
 /**  Why. */
 error: UserText };
 
+/**
+ *  Where the `{{variables}}` of a request come from when it is sent: its
+ *  collection, the folders around it and the chosen environment.
+ */
+export type SendContext = SendContext_Serialize | SendContext_Deserialize;
+
+/**
+ *  Where the `{{variables}}` of a request come from when it is sent: its
+ *  collection, the folders around it and the chosen environment.
+ */
+export type SendContext_Deserialize = {
+	/**  The collection the request belongs to. */
+	collectionId: string,
+	/**  The saved request (for its folders), if it is one. */
+	requestId?: string | null,
+	/**  The chosen environment, if any. */
+	environmentId?: string | null,
+};
+
+/**
+ *  Where the `{{variables}}` of a request come from when it is sent: its
+ *  collection, the folders around it and the chosen environment.
+ */
+export type SendContext_Serialize = {
+	/**  The collection the request belongs to. */
+	collectionId: string,
+	/**  The saved request (for its folders), if it is one. */
+	requestId: string | null,
+	/**  The chosen environment, if any. */
+	environmentId: string | null,
+};
+
 /**  Class of a status code as the UI sees it (serialized in camelCase). */
 export type StatusClassView = 
 /**  `1xx` */
@@ -566,7 +618,10 @@ export type StatusClassView =
 "nonstandard";
 
 /**  An entry of the request tree. */
-export type TreeItemView = 
+export type TreeItemView = TreeItemView_Serialize | TreeItemView_Deserialize;
+
+/**  An entry of the request tree. */
+export type TreeItemView_Deserialize = 
 /**  A folder. */
 { kind: "folder"; 
 /**  Folder id. */
@@ -576,7 +631,34 @@ name: string;
 /**  Its settings are never written. */
 readOnly: boolean; 
 /**  Contents in display order. */
-items: TreeItemView[] } | 
+items: TreeItemView_Deserialize[]; 
+/**  Variables for the requests in the folder. */
+variables: VariableDraft_Deserialize[] } | 
+/**  A request. */
+{ kind: "request"; 
+/**  Request id. */
+id: string; 
+/**  Display name. */
+name: string; 
+/**  Method, e.g. `GET`, for the label in the tree. */
+method: string; 
+/**  The file is never written. */
+readOnly: boolean };
+
+/**  An entry of the request tree. */
+export type TreeItemView_Serialize = 
+/**  A folder. */
+{ kind: "folder"; 
+/**  Folder id. */
+id: string; 
+/**  Display name. */
+name: string; 
+/**  Its settings are never written. */
+readOnly: boolean; 
+/**  Contents in display order. */
+items: TreeItemView_Serialize[]; 
+/**  Variables for the requests in the folder. */
+variables: VariableDraft_Serialize[] } | 
 /**  A request. */
 { kind: "request"; 
 /**  Request id. */
@@ -596,10 +678,10 @@ export type UserText = {
 	args: { [key in string]: string },
 };
 
-/**  A variable of an [`EnvironmentDraft`]. */
+/**  A variable row in an editor. */
 export type VariableDraft = VariableDraft_Serialize | VariableDraft_Deserialize;
 
-/**  A variable of an [`EnvironmentDraft`]. */
+/**  A variable row in an editor. */
 export type VariableDraft_Deserialize = {
 	/**  Name used in `{{name}}`. */
 	name: string,
@@ -610,11 +692,11 @@ export type VariableDraft_Deserialize = {
 	value: string,
 	/**  Used when sending. */
 	enabled: boolean,
-	/**  Stored encrypted (ADR S4). */
+	/**  Stored encrypted (ADR S4); only environments have secrets. */
 	secret?: boolean,
 };
 
-/**  A variable of an [`EnvironmentDraft`]. */
+/**  A variable row in an editor. */
 export type VariableDraft_Serialize = {
 	/**  Name used in `{{name}}`. */
 	name: string,
@@ -625,7 +707,7 @@ export type VariableDraft_Serialize = {
 	value: string,
 	/**  Used when sending. */
 	enabled: boolean,
-	/**  Stored encrypted (ADR S4). */
+	/**  Stored encrypted (ADR S4); only environments have secrets. */
 	secret: boolean,
 };
 

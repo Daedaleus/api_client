@@ -42,11 +42,13 @@ impl Fixture {
         login.body = Body::Json("{}".into());
         let health = Request::new("Health");
         let auth = Folder {
+            variables: Vec::new(),
             id: ItemId::new(),
             name: "Auth".into(),
             items: vec![Item::Request(login.clone())],
         };
         let collection = Collection {
+            variables: Vec::new(),
             id: ItemId::new(),
             name: "Shop".into(),
             items: vec![Item::Folder(auth.clone()), Item::Request(health.clone())],

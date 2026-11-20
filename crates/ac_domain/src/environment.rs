@@ -7,6 +7,7 @@
 //! again, so variables cannot refer to each other in circles.
 
 use std::collections::HashMap;
+use std::hash::BuildHasher;
 
 use crate::collection::ItemId;
 
@@ -50,6 +51,19 @@ impl std::fmt::Debug for Variable {
     }
 }
 
+impl Variable {
+    /// An enabled, plain variable.
+    #[must_use]
+    pub fn plain(name: impl Into<String>, value: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            value: value.into(),
+            enabled: true,
+            secret: false,
+        }
+    }
+}
+
 impl Environment {
     /// A new environment without variables.
     #[must_use]
@@ -72,11 +86,23 @@ impl Environment {
     /// not known (not decrypted) are left out.
     #[must_use]
     pub fn values(&self) -> HashMap<&str, &str> {
-        self.variables
-            .iter()
-            .filter(|variable| variable.enabled && !(variable.secret && variable.value.is_empty()))
-            .map(|variable| (variable.name.trim(), variable.value.as_str()))
-            .collect()
+        let mut values = HashMap::new();
+        add_values(&mut values, &self.variables);
+        values
+    }
+}
+
+/// Adds the usable variables of `variables` to `values`, replacing earlier
+/// values of the same name: enabled ones whose value is known (a secret that
+/// was not decrypted is left out). Within the list the later row wins.
+pub fn add_values<'a, S: BuildHasher>(
+    values: &mut HashMap<&'a str, &'a str, S>,
+    variables: &'a [Variable],
+) {
+    for variable in variables {
+        if variable.enabled && !(variable.secret && variable.value.is_empty()) {
+            values.insert(variable.name.trim(), variable.value.as_str());
+        }
     }
 }
 

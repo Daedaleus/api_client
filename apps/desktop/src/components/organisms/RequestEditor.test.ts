@@ -9,7 +9,7 @@ import RequestEditor from './RequestEditor.svelte';
 
 function setup(
   tab = new RequestTab(draft('r1', 'Login'), { collectionId: 'c1', requestId: 'r1' }),
-  variables: ReadonlyMap<string, string> | null = null,
+  variables: ReadonlyMap<string, string> = new Map(),
 ) {
   const onsave = vi.fn();
   render(RequestEditor, { tab, onsend: vi.fn(), onsave, variables });
@@ -91,8 +91,19 @@ describe('RequestEditor', () => {
     expect(screen.queryByText(/Sent to/)).not.toBeInTheDocument();
   });
 
-  it('asks for an environment when the URL has variables', () => {
+  it('lists unknown variables when nothing defines them', () => {
     setup(new RequestTab(draft('r1', 'Login', { url: '{{baseUrl}}/x' }), null));
-    expect(screen.getByText(/please choose an environment/)).toBeInTheDocument();
+    expect(screen.getByText('Unknown variables: baseUrl')).toBeInTheDocument();
+  });
+
+  it('edits the request variables', async () => {
+    const { tab } = setup();
+    await userEvent.click(screen.getByRole('tab', { name: /Variables/ }));
+    expect(screen.getByText('No own variables.')).toBeInTheDocument();
+    expect(screen.getByText(/override folders, environment and collection/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Add variable' }));
+    await userEvent.type(screen.getByLabelText('Variable name'), 'path');
+    expect(tab.draft.variables).toEqual([{ name: 'path', value: '', enabled: true }]);
+    expect(screen.getByRole('tab', { name: /Variables/ })).toHaveTextContent('1');
   });
 });

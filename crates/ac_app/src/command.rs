@@ -8,8 +8,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::view::{
-    BodyDraft, CollectionView, EnvironmentDraft, EnvironmentRef, HeaderDraft, RecipientsView,
-    RequestDraft,
+    BodyDraft, CollectionView, EnvironmentDraft, HeaderDraft, RecipientsView, RequestDraft,
+    SendContext, VariableDraft,
 };
 
 /// Something the user wants the application to do.
@@ -33,10 +33,13 @@ pub enum Command {
         /// Body; JSON and text get a `Content-Type` unless a header sets one.
         #[serde(default)]
         body: BodyDraft,
-        /// Environment for `{{variables}}`; without one, placeholders are
-        /// an error.
+        /// The request's own variables, as in the editor (strongest).
         #[serde(default)]
-        environment: Option<EnvironmentRef>,
+        variables: Vec<VariableDraft>,
+        /// Where further `{{variables}}` come from: collection, folders and
+        /// environment. Without it only the request's own variables count.
+        #[serde(default)]
+        context: Option<SendContext>,
     },
     /// Open the collection in a folder.
     OpenCollection {
@@ -109,6 +112,15 @@ pub enum Command {
         collection_id: String,
         /// The edited environment (identified by its id).
         environment: EnvironmentDraft,
+    },
+    /// Save the variables of the collection or of one of its folders.
+    SaveVariables {
+        /// The collection.
+        collection_id: String,
+        /// The collection itself or a folder in it.
+        item_id: String,
+        /// The variables in display order (no secrets).
+        variables: Vec<VariableDraft>,
     },
     /// Set who the collection's secrets are encrypted for and re-encrypt
     /// the secrets of every environment. Nothing changes if any of them

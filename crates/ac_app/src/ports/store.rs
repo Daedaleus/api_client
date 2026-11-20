@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use ac_domain::collection::{Collection, ItemId, Request};
-use ac_domain::environment::Environment;
+use ac_domain::environment::{Environment, Variable};
 
 use crate::text::{UserText, keys};
 
@@ -69,6 +69,29 @@ pub trait CollectionStore: Send + Sync + 'static {
     /// If the file cannot be written.
     fn create_environment(&self, root: &Path, environment: &Environment) -> Result<(), StoreError>;
 
+    /// Writes the variables of the collection in `root`.
+    ///
+    /// # Errors
+    /// If its settings are damaged, read-only or cannot be written.
+    fn save_collection_variables(
+        &self,
+        root: &Path,
+        variables: &[Variable],
+    ) -> Result<(), StoreError>;
+
+    /// Writes the variables of the folder `dir` (id and name keep a new
+    /// settings file consistent).
+    ///
+    /// # Errors
+    /// If its settings are damaged, read-only or cannot be written.
+    fn save_folder_variables(
+        &self,
+        dir: &Path,
+        id: ItemId,
+        name: &str,
+        variables: &[Variable],
+    ) -> Result<(), StoreError>;
+
     /// The encrypted secrets of the environment in `environment_file`;
     /// `None` if it has none.
     ///
@@ -126,6 +149,22 @@ impl<T: CollectionStore> CollectionStore for Arc<T> {
     }
     fn create_environment(&self, root: &Path, environment: &Environment) -> Result<(), StoreError> {
         T::create_environment(self, root, environment)
+    }
+    fn save_collection_variables(
+        &self,
+        root: &Path,
+        variables: &[Variable],
+    ) -> Result<(), StoreError> {
+        T::save_collection_variables(self, root, variables)
+    }
+    fn save_folder_variables(
+        &self,
+        dir: &Path,
+        id: ItemId,
+        name: &str,
+        variables: &[Variable],
+    ) -> Result<(), StoreError> {
+        T::save_folder_variables(self, dir, id, name, variables)
     }
     fn read_secrets(&self, environment_file: &Path) -> Result<Option<Vec<u8>>, StoreError> {
         T::read_secrets(self, environment_file)

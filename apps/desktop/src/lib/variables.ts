@@ -28,6 +28,19 @@ export function variableValues(variables: readonly VariableDraft[]): Map<string,
   return values;
 }
 
+/**
+ * The values of several variable lists, weakest first (collection,
+ * environment, folders outer to inner, request): stronger lists win, as when
+ * sending (ac_domain::scope).
+ */
+export function scopeValues(layers: readonly (readonly VariableDraft[])[]): Map<string, string> {
+  const values = new Map<string, string>();
+  for (const layer of layers) {
+    for (const [name, value] of variableValues(layer)) values.set(name, value);
+  }
+  return values;
+}
+
 /** Whether `text` contains a placeholder at all. */
 export function hasPlaceholders(text: string): boolean {
   return /\{\{[^}]*\}\}/.test(text);

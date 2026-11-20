@@ -182,3 +182,15 @@ fn ids_survive_a_round_trip() {
     save_request(&path, &request).unwrap();
     assert_eq!(read_request(&path).unwrap().0.id, request.id);
 }
+
+#[test]
+fn request_variables_round_trip() {
+    let (_temp, root) = shop_api();
+    let path = root.join("health.toml");
+    let (mut request, _) = read_request(&path).unwrap();
+    assert_eq!(request.variables, vec![]);
+    request.variables = vec![ac_domain::environment::Variable::plain("path", "health")];
+    save_request(&path, &request).unwrap();
+    assert!(read(&path).contains("[[request.variables]]"));
+    assert_eq!(read_request(&path).unwrap().0, request);
+}

@@ -35,6 +35,7 @@ export function shop(): CollectionView {
     name: 'Shop',
     root: 'C:\\apis\\shop',
     problems: [],
+    variables: [],
     environments: [
       {
         id: 'e1',
@@ -52,6 +53,7 @@ export function shop(): CollectionView {
         id: 'f1',
         name: 'Auth',
         readOnly: false,
+        variables: [],
         items: [{ kind: 'request', id: 'r1', name: 'Login', method: 'POST', readOnly: false }],
       },
       { kind: 'request', id: 'r2', name: 'Health', method: 'GET', readOnly: false },
@@ -71,6 +73,7 @@ export function draft(
     url: `https://example.com/${id}`,
     headers: [],
     body: { kind: 'none' },
+    variables: [],
     readOnly: false,
     ...overrides,
   };

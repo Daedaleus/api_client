@@ -3,16 +3,15 @@
 
 use std::path::{Path, PathBuf};
 
-use ac_domain::environment::{Environment, Variable};
+use ac_domain::environment::Environment;
 use toml_edit::DocumentMut;
 
 use crate::document;
 use crate::error::StorageError;
 use crate::format::{CURRENT_VERSION, ENVIRONMENT_FORMAT, ENVIRONMENTS_FOLDER};
 use crate::names::{file_stem, slug, unique_file};
-use crate::rows::{self, Row};
+use crate::variables;
 
-const VARIABLES: &str = "variables";
 /// Name stem when an environment name has no usable characters.
 const FALLBACK: &str = "environment";
 
@@ -31,17 +30,7 @@ fn environment_from(doc: &DocumentMut, path: &Path) -> Result<Environment, Stora
     Ok(Environment {
         id: document::id(root, path, path)?,
         name: document::opt_str(root, "name", path)?.unwrap_or_else(|| file_stem(path)),
-        variables: rows::read(root.get(VARIABLES), path, VARIABLES)?
-            .into_iter()
-            .map(|row| Variable {
-                name: row.name,
-                // A plain value next to `secret = true` is ignored (and
-                // dropped on the next save): secrets are never plain text.
-                value: if row.secret { String::new() } else { row.value },
-                enabled: row.enabled,
-                secret: row.secret,
-            })
-            .collect(),
+        variables: variables::read(root.get(variables::KEY), path, variables::KEY)?,
     })
 }
 
@@ -75,12 +64,7 @@ pub fn save_environment(path: &Path, environment: &Environment) -> Result<(), St
     document::set(root, "version", CURRENT_VERSION);
     document::set(root, "id", environment.id.to_string());
     document::set(root, "name", environment.name.as_str());
-    rows::write(
-        root,
-        VARIABLES,
-        &variable_rows(&before.variables),
-        &variable_rows(&environment.variables),
-    );
+    variables::write(root, &before.variables, &environment.variables);
     document::write_atomically(path, &doc.to_string())
 }
 
@@ -95,23 +79,6 @@ pub fn create_environment(root: &Path, environment: &Environment) -> Result<Path
     let path = unique_file(&dir, &slug(&environment.name, FALLBACK));
     save_environment(&path, environment)?;
     Ok(path)
-}
-
-fn variable_rows(variables: &[Variable]) -> Vec<Row> {
-    variables
-        .iter()
-        .map(|variable| Row {
-            name: variable.name.clone(),
-            // Secret values are never written here (encrypted elsewhere).
-            value: if variable.secret {
-                String::new()
-            } else {
-                variable.value.clone()
-            },
-            enabled: variable.enabled,
-            secret: variable.secret,
-        })
-        .collect()
 }
 
 #[cfg(test)]

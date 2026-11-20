@@ -43,6 +43,7 @@ export class RequestTab {
       url: '',
       headers: [],
       body: { kind: 'none' },
+      variables: [],
       readOnly: false,
     };
   }
