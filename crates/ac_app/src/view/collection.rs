@@ -134,7 +134,7 @@ pub struct HeaderDraft {
 }
 
 /// The body of a [`RequestDraft`].
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(
     tag = "kind",
@@ -143,6 +143,7 @@ pub struct HeaderDraft {
 )]
 pub enum BodyDraft {
     /// No body.
+    #[default]
     None,
     /// JSON text.
     Json {
@@ -154,6 +155,54 @@ pub enum BodyDraft {
         /// The text.
         content: String,
     },
+}
+
+impl HeaderDraft {
+    /// The editor's view of a header.
+    #[must_use]
+    pub fn from_entry(header: &HeaderEntry) -> Self {
+        Self {
+            name: header.name.clone(),
+            value: header.value.clone(),
+            enabled: header.enabled,
+        }
+    }
+
+    /// The header this row describes.
+    #[must_use]
+    pub fn to_entry(&self) -> HeaderEntry {
+        HeaderEntry {
+            name: self.name.clone(),
+            value: self.value.clone(),
+            enabled: self.enabled,
+        }
+    }
+}
+
+impl BodyDraft {
+    /// The editor's view of a body.
+    #[must_use]
+    pub fn from_body(body: &Body) -> Self {
+        match body {
+            Body::None => Self::None,
+            Body::Json(content) => Self::Json {
+                content: content.clone(),
+            },
+            Body::Text(content) => Self::Text {
+                content: content.clone(),
+            },
+        }
+    }
+
+    /// The body this draft describes.
+    #[must_use]
+    pub fn to_body(&self) -> Body {
+        match self {
+            Self::None => Body::None,
+            Self::Json { content } => Body::Json(content.clone()),
+            Self::Text { content } => Body::Text(content.clone()),
+        }
+    }
 }
 
 impl RequestDraft {
@@ -168,21 +217,9 @@ impl RequestDraft {
             headers: request
                 .headers
                 .iter()
-                .map(|header| HeaderDraft {
-                    name: header.name.clone(),
-                    value: header.value.clone(),
-                    enabled: header.enabled,
-                })
+                .map(HeaderDraft::from_entry)
                 .collect(),
-            body: match &request.body {
-                Body::None => BodyDraft::None,
-                Body::Json(content) => BodyDraft::Json {
-                    content: content.clone(),
-                },
-                Body::Text(content) => BodyDraft::Text {
-                    content: content.clone(),
-                },
-            },
+            body: BodyDraft::from_body(&request.body),
             read_only,
         }
     }
@@ -197,20 +234,8 @@ impl RequestDraft {
             name: non_empty(&self.name)?.to_owned(),
             method: self.method.trim().parse()?,
             url: self.url.clone(),
-            headers: self
-                .headers
-                .iter()
-                .map(|header| HeaderEntry {
-                    name: header.name.clone(),
-                    value: header.value.clone(),
-                    enabled: header.enabled,
-                })
-                .collect(),
-            body: match &self.body {
-                BodyDraft::None => Body::None,
-                BodyDraft::Json { content } => Body::Json(content.clone()),
-                BodyDraft::Text { content } => Body::Text(content.clone()),
-            },
+            headers: self.headers.iter().map(HeaderDraft::to_entry).collect(),
+            body: self.body.to_body(),
         })
     }
 }

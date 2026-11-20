@@ -1,6 +1,6 @@
 use ac_domain::protocol::HttpMethod;
 use url::Url;
-use wiremock::matchers::{header, method, path};
+use wiremock::matchers::{body_string, header, method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use super::*;
@@ -10,7 +10,29 @@ fn request(method: HttpMethod, url: &str, headers: Vec<Header>) -> ResolvedReque
         method,
         url: Url::parse(url).unwrap(),
         headers,
+        body: None,
     }
+}
+
+#[tokio::test]
+async fn sends_the_body() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(header("content-type", "application/json"))
+        .and(body_string("{\"name\":\"Teapot\"}"))
+        .respond_with(ResponseTemplate::new(201))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let mut post = request(
+        HttpMethod::Post,
+        &server.uri(),
+        vec![Header::new("Content-Type", "application/json")],
+    );
+    post.body = Some(b"{\"name\":\"Teapot\"}".to_vec());
+    let response = sender().send(post).await.unwrap();
+    assert_eq!(response.status.as_u16(), 201);
 }
 
 fn sender() -> ReqwestSender {

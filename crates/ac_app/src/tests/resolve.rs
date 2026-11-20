@@ -1,19 +1,83 @@
 use super::*;
 use crate::text::keys;
 
+/// Method and URL only.
+fn simple(method: &str, url: &str) -> Result<ResolvedRequest, AppError> {
+    resolve_request(method, url, &[], &Body::None)
+}
+
+fn entry(name: &str, value: &str, enabled: bool) -> HeaderEntry {
+    HeaderEntry {
+        name: name.into(),
+        value: value.into(),
+        enabled,
+    }
+}
+
 #[test]
 fn complete_input_is_taken_as_is() {
-    let request = resolve_request("POST", "https://api.example.com/users?page=2").unwrap();
+    let request = simple("POST", "https://api.example.com/users?page=2").unwrap();
     assert_eq!(request.method, HttpMethod::Post);
     assert_eq!(request.url.as_str(), "https://api.example.com/users?page=2");
     assert_eq!(request.headers, vec![]);
+    assert_eq!(request.body, None);
 }
 
 #[test]
 fn whitespace_is_trimmed_and_http_assumed() {
-    let request = resolve_request(" GET ", "  localhost:8080/health  ").unwrap();
+    let request = simple(" GET ", "  localhost:8080/health  ").unwrap();
     assert_eq!(request.method, HttpMethod::Get);
     assert_eq!(request.url.as_str(), "http://localhost:8080/health");
+}
+
+#[test]
+fn enabled_named_headers_are_sent_in_order() {
+    let headers = [
+        entry("Accept", "application/json", true),
+        entry("X-Debug", "1", false),
+        entry("  ", "ignored", true),
+        entry(" X-Trace ", "a b", true),
+    ];
+    let request = resolve_request("GET", "example.com", &headers, &Body::None).unwrap();
+    assert_eq!(
+        request.headers,
+        [
+            Header::new("Accept", "application/json"),
+            Header::new("X-Trace", "a b")
+        ]
+    );
+}
+
+#[test]
+fn bodies_get_a_content_type_unless_one_is_set() {
+    let json = resolve_request("POST", "x.example", &[], &Body::Json("{\"a\":1}".into())).unwrap();
+    assert_eq!(json.body.as_deref(), Some(b"{\"a\":1}".as_slice()));
+    assert_eq!(
+        json.headers,
+        [Header::new("Content-Type", "application/json")]
+    );
+
+    let text = resolve_request("POST", "x.example", &[], &Body::Text("hi".into())).unwrap();
+    assert_eq!(
+        text.headers,
+        [Header::new("Content-Type", "text/plain; charset=utf-8")]
+    );
+
+    let own = [entry("content-type", "application/vnd.api+json", true)];
+    let custom = resolve_request("POST", "x.example", &own, &Body::Json("{}".into())).unwrap();
+    assert_eq!(
+        custom.headers,
+        [Header::new("content-type", "application/vnd.api+json")]
+    );
+
+    // A disabled Content-Type does not count.
+    let disabled = [entry("Content-Type", "text/xml", false)];
+    let request =
+        resolve_request("POST", "x.example", &disabled, &Body::Json("{}".into())).unwrap();
+    assert_eq!(
+        request.headers,
+        [Header::new("Content-Type", "application/json")]
+    );
 }
 
 #[test]
@@ -25,19 +89,39 @@ fn invalid_input_is_reported_with_a_user_text() {
         ("GET", "ftp://example.com/file", keys::URL_SCHEME),
     ];
     for (method, url, key) in cases {
-        let error = resolve_request(method, url).unwrap_err();
+        let error = simple(method, url).unwrap_err();
         assert_eq!(error.user_text().key, key, "{method} {url}");
         assert_ne!(error.to_string(), "");
     }
 }
 
 #[test]
+fn headers_that_cannot_be_sent_are_refused() {
+    for header in [
+        entry("Bad Name", "x", true),
+        entry("X-Inject", "a\r\nEvil: yes", true),
+    ] {
+        let error = resolve_request("GET", "x.example", &[header], &Body::None).unwrap_err();
+        assert_eq!(error.user_text().key, keys::HEADER_INVALID);
+        assert!(error.to_string().contains("invalid header"));
+    }
+    let error = resolve_request(
+        "GET",
+        "x.example",
+        &[entry("Bad Name", "x", true)],
+        &Body::None,
+    )
+    .unwrap_err();
+    assert_eq!(error.user_text().args["name"], "Bad Name");
+}
+
+#[test]
 fn errors_carry_the_offending_value() {
-    let text = resolve_request("GE T", "x").unwrap_err().user_text();
+    let text = simple("GE T", "x").unwrap_err().user_text();
     assert_eq!(text.args["method"], "GE T");
-    let text = resolve_request("GET", "ftp://x").unwrap_err().user_text();
+    let text = simple("GET", "ftp://x").unwrap_err().user_text();
     assert_eq!(text.args["scheme"], "ftp");
-    let text = resolve_request("GET", "http://exa mple.com")
+    let text = simple("GET", "http://exa mple.com")
         .unwrap_err()
         .user_text();
     assert_ne!(text.args["reason"], "");

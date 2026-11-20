@@ -43,6 +43,9 @@ impl HttpSender for ReqwestSender {
         for header in request.headers {
             builder = builder.header(header.name, header.value);
         }
+        if let Some(body) = request.body {
+            builder = builder.body(body);
+        }
 
         let started = Instant::now();
         let response = builder

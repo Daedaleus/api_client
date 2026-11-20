@@ -89,6 +89,8 @@ export class TabsState {
         type: 'sendRequest',
         method: tab.draft.method,
         url: tab.draft.url,
+        headers: tab.draft.headers,
+        body: tab.draft.body,
       });
       if (ack.type !== 'runStarted') {
         throw new Error(`unexpected answer ${ack.type}`);

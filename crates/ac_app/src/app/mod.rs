@@ -93,7 +93,12 @@ impl<H: HttpSender, S: CollectionStore> App<H, S> {
     /// [`AppError`] if the command cannot be carried out as given.
     pub fn execute(&self, command: Command) -> Result<CommandAck, AppError> {
         match command {
-            Command::SendRequest { method, url } => self.send_request(&method, &url),
+            Command::SendRequest {
+                method,
+                url,
+                headers,
+                body,
+            } => self.send_request(&method, &url, &headers, &body),
             Command::OpenCollection { path } => self.open_collection(&path),
             Command::CreateCollection { path, name } => self.create_collection(&path, &name),
             Command::CloseCollection { collection_id } => self.close_collection(&collection_id),

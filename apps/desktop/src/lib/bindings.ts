@@ -136,7 +136,11 @@ export type Command_Deserialize =
 /**  Method as entered, e.g. `GET`. */
 method: string; 
 /**  URL as entered; `http://` is assumed when no scheme is given. */
-url: string } | 
+url: string; 
+/**  Header rows; disabled rows and rows without a name are not sent. */
+headers?: HeaderDraft[]; 
+/**  Body; JSON and text get a `Content-Type` unless a header sets one. */
+body?: BodyDraft } | 
 /**  Open the collection in a folder. */
 { type: "openCollection"; 
 /**  The collection folder. */
@@ -195,7 +199,11 @@ export type Command_Serialize =
 /**  Method as entered, e.g. `GET`. */
 method: string; 
 /**  URL as entered; `http://` is assumed when no scheme is given. */
-url: string } | 
+url: string; 
+/**  Header rows; disabled rows and rows without a name are not sent. */
+headers: HeaderDraft[]; 
+/**  Body; JSON and text get a `Content-Type` unless a header sets one. */
+body: BodyDraft } | 
 /**  Open the collection in a folder. */
 { type: "openCollection"; 
 /**  The collection folder. */

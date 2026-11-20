@@ -65,7 +65,15 @@ describe('TabsState', () => {
     tab.draft.method = 'POST';
     tab.draft.url = 'example.com';
     await tabs.send(tab);
-    expect(api.commands).toEqual([{ type: 'sendRequest', method: 'POST', url: 'example.com' }]);
+    expect(api.commands).toEqual([
+      {
+        type: 'sendRequest',
+        method: 'POST',
+        url: 'example.com',
+        headers: [],
+        body: { kind: 'none' },
+      },
+    ]);
     expect(tab.sending).toBe(true);
     api.emit(1, OK);
     expect(tab.sending).toBe(false);

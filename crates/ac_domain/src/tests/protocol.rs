@@ -76,3 +76,15 @@ fn invalid_tokens_are_rejected() {
         assert!(error.to_string().contains("invalid HTTP method"));
     }
 }
+
+#[test]
+fn header_names_are_tokens_and_values_have_no_line_breaks() {
+    assert!(is_token("X-Request-Id"));
+    assert!(!is_token("X Request"));
+    assert!(!is_token(""));
+    assert!(header::is_valid_value("application/json; charset=utf-8"));
+    assert!(header::is_valid_value(""));
+    for bad in ["a\r\nInjected: yes", "a\nb", "a\0b"] {
+        assert!(!header::is_valid_value(bad), "{bad:?}");
+    }
+}

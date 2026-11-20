@@ -63,6 +63,27 @@
     "de": "Nicht gespeichert. Requests zum Speichern in einer Collection anlegen.",
     "en": "Not saved. Create requests in a collection to save them."
   },
+  "editor.sections": { "de": "Request-Bereiche", "en": "Request sections" },
+  "editor.headers": { "de": "Headers", "en": "Headers" },
+  "editor.body": { "de": "Body", "en": "Body" },
+  "editor.no_headers": { "de": "Keine Header.", "en": "No headers." },
+  "editor.add_header": { "de": "Header hinzufügen", "en": "Add header" },
+  "editor.remove_header": { "de": "Header entfernen", "en": "Remove header" },
+  "editor.header_enabled": { "de": "Mitsenden", "en": "Send" },
+  "editor.header_name": { "de": "Header-Name", "en": "Header name" },
+  "editor.header_value": { "de": "Wert", "en": "Value" },
+  "editor.body_kind": { "de": "Body-Art", "en": "Body type" },
+  "editor.body_none": { "de": "Keiner", "en": "None" },
+  "editor.body_json": { "de": "JSON", "en": "JSON" },
+  "editor.body_text": { "de": "Text", "en": "Text" },
+  "editor.body_none_note": {
+    "de": "Dieser Request sendet keinen Body.",
+    "en": "This request sends no body."
+  },
+  "editor.body_invalid_json": {
+    "de": "Kein gültiges JSON: {detail}",
+    "en": "Not valid JSON: {detail}"
+  },
   "dialog.name": { "de": "Name", "en": "Name" },
   "dialog.ok": { "de": "OK", "en": "OK" },
   "dialog.cancel": { "de": "Abbrechen", "en": "Cancel" },
@@ -89,6 +110,10 @@
   "error.url_scheme": {
     "de": "Nur http und https werden unterstützt, nicht „{scheme}“.",
     "en": "Only http and https are supported, not “{scheme}”."
+  },
+  "error.header_invalid": {
+    "de": "Der Header „{name}“ kann so nicht gesendet werden (ungültiger Name oder Zeilenumbruch im Wert).",
+    "en": "Header “{name}” cannot be sent (invalid name or line break in the value)."
   },
   "error.method_invalid": {
     "de": "Ungültige Methode „{method}“.",

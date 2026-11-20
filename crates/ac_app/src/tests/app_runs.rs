@@ -36,7 +36,33 @@ fn send(method: &str, url: &str) -> Command {
     Command::SendRequest {
         method: method.into(),
         url: url.into(),
+        headers: Vec::new(),
+        body: BodyDraft::None,
     }
+}
+
+#[tokio::test]
+async fn headers_and_body_are_sent() {
+    let (app, fake) = app(FakeHttpSender::new().reply(Ok(response(201, "text/plain", ""))));
+    app.execute(Command::SendRequest {
+        method: "POST".into(),
+        url: "example.com/items".into(),
+        headers: vec![HeaderDraft {
+            name: "X-Test".into(),
+            value: "yes".into(),
+            enabled: true,
+        }],
+        body: BodyDraft::Json {
+            content: "{\"a\":1}".into(),
+        },
+    })
+    .unwrap();
+    tokio::task::yield_now().await;
+
+    let sent = fake.sent();
+    assert_eq!(sent[0].body.as_deref(), Some(b"{\"a\":1}".as_slice()));
+    assert_eq!(sent[0].headers.len(), 2);
+    assert_eq!(sent[0].headers[0].name, "X-Test");
 }
 
 async fn next_event(events: &mut broadcast::Receiver<AppEvent>) -> AppEvent {
