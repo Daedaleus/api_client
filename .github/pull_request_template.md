@@ -7,7 +7,7 @@
 
 ## Checklist
 
-- [ ] `.\build.ps1` passes (fmt, clippy with `-D warnings`, tests)
+- [ ] `mise run ci` passes (fmt, clippy with `-D warnings`, tests, coverage)
 - [ ] New logic has tests in `src/tests/`; coverage stays at least 90 %
 - [ ] New interface texts are in the translation file in all languages
 - [ ] No secrets, tokens or personal data in code, fixtures or screenshots

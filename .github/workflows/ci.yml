@@ -1,7 +1,8 @@
-# Checks the workspace on Windows, Linux and macOS.
-# Formatting and test coverage run once (Linux); Clippy and tests on all
-# three systems. Release builds, virus scans, checksums and the GitHub
-# release join once there is a program to ship (see CLAUDE.md, "Releases").
+# Checks the workspace on Windows, Linux and macOS with the same mise tasks
+# developers run locally (mise.toml). Formatting and test coverage run once
+# (Linux); clippy and tests on all three systems. Release builds, virus scans,
+# checksums and the GitHub release join once there is a program to ship (see
+# CLAUDE.md, "Releases").
 name: CI
 
 on:
@@ -55,10 +56,12 @@ jobs:
       - uses: actions/checkout@v7
       # Toolchain from rust-toolchain.toml, including the cargo cache.
       - uses: actions-rust-lang/setup-rust-toolchain@v2
-      - name: Clippy
-        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      # Tools in the versions from mise.toml.
+      - uses: jdx/mise-action@v5
+      - name: Lint
+        run: mise run lint
       - name: Tests
-        run: cargo test --workspace --locked
+        run: mise run test
 
   coverage:
     name: Test coverage
@@ -66,11 +69,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: actions-rust-lang/setup-rust-toolchain@v2
-      - uses: taiki-e/install-action@cargo-llvm-cov
-      # Like coverage.ps1: user interfaces, program start and test helpers
-      # do not count.
+      - uses: jdx/mise-action@v5
       - name: Measure coverage (at least 90 %)
-        run: >
-          cargo llvm-cov --workspace --lib --locked
-          --ignore-filename-regex '[\\/]apps[\\/]|[\\/]ac_testutil[\\/]|main\.rs$|[\\/]tests[\\/]'
-          --fail-under-lines 90
+        run: mise run coverage

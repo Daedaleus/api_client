@@ -138,14 +138,17 @@ language only determines how they are implemented idiomatically.
   also ≥ 90 % lines) and Testing Library for component behaviour; the Rust
   side is replaced by Tauri's `mockIPC`. A few end-to-end flows via
   WebdriverIO + `tauri-driver`.
-- **Tool versions are pinned:** Rust in `rust-toolchain.toml`, Node in
-  `.node-version` (+ `engines`), npm packages via committed lock file and
-  `npm ci`, Tauri CLI as dev dependency; CI reads the same files.
+- **Tool versions are pinned:** Rust in `rust-toolchain.toml` (rustup), all
+  other tools (Node from M1, cargo-llvm-cov, cargo-deny, git-cliff) in
+  `mise.toml`; npm packages via committed lock file and `npm ci`, Tauri CLI as
+  dev dependency. CI reads the same files.
 
 ## Before every commit
 
-- `cargo fmt`, `cargo clippy --all-targets -- -D warnings`, `cargo test`. A
-  build script (`build.ps1`) runs everything in one go.
+- `mise run ci`: formatting, clippy with `-D warnings`, tests, coverage. The
+  tasks live in `mise.toml` and are the single place for build commands – CI
+  calls the same tasks. Keep tasks plain commands (no shell features), so
+  they work in sh, cmd and PowerShell.
 
 ## Git workflow
 
@@ -237,8 +240,7 @@ language only determines how they are implemented idiomatically.
   program (`main.rs` only starts); diagnostic/CLI in its own module or crate.
 - Tests per module in `src/tests/<module>.rs`, included via
   `#[cfg(test)] #[path = "tests/<module>.rs"] mod tests;`.
-- Coverage with `cargo-llvm-cov`; build script `build.ps1`, coverage
-  `coverage.ps1`.
+- Coverage with `cargo-llvm-cov` via `mise run coverage`.
 
 ## Project
 
