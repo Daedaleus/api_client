@@ -27,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       # Installs the toolchain from rust-toolchain.toml.
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@v2
       - run: cargo fmt --all -- --check
 
   check:
@@ -54,7 +54,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       # Toolchain from rust-toolchain.toml, including the cargo cache.
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@v2
       - name: Clippy
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Tests
@@ -65,7 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@v2
       - uses: taiki-e/install-action@cargo-llvm-cov
       # Like coverage.ps1: user interfaces, program start and test helpers
       # do not count.
