@@ -45,11 +45,13 @@ fn items_are_found_anywhere_in_the_tree() {
     let nested = Request::new("Nested");
     let top = Request::new("Top");
     let folder = Folder {
+        variables: Vec::new(),
         id: ItemId::new(),
         name: "Folder".into(),
         items: vec![Item::Request(nested.clone())],
     };
     let collection = Collection {
+        variables: Vec::new(),
         id: ItemId::new(),
         name: "C".into(),
         items: vec![Item::Folder(folder.clone()), Item::Request(top.clone())],
@@ -64,6 +66,7 @@ fn items_are_found_anywhere_in_the_tree() {
 fn items_expose_id_and_name() {
     let request = Request::new("Login");
     let folder = Folder {
+        variables: Vec::new(),
         id: ItemId::new(),
         name: "Auth".into(),
         items: vec![Item::Request(request.clone())],
@@ -73,4 +76,36 @@ fn items_expose_id_and_name() {
     assert_eq!(items[0].name(), "Auth");
     assert_eq!(items[1].id(), request.id);
     assert_eq!(items[1].name(), "Login");
+}
+
+#[test]
+fn folders_around_an_item_lead_from_outside_in() {
+    let login = Request::new("Login");
+    let inner = Folder {
+        id: ItemId::new(),
+        name: "v2".into(),
+        items: vec![Item::Request(login.clone())],
+        variables: Vec::new(),
+    };
+    let outer = Folder {
+        id: ItemId::new(),
+        name: "Auth".into(),
+        items: vec![Item::Folder(inner.clone())],
+        variables: Vec::new(),
+    };
+    let health = Request::new("Health");
+    let collection = Collection {
+        id: ItemId::new(),
+        name: "Shop".into(),
+        items: vec![Item::Folder(outer.clone()), Item::Request(health.clone())],
+        variables: Vec::new(),
+    };
+    let names: Vec<_> = collection
+        .folders_around(login.id)
+        .iter()
+        .map(|folder| folder.name.as_str())
+        .collect();
+    assert_eq!(names, ["Auth", "v2"]);
+    assert_eq!(collection.folders_around(health.id).len(), 0);
+    assert_eq!(collection.folders_around(ItemId::new()).len(), 0);
 }

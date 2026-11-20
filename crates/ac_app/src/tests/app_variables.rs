@@ -1,0 +1,183 @@
+use std::time::Duration;
+
+use crate::command::{Command, CommandAck};
+use crate::error::AppError;
+use crate::ports::StoreErrorKind;
+use crate::test_support::Fixture;
+use crate::testing::{FakeHttpSender, response};
+use crate::view::{BodyDraft, SendContext, TreeItemView, VariableDraft};
+
+fn plain(name: &str, value: &str) -> VariableDraft {
+    VariableDraft {
+        name: name.into(),
+        value: value.into(),
+        enabled: true,
+        secret: false,
+    }
+}
+
+fn save(
+    fixture: &Fixture,
+    item_id: &str,
+    variables: Vec<VariableDraft>,
+) -> Result<CommandAck, AppError> {
+    fixture.app.execute(Command::SaveVariables {
+        collection_id: fixture.collection.clone(),
+        item_id: item_id.into(),
+        variables,
+    })
+}
+
+/// Sends `url` as the request `request_id` with `own` variables and Dev.
+async fn sent_url(
+    fixture: &Fixture,
+    request_id: Option<&str>,
+    url: &str,
+    own: Vec<VariableDraft>,
+    environment: bool,
+) -> String {
+    let mut events = fixture.app.subscribe();
+    fixture
+        .app
+        .execute(Command::SendRequest {
+            method: "GET".into(),
+            url: url.into(),
+            headers: Vec::new(),
+            body: BodyDraft::None,
+            variables: own,
+            context: Some(SendContext {
+                collection_id: fixture.collection.clone(),
+                request_id: request_id.map(Into::into),
+                environment_id: environment.then(|| fixture.dev.clone()),
+            }),
+        })
+        .unwrap();
+    tokio::time::timeout(Duration::from_secs(5), events.recv())
+        .await
+        .expect("run finishes")
+        .expect("channel open");
+    fixture.http.sent().last().unwrap().url.to_string()
+}
+
+fn replies(count: usize) -> FakeHttpSender {
+    (0..count).fold(FakeHttpSender::new(), |fake, _| {
+        fake.reply(Ok(response(200, "text/plain", "")))
+    })
+}
+
+#[tokio::test]
+async fn the_request_beats_folders_beat_the_environment_beats_the_collection() {
+    let fixture = Fixture::with_http(replies(4));
+    save(
+        &fixture,
+        &fixture.collection.clone(),
+        vec![
+            plain("baseUrl", "https://collection.example.com"),
+            plain("host", "collection"),
+            plain("a", "1"),
+        ],
+    )
+    .unwrap();
+    save(
+        &fixture,
+        &fixture.auth.clone(),
+        vec![plain("host", "folder")],
+    )
+    .unwrap();
+    let url = "{{baseUrl}}/{{host}}/{{a}}";
+
+    let login = fixture.login.clone();
+    assert_eq!(
+        sent_url(&fixture, Some(&login), url, Vec::new(), true).await,
+        "https://dev.example.com/folder/1"
+    );
+    assert_eq!(
+        sent_url(
+            &fixture,
+            Some(&login),
+            url,
+            vec![plain("host", "own")],
+            true
+        )
+        .await,
+        "https://dev.example.com/own/1"
+    );
+    let health = fixture.health.clone();
+    assert_eq!(
+        sent_url(&fixture, Some(&health), url, Vec::new(), true).await,
+        "https://dev.example.com/collection/1"
+    );
+    assert_eq!(
+        sent_url(&fixture, None, url, Vec::new(), false).await,
+        "https://collection.example.com/collection/1"
+    );
+}
+
+#[tokio::test]
+async fn without_context_only_the_own_variables_count() {
+    let fixture = Fixture::with_http(replies(1));
+    let mut events = fixture.app.subscribe();
+    fixture
+        .app
+        .execute(Command::SendRequest {
+            method: "GET".into(),
+            url: "{{host}}/x".into(),
+            headers: Vec::new(),
+            body: BodyDraft::None,
+            variables: vec![plain("host", "own.example.com")],
+            context: None,
+        })
+        .unwrap();
+    events.recv().await.unwrap();
+    assert_eq!(
+        fixture.http.sent()[0].url.as_str(),
+        "http://own.example.com/x"
+    );
+}
+
+#[tokio::test]
+async fn variables_are_saved_for_the_collection_folders_and_requests() {
+    let fixture = Fixture::new();
+    let mut marked = plain("token", "abc");
+    marked.secret = true;
+    save(&fixture, &fixture.collection.clone(), vec![marked]).unwrap();
+    save(&fixture, &fixture.auth.clone(), vec![plain("v", "2")]).unwrap();
+
+    let tree = fixture.tree();
+    // Only environments have secrets: elsewhere a secret row is plain.
+    assert_eq!(tree.variables, [plain("token", "abc")]);
+    let TreeItemView::Folder { variables, .. } = &tree.items[0] else {
+        panic!("expected the Auth folder");
+    };
+    assert_eq!(*variables, [plain("v", "2")]);
+
+    let mut draft = fixture.draft(&fixture.login);
+    draft.variables = vec![plain("path", "login")];
+    fixture.save(draft).unwrap();
+    assert_eq!(
+        fixture.draft(&fixture.login).variables,
+        [plain("path", "login")]
+    );
+}
+
+#[tokio::test]
+async fn variables_go_only_to_the_collection_and_its_folders() {
+    let fixture = Fixture::new();
+    let health = fixture.health.clone();
+    assert_eq!(
+        save(&fixture, &health, Vec::new()),
+        Err(AppError::NotAFolder)
+    );
+    let unknown = ac_domain::collection::ItemId::new().to_string();
+    assert_eq!(
+        save(&fixture, &unknown, Vec::new()),
+        Err(AppError::UnknownItem)
+    );
+
+    fixture.store.mark_read_only(fixture.auth.parse().unwrap());
+    let error = save(&fixture, &fixture.auth.clone(), Vec::new()).unwrap_err();
+    assert!(matches!(
+        error,
+        AppError::Store(ref store) if store.kind == StoreErrorKind::ReadOnly
+    ));
+}

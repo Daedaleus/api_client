@@ -62,6 +62,11 @@
           label={i18n.t('collection.new_folder')}
           onclick={() => workspace.newFolder(collectionId, item.id)}
         />
+        <IconButton
+          icon="braces"
+          label={i18n.t('collection.folder_variables')}
+          onclick={() => workspace.variables.open(collectionId, item.id)}
+        />
       {/if}
       <IconButton
         icon="edit"

@@ -19,6 +19,8 @@
 //! - [`environment_file`]: environment files (variables).
 //! - [`secrets_file`]: encrypted secrets and their recipients (bytes only).
 //! - `rows`: name/value/enabled lists (headers, variables).
+//! - `variables`: variable lists in collection, folder, environment and
+//!   request files.
 //! - [`create`]: creating collections, folders and requests.
 //! - [`remove`]: removing requests and folders.
 //! - [`store`]: [`FileStore`], the `CollectionStore` port of `ac_app`.
@@ -43,6 +45,7 @@ pub mod store;
 #[cfg(test)]
 #[path = "tests/support.rs"]
 mod test_support;
+mod variables;
 
 pub use create::{create_collection, create_folder, create_request};
 pub use environment_file::{create_environment, read_environment, save_environment};

@@ -5,14 +5,22 @@
 import type { Api } from '../api';
 import { toUserText } from '../errors';
 import type { KeyValueStorage } from '../storage';
-import type { CollectionView, EnvironmentDraft, TreeItemView } from '../types';
+import type {
+  CollectionView,
+  EnvironmentDraft,
+  SendContext,
+  TreeItemView,
+  VariableDraft,
+} from '../types';
+import { scopeValues } from '../variables';
 import { CollectionsState } from './collections.svelte';
 import { Dialogs } from './dialogs.svelte';
 import { EnvironmentChoice } from './environments.svelte';
 import { RecipientsState } from './recipients.svelte';
 import type { RequestTab } from './request-tab.svelte';
 import { TabsState } from './tabs.svelte';
-import { baseName } from './tree';
+import { baseName, foldersAround } from './tree';
+import { VariablesState } from './variables.svelte';
 
 /** An environment open in the editor: a copy, so cancelling changes nothing. */
 export interface EnvironmentEdit {
@@ -27,6 +35,8 @@ export class Workspace {
   readonly environments: EnvironmentChoice;
   /** Who secrets are encrypted for (dialog). */
   readonly recipients: RecipientsState;
+  /** Variables of a collection or folder (dialog). */
+  readonly variables: VariablesState;
   /** The environment being edited, if the editor is open. */
   editing = $state<EnvironmentEdit | null>(null);
   readonly #api: Api;
@@ -37,6 +47,7 @@ export class Workspace {
     this.tabs = new TabsState(api);
     this.environments = new EnvironmentChoice(storage);
     this.recipients = new RecipientsState(api, this.collections);
+    this.variables = new VariablesState(api, this.collections);
   }
 
   /** The collection a tab's request belongs to (none for scratch tabs). */
@@ -128,9 +139,38 @@ export class Workspace {
     if (changed) this.tabs.closeMissing(changed.collection);
   }
 
-  /** Sends a tab's request with the environment chosen for its collection. */
+  /** Sends a tab's request in its collection with the chosen environment. */
   send(tab: RequestTab): Promise<void> {
-    return this.tabs.send(tab, this.environments.reference(this.collectionOf(tab)));
+    return this.tabs.send(tab, this.#context(tab));
+  }
+
+  /**
+   * The values a tab's `{{variables}}` get, for the preview: collection,
+   * environment, folders and the request itself, the stronger winning.
+   */
+  variablesFor(tab: RequestTab): Map<string, string> {
+    const layers: VariableDraft[][] = [];
+    const collection = this.collectionOf(tab);
+    if (collection && tab.saved) {
+      layers.push(collection.variables);
+      const environment = this.environments.of(collection);
+      if (environment) layers.push(environment.variables);
+      for (const folder of foldersAround(collection, tab.saved.requestId)) {
+        layers.push(folder.variables);
+      }
+    }
+    layers.push(tab.draft.variables);
+    return scopeValues(layers);
+  }
+
+  #context(tab: RequestTab): SendContext | null {
+    const collection = this.collectionOf(tab);
+    if (!collection || !tab.saved) return null;
+    return {
+      collectionId: collection.id,
+      requestId: tab.saved.requestId,
+      environmentId: this.environments.of(collection)?.id ?? null,
+    };
   }
 
   async newEnvironment(collectionId: string): Promise<void> {

@@ -1,9 +1,9 @@
 //! Environments of open collections: creating and saving them, and their
 //! variables for sending. Deleting goes through `delete_item`.
 
-use std::collections::HashMap;
-
-use ac_domain::environment::Environment;
+use ac_domain::collection::ItemId;
+use ac_domain::environment::{Environment, Variable};
+use ac_domain::scope::Scope;
 
 use super::App;
 use super::collections::{item_id_from, location, writable};
@@ -12,7 +12,7 @@ use crate::command::CommandAck;
 use crate::error::AppError;
 use crate::ports::{CollectionStore, HttpSender, OpenedCollection, SecretVault};
 use crate::view::collection::non_empty;
-use crate::view::{EnvironmentDraft, EnvironmentRef};
+use crate::view::{EnvironmentDraft, SendContext};
 
 impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
     pub(super) fn create_environment(
@@ -45,27 +45,64 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
         self.reload(&opened.root, None)
     }
 
-    /// The environment to send with (`None` = no environment), with its
-    /// secrets decrypted if possible.
-    pub(super) fn environment(
+    /// The collection, request and environment a request is sent in, with
+    /// the environment's secrets decrypted if possible.
+    pub(super) fn context(
         &self,
-        reference: Option<&EnvironmentRef>,
-    ) -> Result<Option<Unlocked>, AppError> {
-        let Some(reference) = reference else {
+        context: Option<&SendContext>,
+    ) -> Result<Option<Context>, AppError> {
+        let Some(context) = context else {
             return Ok(None);
         };
-        let opened = self.current(&reference.collection_id)?;
-        let id = item_id_from(&reference.environment_id)?;
-        let environment = find(&opened, id)?.clone();
-        let file = &location(&opened, id)?.path;
-        self.unlock(file, environment).map(Some)
+        let opened = self.current(&context.collection_id)?;
+        let request = context
+            .request_id
+            .as_deref()
+            .map(item_id_from)
+            .transpose()?;
+        let unlocked = match context.environment_id.as_deref() {
+            None => None,
+            Some(id) => {
+                let id = item_id_from(id)?;
+                let environment = find(&opened, id)?.clone();
+                let file = &location(&opened, id)?.path;
+                Some(self.unlock(file, environment)?)
+            }
+        };
+        Ok(Some(Context {
+            opened,
+            request,
+            unlocked,
+        }))
     }
 }
 
-fn find(
-    opened: &OpenedCollection,
-    id: ac_domain::collection::ItemId,
-) -> Result<&Environment, AppError> {
+/// Everything around a request being sent.
+pub(super) struct Context {
+    opened: OpenedCollection,
+    request: Option<ItemId>,
+    pub unlocked: Option<Unlocked>,
+}
+
+impl Context {
+    /// The variable lists for the request, weakest first; `own` are the
+    /// request's own variables as edited (see [`ac_domain::scope`]).
+    pub fn scope<'a>(&'a self, own: &'a [Variable]) -> Scope<'a> {
+        let collection = &self.opened.collection;
+        let mut scope = Scope::new().then(&collection.variables);
+        if let Some(unlocked) = &self.unlocked {
+            scope = scope.then(&unlocked.environment.variables);
+        }
+        if let Some(request) = self.request {
+            for folder in collection.folders_around(request) {
+                scope = scope.then(&folder.variables);
+            }
+        }
+        scope.then(own)
+    }
+}
+
+fn find(opened: &OpenedCollection, id: ItemId) -> Result<&Environment, AppError> {
     opened
         .environments
         .iter()
@@ -81,11 +118,6 @@ fn without_secret_values(mut environment: Environment) -> Environment {
         }
     }
     environment
-}
-
-/// The values to resolve `{{variables}}` with; none without an environment.
-pub(super) fn values(environment: Option<&Environment>) -> HashMap<&str, &str> {
-    environment.map_or_default(Environment::values)
 }
 
 #[cfg(test)]

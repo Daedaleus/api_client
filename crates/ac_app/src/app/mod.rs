@@ -7,12 +7,14 @@
 //! - `environments`: environments of open collections.
 //! - `secrets`: secret variable values (decrypt for sending, encrypt on save).
 //! - `recipients`: who secrets are encrypted for, re-encrypting on change.
+//! - `variables`: variables of the collection and its folders.
 
 mod collections;
 mod environments;
 mod recipients;
 mod runs;
 mod secrets;
+mod variables;
 
 use std::path::PathBuf;
 use std::sync::atomic::AtomicU64;
@@ -26,6 +28,7 @@ use crate::command::{Command, CommandAck, Query, QueryResult};
 use crate::error::AppError;
 use crate::event::AppEvent;
 use crate::ports::{CollectionStore, HttpSender, SecretVault};
+use runs::Outgoing;
 
 /// Events kept for slow subscribers before they start missing some.
 const EVENT_CAPACITY: usize = 64;
@@ -108,8 +111,18 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
                 url,
                 headers,
                 body,
-                environment,
-            } => self.send_request(&method, &url, &headers, &body, environment.as_ref()),
+                variables,
+                context,
+            } => self.send_request(
+                &Outgoing {
+                    method: &method,
+                    url: &url,
+                    headers: &headers,
+                    body: &body,
+                    variables: &variables,
+                },
+                context.as_ref(),
+            ),
             Command::OpenCollection { path } => self.open_collection(&path),
             Command::CreateCollection { path, name } => self.create_collection(&path, &name),
             Command::CloseCollection { collection_id } => self.close_collection(&collection_id),
@@ -144,6 +157,11 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
                 collection_id,
                 environment,
             } => self.save_environment(&collection_id, &environment),
+            Command::SaveVariables {
+                collection_id,
+                item_id,
+                variables,
+            } => self.save_variables(&collection_id, &item_id, &variables),
             Command::SetRecipients {
                 collection_id,
                 recipients,

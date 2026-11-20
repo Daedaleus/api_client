@@ -6,6 +6,7 @@ use std::str::FromStr;
 
 use uuid::Uuid;
 
+use crate::environment::Variable;
 use crate::protocol::HttpMethod;
 
 /// Stable identity of a collection, folder or request. Survives renaming and
@@ -68,6 +69,9 @@ pub struct Collection {
     pub name: String,
     /// Top-level folders and requests in display order.
     pub items: Vec<Item>,
+    /// Variables for every request of the collection (weakest, see
+    /// [`crate::scope`]).
+    pub variables: Vec<Variable>,
 }
 
 impl Collection {
@@ -76,6 +80,32 @@ impl Collection {
     pub fn find(&self, id: ItemId) -> Option<&Item> {
         find_in(&self.items, id)
     }
+
+    /// The folders around the item `id`, outermost first; empty for a
+    /// top-level item or an unknown id.
+    #[must_use]
+    pub fn folders_around(&self, id: ItemId) -> Vec<&Folder> {
+        let mut path = Vec::new();
+        folders_to(&self.items, id, &mut path);
+        path
+    }
+}
+
+/// Pushes the folders leading to `id` onto `path`; true if found.
+fn folders_to<'a>(items: &'a [Item], id: ItemId, path: &mut Vec<&'a Folder>) -> bool {
+    for item in items {
+        if item.id() == id {
+            return true;
+        }
+        if let Item::Folder(folder) = item {
+            path.push(folder);
+            if folders_to(&folder.items, id, path) {
+                return true;
+            }
+            path.pop();
+        }
+    }
+    false
 }
 
 fn find_in(items: &[Item], id: ItemId) -> Option<&Item> {
@@ -95,6 +125,8 @@ pub struct Folder {
     pub name: String,
     /// Folders and requests in display order.
     pub items: Vec<Item>,
+    /// Variables for the requests in this folder and its subfolders.
+    pub variables: Vec<Variable>,
 }
 
 /// An entry of the request tree.
@@ -141,6 +173,8 @@ pub struct Request {
     pub headers: Vec<HeaderEntry>,
     /// Body.
     pub body: Body,
+    /// Variables of this request only (strongest, see [`crate::scope`]).
+    pub variables: Vec<Variable>,
 }
 
 impl Request {
@@ -154,6 +188,7 @@ impl Request {
             url: String::new(),
             headers: Vec::new(),
             body: Body::None,
+            variables: Vec::new(),
         }
     }
 }

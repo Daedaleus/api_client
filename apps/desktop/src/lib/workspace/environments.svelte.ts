@@ -1,7 +1,7 @@
 // Which environment is chosen per collection, remembered between starts.
 
 import { type KeyValueStorage, readJson, writeJson } from '../storage';
-import type { CollectionView, EnvironmentDraft, EnvironmentRef } from '../types';
+import type { CollectionView, EnvironmentDraft } from '../types';
 
 const STORAGE_KEY = 'activeEnvironments';
 
@@ -35,13 +35,5 @@ export class EnvironmentChoice {
     else delete next[collectionId];
     this.#chosen = next;
     writeJson(this.#storage, STORAGE_KEY, next);
-  }
-
-  /** What to send with for a request of `collection`. */
-  reference(collection: CollectionView | undefined): EnvironmentRef | null {
-    const environment = this.of(collection);
-    return collection && environment
-      ? { collectionId: collection.id, environmentId: environment.id }
-      : null;
   }
 }

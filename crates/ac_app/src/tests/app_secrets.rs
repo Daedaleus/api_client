@@ -8,7 +8,7 @@ use crate::ports::{SecretError, SecretValues, SecretVault};
 use crate::test_support::Fixture;
 use crate::testing::{FakeHttpSender, FakeVault, response};
 use crate::text::keys;
-use crate::view::{BodyDraft, EnvironmentDraft, EnvironmentRef, VariableDraft};
+use crate::view::{BodyDraft, EnvironmentDraft, SendContext, VariableDraft};
 
 fn secret(name: &str, value: &str) -> VariableDraft {
     VariableDraft {
@@ -61,9 +61,11 @@ fn send(fixture: &Fixture, url: &str) -> Result<CommandAck, AppError> {
         url: url.into(),
         headers: Vec::new(),
         body: BodyDraft::None,
-        environment: Some(EnvironmentRef {
+        variables: Vec::new(),
+        context: Some(SendContext {
             collection_id: fixture.collection.clone(),
-            environment_id: fixture.dev.clone(),
+            request_id: None,
+            environment_id: Some(fixture.dev.clone()),
         }),
     })
 }

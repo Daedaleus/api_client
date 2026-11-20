@@ -1,4 +1,33 @@
 {
+  "editor.variables": { "de": "Variablen", "en": "Variables" },
+  "editor.no_variables": {
+    "de": "Keine eigenen Variablen.",
+    "en": "No own variables."
+  },
+  "editor.variables_hint": {
+    "de": "Gelten nur für diesen Request und überschreiben Ordner, Umgebung und Collection.",
+    "en": "Apply to this request only and override folders, environment and collection."
+  },
+  "collection.variables": {
+    "de": "Variablen der Collection",
+    "en": "Collection variables"
+  },
+  "collection.folder_variables": {
+    "de": "Variablen des Ordners",
+    "en": "Folder variables"
+  },
+  "variables.title": {
+    "de": "Variablen von „{name}“",
+    "en": "Variables of “{name}”"
+  },
+  "variables.hint_collection": {
+    "de": "Gelten für alle Requests der Collection. Umgebung, Ordner und Request überschreiben sie.",
+    "en": "Apply to every request of the collection. Environment, folders and request override them."
+  },
+  "variables.hint_folder": {
+    "de": "Gelten für alle Requests in diesem Ordner und überschreiben Collection und Umgebung. Unterordner und Request überschreiben sie.",
+    "en": "Apply to every request in this folder and override collection and environment. Subfolders and request override them."
+  },
   "app.title": { "de": "API Client", "en": "API Client" },
   "settings.language": { "de": "Sprache", "en": "Language" },
   "settings.language.de": { "de": "Deutsch", "en": "German" },
@@ -151,10 +180,6 @@
   "editor.variables_missing": {
     "de": "Unbekannte Variablen: {names}",
     "en": "Unknown variables: {names}"
-  },
-  "editor.variables_no_environment": {
-    "de": "Die URL enthält Variablen – bitte eine Umgebung wählen.",
-    "en": "The URL contains variables – please choose an environment."
   },
   "dialog.name": { "de": "Name", "en": "Name" },
   "dialog.ok": { "de": "OK", "en": "OK" },

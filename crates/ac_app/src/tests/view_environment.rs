@@ -1,3 +1,5 @@
+use ac_domain::environment::Variable;
+
 use super::*;
 
 #[test]
@@ -25,12 +27,13 @@ fn drafts_match_the_ui_contract() {
     assert!(!draft.read_only);
     assert_eq!(draft.to_environment().unwrap_err(), AppError::UnknownItem);
 
-    let reference: EnvironmentRef = serde_json::from_value(serde_json::json!({
+    let context: crate::view::SendContext = serde_json::from_value(serde_json::json!({
         "collectionId": "c",
         "environmentId": "e"
     }))
     .unwrap();
-    assert_eq!(reference.environment_id, "e");
+    assert_eq!(context.environment_id.as_deref(), Some("e"));
+    assert_eq!(context.request_id, None);
 }
 
 #[test]

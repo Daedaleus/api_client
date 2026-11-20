@@ -4,12 +4,12 @@
   import DialogHost from '../components/organisms/DialogHost.svelte';
   import EnvironmentEditor from '../components/organisms/EnvironmentEditor.svelte';
   import RecipientsDialog from '../components/organisms/RecipientsDialog.svelte';
+  import VariablesDialog from '../components/organisms/VariablesDialog.svelte';
   import RequestEditor from '../components/organisms/RequestEditor.svelte';
   import ResponseViewer from '../components/organisms/ResponseViewer.svelte';
   import Sidebar from '../components/organisms/Sidebar.svelte';
   import TabBar from '../components/organisms/TabBar.svelte';
   import type { Api } from '../lib/api';
-  import { variableValues } from '../lib/variables';
   import { Workspace } from '../lib/workspace/workspace.svelte';
 
   interface Props {
@@ -64,7 +64,7 @@
             {tab}
             onsend={() => workspace.send(tab)}
             onsave={() => workspace.save(tab)}
-            variables={chosen ? variableValues(chosen.variables) : null}
+            variables={workspace.variablesFor(tab)}
           >
             {#snippet environment()}
               {#if collection}
@@ -92,6 +92,9 @@
       oncancel={() => (workspace.editing = null)}
       ondelete={() => workspace.deleteEnvironment()}
     />
+  {/if}
+  {#if workspace.variables.editing}
+    <VariablesDialog variables={workspace.variables} />
   {/if}
   {#if workspace.recipients.editing}
     <RecipientsDialog recipients={workspace.recipients} />

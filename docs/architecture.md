@@ -110,7 +110,8 @@ switch also covers messages that are already shown.
   post-response, tests), settings.
 - `Variable` value is `Plain(String)` or `Secret(SecretRef)`; secret values
   are zeroized in memory and masked in `Debug`/`Display`.
-- Variable precedence: runtime > request > folder > environment > collection.
+- Variable precedence: runtime > request > folder > environment > collection
+  (`ac_domain::scope`; runtime variables come with scripting, M4).
 - A failed request is a normal outcome (`RunOutcome::Failed`), not an error
   that crashes anything.
 

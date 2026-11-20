@@ -5,7 +5,7 @@ use std::path::Path;
 
 use ac_app::ports::{CollectionStore, Location, OpenedCollection, StoreError, StoreErrorKind};
 use ac_domain::collection::{ItemId, Request};
-use ac_domain::environment::Environment;
+use ac_domain::environment::{Environment, Variable};
 
 use crate::error::StorageError;
 use crate::format::ENVIRONMENTS_FOLDER;
@@ -97,6 +97,24 @@ impl CollectionStore for FileStore {
         environment_file::create_environment(root, environment)
             .map(|_| ())
             .map_err(store_error)
+    }
+
+    fn save_collection_variables(
+        &self,
+        root: &Path,
+        variables: &[Variable],
+    ) -> Result<(), StoreError> {
+        settings::save_collection_variables(root, variables).map_err(store_error)
+    }
+
+    fn save_folder_variables(
+        &self,
+        dir: &Path,
+        id: ItemId,
+        name: &str,
+        variables: &[Variable],
+    ) -> Result<(), StoreError> {
+        settings::save_folder_variables(dir, id, name, variables).map_err(store_error)
     }
 
     fn read_secrets(&self, environment_file: &Path) -> Result<Option<Vec<u8>>, StoreError> {

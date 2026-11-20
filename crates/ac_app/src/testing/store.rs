@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use ac_domain::collection::{Collection, Folder, Item, ItemId, Request};
-use ac_domain::environment::Environment;
+use ac_domain::environment::{Environment, Variable};
 
 use super::lock;
 use crate::ports::{CollectionStore, Location, OpenedCollection, StoreError, StoreErrorKind};
@@ -183,6 +183,7 @@ impl CollectionStore for MemoryStore {
             collections.insert(
                 root.to_owned(),
                 Collection {
+                    variables: Vec::new(),
                     id: ItemId::new(),
                     name: name.to_owned(),
                     items: Vec::new(),
@@ -211,6 +212,7 @@ impl CollectionStore for MemoryStore {
         let id = ItemId::new();
         self.with_items(parent, |items| {
             items.push(Item::Folder(Folder {
+                variables: Vec::new(),
                 id,
                 name: name.to_owned(),
                 items: Vec::new(),
@@ -226,6 +228,37 @@ impl CollectionStore for MemoryStore {
                     && folder.id == id
                 {
                     name.clone_into(&mut folder.name);
+                }
+            }
+        })
+    }
+
+    fn save_collection_variables(
+        &self,
+        root: &Path,
+        variables: &[Variable],
+    ) -> Result<(), StoreError> {
+        self.check_failure()?;
+        let mut collections = lock(&self.collections);
+        let collection = collections.get_mut(root).ok_or_else(|| not_found(root))?;
+        collection.variables = variables.to_vec();
+        Ok(())
+    }
+
+    fn save_folder_variables(
+        &self,
+        dir: &Path,
+        id: ItemId,
+        _name: &str,
+        variables: &[Variable],
+    ) -> Result<(), StoreError> {
+        self.check_failure()?;
+        self.with_items(parent_of(dir), |items| {
+            for item in items.iter_mut() {
+                if let Item::Folder(folder) = item
+                    && folder.id == id
+                {
+                    folder.variables = variables.to_vec();
                 }
             }
         })

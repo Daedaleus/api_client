@@ -18,6 +18,7 @@ use crate::format::{
 };
 use crate::names::file_stem;
 use crate::request_file::read_request;
+use crate::variables;
 
 /// A loaded collection with the file behind every item.
 #[derive(Debug)]
@@ -76,6 +77,7 @@ pub fn load_collection(root: &Path) -> Result<LoadedCollection, StorageError> {
     let id = document::id(table, &settings, root)?;
     let name = document::opt_str(table, "name", &settings)?.unwrap_or_else(|| file_stem(root));
     let order = document::order(table, &settings)?;
+    let variables = variables::read(table.get(variables::KEY), &settings, variables::KEY)?;
 
     let mut loader = Loader::default();
     loader.entries.insert(
@@ -90,11 +92,25 @@ pub fn load_collection(root: &Path) -> Result<LoadedCollection, StorageError> {
     let environments = loader.environments(&root.join(ENVIRONMENTS_FOLDER));
     Ok(LoadedCollection {
         root: root.to_owned(),
-        collection: Collection { id, name, items },
+        collection: Collection {
+            id,
+            name,
+            items,
+            variables,
+        },
         environments,
         entries: loader.entries,
         problems: loader.problems,
     })
+}
+
+/// What a `folder.toml` holds.
+struct FolderSettings {
+    id: ItemId,
+    name: String,
+    order: Vec<String>,
+    variables: Vec<ac_domain::environment::Variable>,
+    read_only: bool,
 }
 
 #[derive(Default)]
@@ -174,18 +190,34 @@ impl Loader {
 
     fn folder(&mut self, dir: &Path) -> Item {
         let settings = dir.join(FOLDER_FILE);
-        let (id, name, order, read_only) = if settings.is_file() {
+        let defaults = || FolderSettings {
+            id: document::derived_id(dir),
+            name: file_stem(dir),
+            order: Vec::new(),
+            variables: Vec::new(),
+            read_only: false,
+        };
+        let FolderSettings {
+            id,
+            name,
+            order,
+            variables,
+            read_only,
+        } = if settings.is_file() {
             match Self::folder_settings(&settings) {
                 Ok(values) => values,
                 Err(error) => {
                     // Show the contents anyway, but never overwrite the
                     // damaged settings.
                     self.problem(error);
-                    (document::derived_id(dir), file_stem(dir), Vec::new(), true)
+                    FolderSettings {
+                        read_only: true,
+                        ..defaults()
+                    }
                 }
             }
         } else {
-            (document::derived_id(dir), file_stem(dir), Vec::new(), false)
+            defaults()
         };
         let id = self.unique(id, dir);
         let items = self.items(dir, &order, false);
@@ -197,21 +229,25 @@ impl Loader {
                 read_only,
             },
         );
-        Item::Folder(Folder { id, name, items })
+        Item::Folder(Folder {
+            id,
+            name,
+            items,
+            variables,
+        })
     }
 
-    fn folder_settings(
-        settings: &Path,
-    ) -> Result<(ItemId, String, Vec<String>, bool), StorageError> {
+    fn folder_settings(settings: &Path) -> Result<FolderSettings, StorageError> {
         let parsed = document::read(settings, FOLDER_FORMAT)?;
         let table = parsed.doc.as_table();
         let dir = settings.parent().unwrap_or(settings);
-        Ok((
-            document::id(table, settings, dir)?,
-            document::opt_str(table, "name", settings)?.unwrap_or_else(|| file_stem(dir)),
-            document::order(table, settings)?,
-            parsed.read_only(),
-        ))
+        Ok(FolderSettings {
+            id: document::id(table, settings, dir)?,
+            name: document::opt_str(table, "name", settings)?.unwrap_or_else(|| file_stem(dir)),
+            order: document::order(table, settings)?,
+            variables: variables::read(table.get(variables::KEY), settings, variables::KEY)?,
+            read_only: parsed.read_only(),
+        })
     }
 
     /// The environment files in `dir` (missing folder = none), by name.

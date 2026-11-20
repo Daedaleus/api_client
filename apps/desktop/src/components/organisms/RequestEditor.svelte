@@ -12,17 +12,17 @@
     tab: RequestTab;
     onsend: () => void;
     onsave: () => void;
-    /** Values of the chosen environment, `null` without one. */
-    variables?: ReadonlyMap<string, string> | null;
+    /** The values `{{variables}}` get (all places, the stronger winning). */
+    variables?: ReadonlyMap<string, string>;
     /** The environment picker, shown next to the name of a saved request. */
     environment?: Snippet;
   }
 
-  let { tab, onsend, onsave, variables = null, environment }: Props = $props();
+  let { tab, onsend, onsave, variables = new Map(), environment }: Props = $props();
 
   // What the URL looks like with its `{{variables}}` filled in.
   let urlPreview = $derived(
-    hasPlaceholders(tab.draft.url) && variables ? preview(tab.draft.url, variables) : null,
+    hasPlaceholders(tab.draft.url) ? preview(tab.draft.url, variables) : null,
   );
 
   const HEADER_LABELS: RowLabels = {
@@ -34,9 +34,22 @@
     empty: 'editor.no_headers',
   };
 
-  type Section = 'headers' | 'body';
-  const SECTIONS: Section[] = ['headers', 'body'];
+  const VARIABLE_LABELS: RowLabels = {
+    enabled: 'env.variable_enabled',
+    name: 'env.variable_name',
+    value: 'env.variable_value',
+    add: 'env.add_variable',
+    remove: 'env.remove_variable',
+    empty: 'editor.no_variables',
+  };
+
+  type Section = 'headers' | 'body' | 'variables';
+  const SECTIONS: Section[] = ['headers', 'body', 'variables'];
   let section = $state<Section>('headers');
+  let activeVariables = $derived(
+    tab.draft.variables.filter((variable) => variable.enabled && variable.name.trim() !== '')
+      .length,
+  );
   let activeHeaders = $derived(
     tab.draft.headers.filter((header) => header.enabled && header.name.trim() !== '').length,
   );
@@ -80,8 +93,6 @@
         {i18n.t('editor.variables_missing', { names: urlPreview.missing.join(', ') })}
       </p>
     {/if}
-  {:else if hasPlaceholders(tab.draft.url)}
-    <p class="request-editor__warning">{i18n.t('editor.variables_no_environment')}</p>
   {/if}
   <div class="request-editor__sections" role="tablist" aria-label={i18n.t('editor.sections')}>
     {#each SECTIONS as name (name)}
@@ -98,6 +109,8 @@
           <span class="request-editor__count">{activeHeaders}</span>
         {:else if name === 'body' && tab.draft.body.kind !== 'none'}
           <span class="request-editor__count">{tab.draft.body.kind.toUpperCase()}</span>
+        {:else if name === 'variables' && activeVariables > 0}
+          <span class="request-editor__count">{activeVariables}</span>
         {/if}
       </button>
     {/each}
@@ -105,8 +118,11 @@
   <div class="request-editor__panel" role="tabpanel">
     {#if section === 'headers'}
       <RowsEditor bind:rows={tab.draft.headers} labels={HEADER_LABELS} />
-    {:else}
+    {:else if section === 'body'}
       <BodyEditor bind:body={tab.draft.body} />
+    {:else}
+      <p class="request-editor__note">{i18n.t('editor.variables_hint')}</p>
+      <RowsEditor bind:rows={tab.draft.variables} labels={VARIABLE_LABELS} />
     {/if}
   </div>
 </div>

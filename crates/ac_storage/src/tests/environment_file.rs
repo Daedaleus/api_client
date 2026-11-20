@@ -1,5 +1,6 @@
 use crate::load_collection;
 use crate::test_support::{read, shop_api};
+use ac_domain::environment::Variable;
 
 use super::*;
 

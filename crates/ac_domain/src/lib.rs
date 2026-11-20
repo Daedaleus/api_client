@@ -9,6 +9,8 @@
 //! - [`collection`]: collections, folders and saved requests as the user
 //!   edits them.
 //! - [`environment`]: environments, variables and `{{name}}` placeholders.
+//! - [`scope`]: which value wins when variables are defined in several
+//!   places (collection, environment, folders, request).
 //! - [`exchange`]: one HTTP exchange – the request as sent and the response
 //!   as received.
 
@@ -16,3 +18,4 @@ pub mod collection;
 pub mod environment;
 pub mod exchange;
 pub mod protocol;
+pub mod scope;

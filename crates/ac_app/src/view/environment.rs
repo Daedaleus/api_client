@@ -1,8 +1,9 @@
 //! Environments as the editor shows and returns them.
 
-use ac_domain::environment::{Environment, Variable};
+use ac_domain::environment::Environment;
 use serde::{Deserialize, Serialize};
 
+use super::VariableDraft;
 use super::collection::non_empty;
 use crate::error::AppError;
 
@@ -22,33 +23,6 @@ pub struct EnvironmentDraft {
     pub read_only: bool,
 }
 
-/// A variable of an [`EnvironmentDraft`].
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "specta", derive(specta::Type))]
-pub struct VariableDraft {
-    /// Name used in `{{name}}`.
-    pub name: String,
-    /// Value. For a secret always empty towards the UI (never shown); from
-    /// the UI a new value, or empty to keep the stored one.
-    pub value: String,
-    /// Used when sending.
-    pub enabled: bool,
-    /// Stored encrypted (ADR S4).
-    #[serde(default)]
-    pub secret: bool,
-}
-
-/// The environment to resolve `{{variables}}` with when sending.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "specta", derive(specta::Type))]
-#[serde(rename_all = "camelCase")]
-pub struct EnvironmentRef {
-    /// The collection the environment belongs to.
-    pub collection_id: String,
-    /// The environment.
-    pub environment_id: String,
-}
-
 impl EnvironmentDraft {
     /// The editor's view of `environment`.
     #[must_use]
@@ -56,20 +30,7 @@ impl EnvironmentDraft {
         Self {
             id: environment.id.to_string(),
             name: environment.name.clone(),
-            variables: environment
-                .variables
-                .iter()
-                .map(|variable| VariableDraft {
-                    name: variable.name.clone(),
-                    value: if variable.secret {
-                        String::new()
-                    } else {
-                        variable.value.clone()
-                    },
-                    enabled: variable.enabled,
-                    secret: variable.secret,
-                })
-                .collect(),
+            variables: VariableDraft::list(&environment.variables),
             read_only,
         }
     }
@@ -82,16 +43,7 @@ impl EnvironmentDraft {
         Ok(Environment {
             id: self.id.parse().map_err(|_| AppError::UnknownItem)?,
             name: non_empty(&self.name)?.to_owned(),
-            variables: self
-                .variables
-                .iter()
-                .map(|variable| Variable {
-                    name: variable.name.clone(),
-                    value: variable.value.clone(),
-                    enabled: variable.enabled,
-                    secret: variable.secret,
-                })
-                .collect(),
+            variables: VariableDraft::to_variables(&self.variables),
         })
     }
 }
