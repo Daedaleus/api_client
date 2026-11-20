@@ -1,0 +1,20 @@
+[package]
+name = "ac_desktop"
+description = "Desktop app (Tauri): wires the adapters into ac_app and forwards commands and events."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[build-dependencies]
+tauri-build.workspace = true
+
+[dependencies]
+ac_app.workspace = true
+ac_http.workspace = true
+tauri.workspace = true
+tokio = { workspace = true, features = ["sync"] }
+
+[lints]
+workspace = true

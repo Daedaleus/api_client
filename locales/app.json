@@ -1,0 +1,56 @@
+{
+  "app.title": { "de": "API Client", "en": "API Client" },
+  "settings.language": { "de": "Sprache", "en": "Language" },
+  "settings.language.de": { "de": "Deutsch", "en": "German" },
+  "settings.language.en": { "de": "Englisch", "en": "English" },
+  "request.method": { "de": "Methode", "en": "Method" },
+  "request.url": { "de": "URL", "en": "URL" },
+  "request.url.placeholder": {
+    "de": "https://api.example.com/users",
+    "en": "https://api.example.com/users"
+  },
+  "request.send": { "de": "Senden", "en": "Send" },
+  "request.sending": { "de": "Wird gesendet …", "en": "Sending …" },
+  "response.title": { "de": "Antwort", "en": "Response" },
+  "response.empty": {
+    "de": "Noch keine Antwort. URL eingeben und senden.",
+    "en": "No response yet. Enter a URL and send."
+  },
+  "response.time": { "de": "Zeit", "en": "Time" },
+  "response.size": { "de": "Größe", "en": "Size" },
+  "response.body": { "de": "Body", "en": "Body" },
+  "response.headers": { "de": "Headers", "en": "Headers" },
+  "response.body.none": { "de": "Kein Inhalt.", "en": "No content." },
+  "response.body.binary": {
+    "de": "Binärer Inhalt ({size}), keine Vorschau.",
+    "en": "Binary content ({size}), no preview."
+  },
+  "response.body.truncated": {
+    "de": "Vorschau gekürzt auf die ersten {size}.",
+    "en": "Preview truncated to the first {size}."
+  },
+  "response.failed": { "de": "Request fehlgeschlagen", "en": "Request failed" },
+  "error.url_empty": { "de": "Bitte eine URL eingeben.", "en": "Please enter a URL." },
+  "error.url_invalid": { "de": "Ungültige URL: {reason}", "en": "Invalid URL: {reason}" },
+  "error.url_scheme": {
+    "de": "Nur http und https werden unterstützt, nicht „{scheme}“.",
+    "en": "Only http and https are supported, not “{scheme}”."
+  },
+  "error.method_invalid": {
+    "de": "Ungültige Methode „{method}“.",
+    "en": "Invalid method “{method}”."
+  },
+  "error.timeout": {
+    "de": "Zeitüberschreitung: Der Server hat nicht rechtzeitig geantwortet.",
+    "en": "Timed out: the server did not answer in time."
+  },
+  "error.connect": {
+    "de": "Verbindung fehlgeschlagen: {detail}",
+    "en": "Connection failed: {detail}"
+  },
+  "error.request": { "de": "Request fehlgeschlagen: {detail}", "en": "Request failed: {detail}" },
+  "error.unexpected": {
+    "de": "Unerwarteter Fehler: {detail}",
+    "en": "Unexpected error: {detail}"
+  }
+}

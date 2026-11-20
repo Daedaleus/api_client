@@ -56,8 +56,14 @@ jobs:
       - uses: actions/checkout@v7
       # Toolchain from rust-toolchain.toml, including the cargo cache.
       - uses: actions-rust-lang/setup-rust-toolchain@v2
-      # Tools in the versions from mise.toml.
+      # Tools (Node, cargo tools) in the versions from mise.toml.
       - uses: jdx/mise-action@v5
+      - name: Linux packages for Tauri (WebKitGTK)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libxdo-dev libssl-dev \
+            libayatana-appindicator3-dev librsvg2-dev
       - name: Lint
         run: mise run lint
       - name: Tests
@@ -70,5 +76,6 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions-rust-lang/setup-rust-toolchain@v2
       - uses: jdx/mise-action@v5
+      # Rust (without the desktop app) and frontend logic, at least 90 % each.
       - name: Measure coverage (at least 90 %)
         run: mise run coverage

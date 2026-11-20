@@ -1,5 +1,5 @@
-# Weekly updates for Rust dependencies and GitHub Actions, each in one
-# grouped pull request. The npm ecosystem joins with the desktop frontend.
+# Weekly updates for Rust dependencies, frontend packages and GitHub Actions,
+# each in one grouped pull request.
 version: 2
 updates:
   - package-ecosystem: cargo
@@ -16,6 +16,19 @@ updates:
     # Major version jumps change the API and are a refactoring of their own,
     # so only compatible updates come automatically. Security updates are
     # reported by Dependabot regardless.
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
+  - package-ecosystem: npm
+    directory: /apps/desktop
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      npm:
+        patterns: ['*']
     ignore:
       - dependency-name: '*'
         update-types: ['version-update:semver-major']

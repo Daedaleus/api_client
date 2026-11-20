@@ -1,0 +1,52 @@
+/* Design tokens: every colour, spacing and font size comes from here.
+   Light is the default, dark follows the operating system. */
+:root {
+  --color-bg: #f4f5f7;
+  --color-surface: #ffffff;
+  --color-raised: #f0f2f5;
+  --color-border: #dfe3e8;
+  --color-text: #1b1f24;
+  --color-muted: #566070;
+  --color-accent: #1f6feb;
+  --color-accent-text: #ffffff;
+  --color-code-bg: #fafbfc;
+  --color-success: #1b7f3b;
+  --color-redirect: #1d58b8;
+  --color-warning: #9a4a07;
+  --color-error: #c62828;
+  --color-error-bg: rgba(198, 40, 40, 0.08);
+
+  --font-sans: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+  --font-size-s: 12px;
+  --font-size-m: 13px;
+  --font-size-l: 15px;
+
+  --space-xs: 4px;
+  --space-s: 8px;
+  --space-m: 12px;
+  --space-l: 16px;
+  --space-xl: 24px;
+
+  --radius: 8px;
+  --control-height: 36px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #111317;
+    --color-surface: #1b1e24;
+    --color-raised: #23272f;
+    --color-border: #2b3039;
+    --color-text: #e7e9ee;
+    --color-muted: #a0a8b5;
+    --color-accent: #5b9dff;
+    --color-accent-text: #0b1220;
+    --color-code-bg: #15171c;
+    --color-success: #5fd38d;
+    --color-redirect: #82aaff;
+    --color-warning: #f2b673;
+    --color-error: #ff7b7b;
+    --color-error-bg: rgba(255, 123, 123, 0.1);
+  }
+}

@@ -1,6 +1,6 @@
 # Development tools and tasks for everyone: `mise install`, then `mise run ci`.
 # Rust itself is pinned in rust-toolchain.toml (installed by rustup), so plain
-# cargo works without mise too. Node joins with the desktop app (M1).
+# cargo works without mise too.
 #
 # Tasks are plain commands so they run the same in sh, cmd and PowerShell.
 
@@ -8,28 +8,60 @@
 "aqua:taiki-e/cargo-llvm-cov" = "0.9.1"
 cargo-deny = "0.21.0"
 git-cliff = "2.14.2"
+node = "26.13.1"
+
+# --- Desktop app frontend (apps/desktop) ---------------------------------
+
+[tasks."web:install"]
+description = "Install the frontend packages (only when package-lock.json changed)"
+dir = "apps/desktop"
+run = "npm ci --no-fund --no-audit"
+sources = ["package.json", "package-lock.json"]
+outputs = ["node_modules/.package-lock.json"]
+
+[tasks."web:build"]
+description = "Build the frontend into apps/desktop/dist"
+depends = ["web:install"]
+dir = "apps/desktop"
+run = "npm run build"
+
+# --- Everyday tasks ------------------------------------------------------
+
+[tasks.dev]
+description = "Start the desktop app in development mode (hot reload)"
+depends = ["web:install"]
+dir = "apps/desktop"
+run = "npm run tauri dev"
 
 [tasks.fmt]
 description = "Format all code"
-run = "cargo fmt --all"
+depends = ["web:install"]
+run = ["cargo fmt --all", "npm --prefix apps/desktop run format"]
 
 [tasks.lint]
-description = "Check formatting and run clippy (warnings are errors)"
+description = "Check formatting, clippy (warnings are errors), types and ESLint"
+depends = ["web:build"]
 run = [
     "cargo fmt --all -- --check",
     "cargo clippy --workspace --all-targets --locked -- -D warnings",
+    "npm --prefix apps/desktop run check",
+    "npm --prefix apps/desktop run lint",
 ]
 
 [tasks.test]
-description = "Run all tests"
-run = "cargo test --workspace --locked"
+description = "Run all tests (Rust and frontend)"
+depends = ["web:build"]
+run = ["cargo test --workspace --locked", "npm --prefix apps/desktop run test"]
 
-# User interfaces (apps/), program start, test helpers and tests do not count.
+# User interfaces (apps/), program start and tests do not count on the Rust
+# side; the frontend measures its logic (src/lib) with Vitest.
 [tasks.coverage]
-description = "Measure line coverage (at least 90 %); HTML report in target/llvm-cov/html"
+description = "Measure line coverage (at least 90 %); reports in target/llvm-cov/html and apps/desktop/coverage"
+depends = ["web:install"]
 run = [
-    'cargo llvm-cov --workspace --lib --locked --html --ignore-filename-regex "(apps|ac_testutil|tests)[^a-zA-Z0-9_]|main[.]rs$"',
-    'cargo llvm-cov report --summary-only --fail-under-lines 90 --ignore-filename-regex "(apps|ac_testutil|tests)[^a-zA-Z0-9_]|main[.]rs$"',
+    'cargo llvm-cov --workspace --exclude ac_desktop --lib --locked --html --ignore-filename-regex "(apps|tests)[^a-zA-Z0-9_]|main[.]rs$"',
+    'cargo llvm-cov report --summary-only --fail-under-lines 90 --ignore-filename-regex "(apps|tests)[^a-zA-Z0-9_]|main[.]rs$"',
+    "npm --prefix apps/desktop run coverage",
 ]
 
 [tasks.audit]
@@ -37,8 +69,16 @@ description = "Check dependencies: advisories, licenses, sources (deny.toml)"
 run = "cargo deny check advisories licenses bans sources"
 
 [tasks.release]
-description = "Build the release version"
-run = "cargo build --workspace --release --locked"
+description = "Build the release version of the desktop app (no installer)"
+depends = ["web:install"]
+dir = "apps/desktop"
+run = "npm run tauri build -- --no-bundle"
+
+[tasks.install]
+description = "Windows: release build, copy to dist and create a desktop shortcut"
+depends = ["release"]
+run_windows = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-desktop.ps1"
+run = "echo The desktop shortcut is only created on Windows; the program is in target/release."
 
 [tasks.changelog]
 description = "Preview the changelog of unreleased commits"

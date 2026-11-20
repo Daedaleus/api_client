@@ -2,7 +2,7 @@
 # docs/architecture.md. Spikes live in spikes/ and are not workspace members.
 [workspace]
 resolver = "3"
-members = ["crates/*"]
+members = ["crates/*", "apps/desktop/src-tauri"]
 exclude = ["spikes"]
 
 [workspace.package]
@@ -13,7 +13,18 @@ repository = "https://github.com/Daedaleus/api_client"
 publish = false
 
 [workspace.dependencies]
+ac_app = { path = "crates/ac_app" }
+ac_domain = { path = "crates/ac_domain" }
+ac_http = { path = "crates/ac_http" }
+reqwest = "0.13"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri = "2"
+tauri-build = "2"
 thiserror = "2"
+tokio = "1"
+url = "2"
+wiremock = "0.6"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
