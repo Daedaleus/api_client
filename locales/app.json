@@ -45,7 +45,10 @@
   "collection.new_folder": { "de": "Neuer Ordner", "en": "New folder" },
   "collection.rename": { "de": "Umbenennen", "en": "Rename" },
   "collection.delete": { "de": "Löschen", "en": "Delete" },
-  "collection.close": { "de": "Collection schließen", "en": "Close collection" },
+  "collection.close": {
+    "de": "Collection schließen",
+    "en": "Close collection"
+  },
   "collection.read_only": { "de": "nur lesbar", "en": "read-only" },
   "tab.list": { "de": "Offene Requests", "en": "Open requests" },
   "tab.untitled": { "de": "Neuer Request", "en": "New request" },
@@ -96,10 +99,21 @@
   },
   "env.no_variables": { "de": "Keine Variablen.", "en": "No variables." },
   "env.add_variable": { "de": "Variable hinzufügen", "en": "Add variable" },
-  "env.remove_variable": { "de": "Variable entfernen", "en": "Remove variable" },
+  "env.remove_variable": {
+    "de": "Variable entfernen",
+    "en": "Remove variable"
+  },
   "env.variable_enabled": { "de": "Aktiv", "en": "Active" },
   "env.variable_name": { "de": "Variablenname", "en": "Variable name" },
   "env.variable_value": { "de": "Wert", "en": "Value" },
+  "env.variable_secret": {
+    "de": "Secret (verschlüsselt gespeichert)",
+    "en": "Secret (stored encrypted)"
+  },
+  "env.secret_placeholder": {
+    "de": "Verschlüsselt – leer lassen zum Behalten",
+    "en": "Encrypted – leave empty to keep"
+  },
   "editor.preview": { "de": "Wird gesendet an: {url}", "en": "Sent to: {url}" },
   "editor.variables_missing": {
     "de": "Unbekannte Variablen: {names}",
@@ -135,8 +149,14 @@
     "de": "Es gibt ungespeicherte Änderungen. Trotzdem schließen?",
     "en": "There are unsaved changes. Close anyway?"
   },
-  "error.url_empty": { "de": "Bitte eine URL eingeben.", "en": "Please enter a URL." },
-  "error.url_invalid": { "de": "Ungültige URL: {reason}", "en": "Invalid URL: {reason}" },
+  "error.url_empty": {
+    "de": "Bitte eine URL eingeben.",
+    "en": "Please enter a URL."
+  },
+  "error.url_invalid": {
+    "de": "Ungültige URL: {reason}",
+    "en": "Invalid URL: {reason}"
+  },
   "error.url_scheme": {
     "de": "Nur http und https werden unterstützt, nicht „{scheme}“.",
     "en": "Only http and https are supported, not “{scheme}”."
@@ -153,6 +173,30 @@
     "de": "Ungültige Methode „{method}“.",
     "en": "Invalid method “{method}”."
   },
+  "error.secret_unavailable": {
+    "de": "Das Secret „{name}“ hat keinen Wert oder lässt sich mit deinen Schlüsseln nicht entschlüsseln.",
+    "en": "The secret “{name}” has no value or cannot be decrypted with your keys."
+  },
+  "error.secret_no_key": {
+    "de": "Keiner deiner Schlüssel kann die Secrets dieser Umgebung entschlüsseln. Bitte jemanden aus dem Team, dich in .age-recipients einzutragen und neu zu verschlüsseln.",
+    "en": "None of your keys can decrypt the secrets of this environment. Ask someone on the team to add you to .age-recipients and re-encrypt."
+  },
+  "error.secret_no_recipients": {
+    "de": "Es gibt niemanden, für den die Secrets verschlüsselt werden können.",
+    "en": "There is nobody to encrypt the secrets for."
+  },
+  "error.secret_invalid_recipient": {
+    "de": "Kein gültiger öffentlicher Schlüssel in .age-recipients: {recipient}",
+    "en": "Not a valid public key in .age-recipients: {recipient}"
+  },
+  "error.secret_damaged": {
+    "de": "Die verschlüsselten Secrets sind beschädigt: {detail}",
+    "en": "The encrypted secrets are damaged: {detail}"
+  },
+  "error.secret_key": {
+    "de": "Dein Schlüssel für Secrets lässt sich nicht lesen oder anlegen: {detail}",
+    "en": "Your key for secrets cannot be read or created: {detail}"
+  },
   "error.timeout": {
     "de": "Zeitüberschreitung: Der Server hat nicht rechtzeitig geantwortet.",
     "en": "Timed out: the server did not answer in time."
@@ -161,7 +205,10 @@
     "de": "Verbindung fehlgeschlagen: {detail}",
     "en": "Connection failed: {detail}"
   },
-  "error.request": { "de": "Request fehlgeschlagen: {detail}", "en": "Request failed: {detail}" },
+  "error.request": {
+    "de": "Request fehlgeschlagen: {detail}",
+    "en": "Request failed: {detail}"
+  },
   "error.store_io": {
     "de": "„{path}“ kann nicht gelesen oder geschrieben werden: {detail}",
     "en": "Cannot read or write “{path}”: {detail}"

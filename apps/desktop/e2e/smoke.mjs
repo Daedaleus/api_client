@@ -10,6 +10,8 @@
 //      file and received by the server exactly as entered,
 //   5. with the collection's environment chosen, `{{baseUrl}}` in the URL is
 //      previewed and resolved when sending,
+//   6. a secret variable: saved encrypted (never in plain text on disk or in
+//      the window), masked in the preview and resolved when sending,
 // and the program is still running after each send.
 //
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
@@ -21,6 +23,7 @@
 // The program gets its own temporary WebView2 data folder: WebView2 refuses
 // to share a folder between instances started with different options, so
 // without it the test would fail while the app is open on the same machine.
+// Likewise its own key file for secrets, so the user's key is never touched.
 
 import { spawn, spawnSync } from 'node:child_process';
 import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -126,6 +129,7 @@ server = http.createServer((request, response) => {
     response.end(
       JSON.stringify({
         method: request.method,
+        url: request.url,
         contentType: request.headers['content-type'] ?? null,
         xClient: request.headers['x-client'] ?? null,
         body: received,
@@ -142,9 +146,15 @@ const closedUrl = `http://127.0.0.1:${await freePort()}/`;
 // --- Start the program -----------------------------------------------------
 
 const debugPort = await freePort();
+/** The program's key file for secrets (inside the temporary data folder). */
+const identityFile = path.join(webviewData, 'identity.txt');
+// A CI key of the user must not mix into the test.
+const environment = { ...process.env };
+delete environment.API_CLIENT_IDENTITY;
 app = spawn(program, [], {
   env: {
-    ...process.env,
+    ...environment,
+    API_CLIENT_IDENTITY_FILE: identityFile,
     WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${debugPort}`,
     WEBVIEW2_USER_DATA_FOLDER: webviewData,
     RUST_BACKTRACE: '1',
@@ -380,5 +390,77 @@ const resolved = await waitFor(
 );
 check(resolved.length > 0, '{{baseUrl}} resolved from the environment when sending');
 check(exitCode === null, 'program still running after sending with an environment');
+
+// --- 6. Secrets -----------------------------------------------------------------
+
+const secretValue = 'e2e-s3cr3t';
+// Open the editor of the chosen environment and add a secret variable.
+await evaluate(`document.querySelector('.environment-picker .icon-button').click()`);
+await waitFor(`!!document.querySelector('.environment-editor')`, 'environment editor');
+await evaluate(
+  `[...document.querySelectorAll('.environment-editor .rows-editor .button')].at(-1).click()`,
+);
+await waitFor(
+  `document.querySelectorAll('.environment-editor .rows-editor__secret-input').length === 3`,
+  'new variable row',
+);
+await evaluate(`(() => {
+  const inputs = [...document.querySelectorAll('.environment-editor .rows-editor__input')];
+  const [name, value] = inputs.slice(-2);
+  [...document.querySelectorAll('.environment-editor .rows-editor__secret-input')].at(-1).click();
+  name.value = 'token';
+  name.dispatchEvent(new Event('input', { bubbles: true }));
+  value.value = ${JSON.stringify(secretValue)};
+  value.dispatchEvent(new Event('input', { bubbles: true }));
+})()`);
+await evaluate(`document.querySelector('.environment-editor [type=submit]').click()`);
+await waitFor(`!document.querySelector('.environment-editor')`, 'environment saved');
+
+const secretsFile = path.join(collectionDir, 'secrets', 'dev.age');
+let encrypted = '';
+for (let attempt = 0; attempt < 40 && !encrypted; attempt++) {
+  await sleep(250);
+  try {
+    encrypted = readFileSync(secretsFile, 'utf8');
+  } catch {
+    // not written yet
+  }
+}
+check(
+  encrypted.startsWith('-----BEGIN AGE ENCRYPTED FILE-----') && !encrypted.includes(secretValue),
+  'secret saved encrypted to secrets/dev.age',
+);
+const devText = readFileSync(devFile, 'utf8');
+check(
+  devText.includes('secret = true') && !devText.includes(secretValue),
+  'dev.toml only marks it',
+);
+const recipients = readFileSync(path.join(collectionDir, '.age-recipients'), 'utf8');
+check(/^age1/m.test(recipients), 'own public key written to .age-recipients');
+check(readFileSync(identityFile, 'utf8').includes('AGE-SECRET-KEY-'), 'own key created outside');
+check(
+  !(await evaluate(`document.body.innerHTML.includes(${JSON.stringify(secretValue)})`)),
+  'secret value not in the window',
+);
+
+await evaluate(setValue('.url-bar__input', '{{baseUrl}}/echo?token={{token}}'));
+const masked = await waitFor(
+  `(() => {
+    const text = document.querySelector('.request-editor__preview')?.textContent ?? '';
+    return text.includes('token=••••••') ? text : null;
+  })()`,
+  'masked secret in the URL preview',
+);
+check(!masked.includes(secretValue), 'secret masked in the preview');
+await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);
+const withSecret = await waitFor(
+  `(() => {
+    const body = document.querySelector('.response__body')?.textContent ?? '';
+    return body.includes('token=') ? body : null;
+  })()`,
+  'echo of the request with the secret',
+);
+check(withSecret.includes(`token=${secretValue}`), 'secret decrypted and sent');
+check(exitCode === null, 'program still running after sending a secret');
 
 finish(null);

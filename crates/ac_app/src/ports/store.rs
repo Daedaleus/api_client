@@ -68,6 +68,34 @@ pub trait CollectionStore: Send + Sync + 'static {
     /// # Errors
     /// If the file cannot be written.
     fn create_environment(&self, root: &Path, environment: &Environment) -> Result<(), StoreError>;
+
+    /// The encrypted secrets of the environment in `environment_file`;
+    /// `None` if it has none.
+    ///
+    /// # Errors
+    /// If they exist but cannot be read.
+    fn read_secrets(&self, environment_file: &Path) -> Result<Option<Vec<u8>>, StoreError>;
+
+    /// Replaces the encrypted secrets of an environment; `None` moves them to
+    /// the trash (the environment has no secrets any more).
+    ///
+    /// # Errors
+    /// If they cannot be written or moved.
+    fn write_secrets(&self, environment_file: &Path, data: Option<&[u8]>)
+    -> Result<(), StoreError>;
+
+    /// The public keys secrets in the collection `root` are encrypted for;
+    /// empty if none are set up yet.
+    ///
+    /// # Errors
+    /// If the list exists but cannot be read.
+    fn recipients(&self, root: &Path) -> Result<Vec<String>, StoreError>;
+
+    /// Sets up the list of recipients of a collection that has none yet.
+    ///
+    /// # Errors
+    /// If it exists already or cannot be written.
+    fn create_recipients(&self, root: &Path, recipients: &[String]) -> Result<(), StoreError>;
 }
 
 impl<T: CollectionStore> CollectionStore for Arc<T> {
@@ -97,6 +125,22 @@ impl<T: CollectionStore> CollectionStore for Arc<T> {
     }
     fn create_environment(&self, root: &Path, environment: &Environment) -> Result<(), StoreError> {
         T::create_environment(self, root, environment)
+    }
+    fn read_secrets(&self, environment_file: &Path) -> Result<Option<Vec<u8>>, StoreError> {
+        T::read_secrets(self, environment_file)
+    }
+    fn write_secrets(
+        &self,
+        environment_file: &Path,
+        data: Option<&[u8]>,
+    ) -> Result<(), StoreError> {
+        T::write_secrets(self, environment_file, data)
+    }
+    fn recipients(&self, root: &Path) -> Result<Vec<String>, StoreError> {
+        T::recipients(self, root)
+    }
+    fn create_recipients(&self, root: &Path, recipients: &[String]) -> Result<(), StoreError> {
+        T::create_recipients(self, root, recipients)
     }
 }
 

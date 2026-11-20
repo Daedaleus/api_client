@@ -17,6 +17,7 @@ use std::path::Path;
 
 use ac_app::{App, AppEvent, Command, CommandAck, Ports, Query, QueryResult, UserText};
 use ac_http::{DEFAULT_TIMEOUT, ReqwestSender};
+use ac_secrets::{AgeVault, KeyConfig};
 use ac_storage::FileStore;
 use serde::Serialize;
 use specta_typescript::Typescript;
@@ -24,7 +25,10 @@ use tauri::{AppHandle, Manager, State};
 use tauri_specta::{Event, collect_commands, collect_events};
 use tokio::sync::broadcast::{Receiver, error::RecvError};
 
-type DesktopApp = App<ReqwestSender, FileStore>;
+type DesktopApp = App<ReqwestSender, FileStore, AgeVault>;
+
+/// The user's own key for secrets, in the app's config folder (ADR S4).
+const IDENTITY_FILE: &str = "identity.txt";
 
 /// Header of the generated bindings file.
 const BINDINGS_HEADER: &str = "// Generated from the Rust types by tauri-specta - do not edit.\n\
@@ -88,10 +92,12 @@ pub fn run() {
             // Commands run on the main thread; the app spawns its work on
             // Tauri's Tokio runtime instead.
             let runtime = tauri::async_runtime::handle().inner().clone();
+            let identity = tauri_app.path().app_config_dir()?.join(IDENTITY_FILE);
             let app = App::new(
                 Ports {
                     http: ReqwestSender::new(DEFAULT_TIMEOUT)?,
                     store: FileStore::new(),
+                    vault: AgeVault::new(KeyConfig::from_environment(identity)),
                 },
                 runtime,
             );

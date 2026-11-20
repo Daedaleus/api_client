@@ -7,6 +7,7 @@ fn drafts_round_trip_to_environments() {
         name: "baseUrl".into(),
         value: "https://staging.example.com".into(),
         enabled: false,
+        secret: false,
     });
     let draft = EnvironmentDraft::from_environment(&environment, true);
     assert!(draft.read_only);
@@ -30,4 +31,20 @@ fn drafts_match_the_ui_contract() {
     }))
     .unwrap();
     assert_eq!(reference.environment_id, "e");
+}
+
+#[test]
+fn secret_values_never_reach_the_ui() {
+    let mut environment = Environment::new("Staging");
+    environment.variables.push(Variable {
+        name: "token".into(),
+        value: "s3cr3t".into(),
+        enabled: true,
+        secret: true,
+    });
+    let draft = EnvironmentDraft::from_environment(&environment, false);
+    assert!(draft.variables[0].secret);
+    assert_eq!(draft.variables[0].value, "");
+    let json = serde_json::to_string(&draft).unwrap();
+    assert!(!json.contains("s3cr3t"), "{json}");
 }

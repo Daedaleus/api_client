@@ -16,12 +16,14 @@ fn environments_are_loaded_with_the_collection() {
             Variable {
                 name: "baseUrl".into(),
                 value: "http://localhost:8080".into(),
-                enabled: true
+                enabled: true,
+                secret: false,
             },
             Variable {
                 name: "debug".into(),
                 value: "1".into(),
-                enabled: false
+                enabled: false,
+                secret: false,
             },
         ]
     );
@@ -60,6 +62,7 @@ fn new_environments_get_a_file_in_the_environments_folder() {
         name: "baseUrl".into(),
         value: "https://staging.example.com".into(),
         enabled: true,
+        secret: false,
     });
     let path = create_environment(&root, &staging).unwrap();
     assert_eq!(path, root.join("environments").join("staging-eu.toml"));
@@ -112,4 +115,33 @@ fn files_without_name_use_the_file_name() {
     let (qa, _) = read_environment(&path).unwrap();
     assert_eq!(qa.name, "qa");
     assert_eq!(qa.variables, vec![]);
+}
+
+#[test]
+fn secret_variables_are_marked_and_never_get_a_value_in_the_file() {
+    let (_temp, root) = shop_api();
+    let path = root.join("environments").join("dev.toml");
+    let (mut dev, _) = read_environment(&path).unwrap();
+    dev.variables.push(Variable {
+        name: "token".into(),
+        value: "s3cr3t".into(),
+        enabled: true,
+        secret: true,
+    });
+    save_environment(&path, &dev).unwrap();
+    let text = read(&path);
+    assert!(text.contains("secret = true"), "{text}");
+    assert!(!text.contains("s3cr3t"), "{text}");
+    let (reread, _) = read_environment(&path).unwrap();
+    assert!(reread.variables[2].secret);
+    assert_eq!(reread.variables[2].value, "");
+
+    // A plain value next to `secret = true` (hand edit) is ignored.
+    std::fs::write(
+        &path,
+        text.replace("secret = true", "secret = true\nvalue = \"leak\""),
+    )
+    .unwrap();
+    let (edited, _) = read_environment(&path).unwrap();
+    assert_eq!(edited.variables[2].value, "");
 }

@@ -17,6 +17,7 @@
 //! - [`request_file`]: reading and writing one request file.
 //! - [`settings`]: folder settings (name, id).
 //! - [`environment_file`]: environment files (variables).
+//! - [`secrets_file`]: encrypted secrets and their recipients (bytes only).
 //! - `rows`: name/value/enabled lists (headers, variables).
 //! - [`create`]: creating collections, folders and requests.
 //! - [`remove`]: removing requests and folders.
@@ -36,6 +37,7 @@ mod order;
 pub mod remove;
 pub mod request_file;
 mod rows;
+pub mod secrets_file;
 pub mod settings;
 pub mod store;
 #[cfg(test)]

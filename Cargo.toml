@@ -16,7 +16,11 @@ publish = false
 ac_app = { path = "crates/ac_app" }
 ac_domain = { path = "crates/ac_domain" }
 ac_http = { path = "crates/ac_http" }
+ac_secrets = { path = "crates/ac_secrets" }
 ac_storage = { path = "crates/ac_storage" }
+# age: secrets for several recipients (ADR S4); armor for text files in git,
+# ssh for SSH keys as recipients and identities.
+age = { version = "0.12", features = ["armor", "ssh"] }
 reqwest = "0.13"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

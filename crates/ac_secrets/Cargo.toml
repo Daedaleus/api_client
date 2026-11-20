@@ -1,0 +1,19 @@
+[package]
+name = "ac_secrets"
+description = "Secrets adapter: age encryption for several recipients (ADR S4)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+ac_app.workspace = true
+age.workspace = true
+toml_edit.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

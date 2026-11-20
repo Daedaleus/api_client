@@ -11,7 +11,10 @@ function setup(readOnly = false, error: UserText | null = null) {
     id: 'e1',
     name: 'Dev',
     readOnly,
-    variables: [{ name: 'baseUrl', value: 'http://localhost', enabled: true }],
+    variables: [
+      { name: 'baseUrl', value: 'http://localhost', enabled: true, secret: false },
+      { name: 'token', value: '', enabled: true, secret: true },
+    ],
   });
   const props = { onsave: vi.fn(), oncancel: vi.fn(), ondelete: vi.fn() };
   render(EnvironmentEditor, { draft, error, ...props });
@@ -25,9 +28,14 @@ describe('EnvironmentEditor', () => {
     const { draft, onsave } = setup();
     await userEvent.type(screen.getByLabelText('Name'), ' 2');
     await userEvent.click(screen.getByRole('button', { name: 'Add variable' }));
-    await userEvent.type(screen.getAllByLabelText('Variable name')[1]!, 'token');
+    await userEvent.type(screen.getAllByLabelText('Variable name')[2]!, 'apiKey');
     expect(draft.name).toBe('Dev 2');
-    expect(draft.variables.map((variable) => variable.name)).toEqual(['baseUrl', 'token']);
+    expect(draft.variables.map((variable) => variable.name)).toEqual([
+      'baseUrl',
+      'token',
+      'apiKey',
+    ]);
+    expect(draft.variables[2]?.secret).toBe(false);
 
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(onsave).toHaveBeenCalled();
@@ -48,5 +56,19 @@ describe('EnvironmentEditor', () => {
     expect(screen.getByText(/newer format/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled();
+  });
+
+  it('masks secret values and marks variables as secret', async () => {
+    const { draft } = setup();
+    const values = screen.getAllByLabelText('Value');
+    expect(values[0]).toHaveAttribute('type', 'text');
+    expect(values[1]).toHaveAttribute('type', 'password');
+    expect(values[1]).toHaveAttribute('placeholder', 'Encrypted – leave empty to keep');
+
+    const toggles = screen.getAllByRole('checkbox', { name: 'Secret (stored encrypted)' });
+    expect(toggles[1]).toBeChecked();
+    await userEvent.click(toggles[0]!);
+    expect(draft.variables[0]?.secret).toBe(true);
+    expect(screen.getAllByLabelText('Value')[0]).toHaveAttribute('type', 'password');
   });
 });

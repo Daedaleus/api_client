@@ -8,8 +8,9 @@ use ac_domain::collection::{ItemId, Request};
 use ac_domain::environment::Environment;
 
 use crate::error::StorageError;
+use crate::format::ENVIRONMENTS_FOLDER;
 use crate::load::{LoadedCollection, load_collection};
-use crate::{create, environment_file, remove, request_file, settings};
+use crate::{create, environment_file, remove, request_file, secrets_file, settings};
 
 /// How removed items are discarded.
 pub type Discard = fn(&Path) -> std::io::Result<()>;
@@ -79,8 +80,13 @@ impl CollectionStore for FileStore {
         settings::save_folder_settings(dir, id, name).map_err(store_error)
     }
 
+    /// An environment's secrets go to the trash with it.
     fn remove(&self, path: &Path) -> Result<(), StoreError> {
-        remove::remove_item(path, self.discard).map_err(store_error)
+        remove::remove_item(path, self.discard).map_err(store_error)?;
+        if is_environment_file(path) {
+            self.discard_secrets(path)?;
+        }
+        Ok(())
     }
 
     fn save_environment(&self, file: &Path, environment: &Environment) -> Result<(), StoreError> {
@@ -92,6 +98,47 @@ impl CollectionStore for FileStore {
             .map(|_| ())
             .map_err(store_error)
     }
+
+    fn read_secrets(&self, environment_file: &Path) -> Result<Option<Vec<u8>>, StoreError> {
+        secrets_file::read_secrets(environment_file).map_err(store_error)
+    }
+
+    fn write_secrets(
+        &self,
+        environment_file: &Path,
+        data: Option<&[u8]>,
+    ) -> Result<(), StoreError> {
+        match data {
+            Some(data) => secrets_file::write_secrets(environment_file, data).map_err(store_error),
+            None => self.discard_secrets(environment_file),
+        }
+    }
+
+    fn recipients(&self, root: &Path) -> Result<Vec<String>, StoreError> {
+        secrets_file::read_recipients(root).map_err(store_error)
+    }
+
+    fn create_recipients(&self, root: &Path, recipients: &[String]) -> Result<(), StoreError> {
+        secrets_file::create_recipients(root, recipients).map_err(store_error)
+    }
+}
+
+impl FileStore {
+    /// Discards the secrets file of an environment, if there is one.
+    fn discard_secrets(self, environment_file: &Path) -> Result<(), StoreError> {
+        let path = secrets_file::secrets_path(environment_file);
+        if !path.exists() {
+            return Ok(());
+        }
+        (self.discard)(&path)
+            .map_err(|error| store_error(crate::error::StorageError::io(&path, error)))
+    }
+}
+
+fn is_environment_file(path: &Path) -> bool {
+    path.parent()
+        .and_then(Path::file_name)
+        .is_some_and(|name| name == ENVIRONMENTS_FOLDER)
 }
 
 fn opened(loaded: LoadedCollection) -> OpenedCollection {

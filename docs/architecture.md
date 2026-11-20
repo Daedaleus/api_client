@@ -145,7 +145,8 @@ result is an ADR, spike code is never merged into the crates.
 3. **S3 Tauri reality check:** Linux WebKitGTK, large responses, bundling –
    go/no-go for Tauri vs. egui.
 4. **S4 age keys (ADR):** identity location, SSH keys as recipients,
-   re-encryption on recipient changes, CI identity.
+   re-encryption on recipient changes, CI identity – decided:
+   [`docs/adr/s4-age-keys.md`](adr/s4-age-keys.md).
 
 ## Milestones
 

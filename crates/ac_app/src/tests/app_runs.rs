@@ -8,10 +8,10 @@ use super::*;
 use crate::app::Ports;
 use crate::command::Command;
 use crate::ports::TransportError;
-use crate::testing::{FakeHttpSender, MemoryStore, response};
+use crate::testing::{FakeHttpSender, FakeVault, MemoryStore, response};
 use crate::text::{UserText, keys};
 
-type TestApp = App<Arc<FakeHttpSender>, MemoryStore>;
+type TestApp = App<Arc<FakeHttpSender>, MemoryStore, FakeVault>;
 
 fn app(fake: FakeHttpSender) -> (TestApp, Arc<FakeHttpSender>) {
     let fake = Arc::new(fake);
@@ -19,6 +19,7 @@ fn app(fake: FakeHttpSender) -> (TestApp, Arc<FakeHttpSender>) {
         Ports {
             http: Arc::clone(&fake),
             store: MemoryStore::new(),
+            vault: FakeVault::default(),
         },
         Handle::current(),
     );

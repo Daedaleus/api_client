@@ -6,14 +6,15 @@ use std::collections::HashMap;
 use ac_domain::environment::Environment;
 
 use super::App;
-use super::collections::{item_id_from, writable};
+use super::collections::{item_id_from, location, writable};
+use super::secrets::Unlocked;
 use crate::command::CommandAck;
 use crate::error::AppError;
-use crate::ports::{CollectionStore, HttpSender, OpenedCollection};
+use crate::ports::{CollectionStore, HttpSender, OpenedCollection, SecretVault};
 use crate::view::collection::non_empty;
 use crate::view::{EnvironmentDraft, EnvironmentRef};
 
-impl<H: HttpSender, S: CollectionStore> App<H, S> {
+impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
     pub(super) fn create_environment(
         &self,
         collection_id: &str,
@@ -35,23 +36,29 @@ impl<H: HttpSender, S: CollectionStore> App<H, S> {
     ) -> Result<CommandAck, AppError> {
         let opened = self.current(collection_id)?;
         let environment = draft.to_environment()?;
-        find(&opened, environment.id)?;
+        let stored = find(&opened, environment.id)?;
         let file = writable(&opened, environment.id)?;
-        self.inner.store.save_environment(file, &environment)?;
+        self.save_secrets(&opened.root, file, stored, &environment)?;
+        self.inner
+            .store
+            .save_environment(file, &without_secret_values(environment))?;
         self.reload(&opened.root, None)
     }
 
-    /// The environment to send with (`None` = no environment).
+    /// The environment to send with (`None` = no environment), with its
+    /// secrets decrypted if possible.
     pub(super) fn environment(
         &self,
         reference: Option<&EnvironmentRef>,
-    ) -> Result<Option<Environment>, AppError> {
+    ) -> Result<Option<Unlocked>, AppError> {
         let Some(reference) = reference else {
             return Ok(None);
         };
         let opened = self.current(&reference.collection_id)?;
         let id = item_id_from(&reference.environment_id)?;
-        Ok(Some(find(&opened, id)?.clone()))
+        let environment = find(&opened, id)?.clone();
+        let file = &location(&opened, id)?.path;
+        self.unlock(file, environment).map(Some)
     }
 }
 
@@ -64,6 +71,16 @@ fn find(
         .iter()
         .find(|environment| environment.id == id)
         .ok_or(AppError::UnknownItem)
+}
+
+/// Secret values never go to the store in plain text.
+fn without_secret_values(mut environment: Environment) -> Environment {
+    for variable in &mut environment.variables {
+        if variable.secret {
+            variable.value.clear();
+        }
+    }
+    environment
 }
 
 /// The values to resolve `{{variables}}` with; none without an environment.

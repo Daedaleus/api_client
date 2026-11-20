@@ -76,6 +76,7 @@ fn header_rows(headers: &[HeaderEntry]) -> Vec<Row> {
             name: header.name.clone(),
             value: header.value.clone(),
             enabled: header.enabled,
+            secret: false,
         })
         .collect()
 }

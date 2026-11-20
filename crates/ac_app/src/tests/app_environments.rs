@@ -37,7 +37,8 @@ async fn the_tree_lists_the_environments() {
         [VariableDraft {
             name: "baseUrl".into(),
             value: "https://dev.example.com".into(),
-            enabled: true
+            enabled: true,
+            secret: false,
         }]
     );
     assert!(!environments[0].read_only);
@@ -94,6 +95,7 @@ async fn environments_can_be_created_saved_and_deleted() {
         name: "token".into(),
         value: "abc".into(),
         enabled: false,
+        secret: false,
     });
     fixture.run(Command::SaveEnvironment {
         collection_id: fixture.collection.clone(),

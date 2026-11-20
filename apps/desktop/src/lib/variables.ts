@@ -7,6 +7,9 @@ import type { VariableDraft } from './types';
 
 const PLACEHOLDER = /\{\{([^}]*)\}\}/g;
 
+/** Shown in place of a secret value (the UI never gets the real one). */
+export const SECRET_MASK = '••••••';
+
 export interface Preview {
   /** The text with every known placeholder replaced. */
   text: string;
@@ -14,11 +17,13 @@ export interface Preview {
   missing: string[];
 }
 
-/** The enabled variables by name (later rows win). */
+/** The enabled variables by name (later rows win); secrets masked. */
 export function variableValues(variables: readonly VariableDraft[]): Map<string, string> {
   const values = new Map<string, string>();
   for (const variable of variables) {
-    if (variable.enabled) values.set(variable.name.trim(), variable.value);
+    if (variable.enabled) {
+      values.set(variable.name.trim(), variable.secret ? SECRET_MASK : variable.value);
+    }
   }
   return values;
 }

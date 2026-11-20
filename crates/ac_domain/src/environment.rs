@@ -22,14 +22,32 @@ pub struct Environment {
 }
 
 /// One variable of an [`Environment`].
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Variable {
     /// Name used in `{{name}}`.
     pub name: String,
-    /// Value inserted for it.
+    /// Value inserted for it. For a secret: the decrypted value, empty while
+    /// it is not known (it is never stored in plain text).
     pub value: String,
     /// Disabled variables are kept but not used.
     pub enabled: bool,
+    /// The value is a secret: stored encrypted, never shown or logged.
+    pub secret: bool,
+}
+
+/// Shown in place of a secret value.
+const MASK: &str = "***";
+
+impl std::fmt::Debug for Variable {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let value = if self.secret { MASK } else { &self.value };
+        f.debug_struct("Variable")
+            .field("name", &self.name)
+            .field("value", &value)
+            .field("enabled", &self.enabled)
+            .field("secret", &self.secret)
+            .finish()
+    }
 }
 
 impl Environment {
@@ -43,13 +61,20 @@ impl Environment {
         }
     }
 
+    /// Whether any variable is a secret.
+    #[must_use]
+    pub fn has_secrets(&self) -> bool {
+        self.variables.iter().any(|variable| variable.secret)
+    }
+
     /// The values of the enabled variables by name. If a name occurs twice,
-    /// the later row wins (as in an assignment list).
+    /// the later row wins (as in an assignment list). Secrets whose value is
+    /// not known (not decrypted) are left out.
     #[must_use]
     pub fn values(&self) -> HashMap<&str, &str> {
         self.variables
             .iter()
-            .filter(|variable| variable.enabled)
+            .filter(|variable| variable.enabled && !(variable.secret && variable.value.is_empty()))
             .map(|variable| (variable.name.trim(), variable.value.as_str()))
             .collect()
     }
