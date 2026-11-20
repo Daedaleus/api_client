@@ -75,9 +75,13 @@ switch also covers messages that are already shown.
 - `apps/desktop/src`: Svelte 5 + Vite + TypeScript (strict), components by
   Atomic Design, BEM CSS, design tokens for light/dark, CodeMirror 6 as
   editor.
-- **Typed boundary:** `tauri-specta` generates `bindings.ts` from the Rust
-  types (behind an optional `specta` feature in `ac_app`); CI fails if the
-  committed bindings drift.
+- **Typed boundary:** `tauri-specta` generates `src/lib/bindings.ts` from the
+  Rust types (behind an optional `specta` feature in `ac_app`). The program
+  `ac_desktop --bin bindings` writes it (`mise run bindings`) or checks it
+  (`--check`, part of `mise run lint` and CI). A program, not a unit test:
+  test binaries linking Tauri cannot start on Windows (missing application
+  manifest), so `ac_desktop` has no unit tests – its logic lives in
+  `ac_app`. The UI imports the types through `src/lib/types.ts`.
 - Large response bodies: metadata plus a preview in the view model, the raw
   body via a binary IPC response – never one huge JSON string.
 - **egui fallback:** `apps/egui` would build the same `App` with the same

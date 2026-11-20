@@ -25,8 +25,13 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/lib/**/*.ts'],
-      // tauri.ts only forwards to the Tauri API; types.ts has no code.
-      exclude: ['src/lib/**/*.test.ts', 'src/lib/tauri.ts', 'src/lib/types.ts'],
+      // tauri.ts only forwards to the Tauri API; bindings.ts is generated.
+      exclude: [
+        'src/lib/**/*.test.ts',
+        'src/lib/tauri.ts',
+        'src/lib/types.ts',
+        'src/lib/bindings.ts',
+      ],
       thresholds: { lines: 90 },
     },
   },

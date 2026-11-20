@@ -10,10 +10,14 @@ publish.workspace = true
 [features]
 # Test doubles (`ac_app::testing`) for other crates' tests.
 testing = []
+# Type descriptions for generating the TypeScript bindings (used by the
+# desktop app); keeps ac_app free of UI dependencies otherwise.
+specta = ["dep:specta"]
 
 [dependencies]
 ac_domain.workspace = true
 serde.workspace = true
+specta = { workspace = true, optional = true }
 serde_json.workspace = true
 thiserror.workspace = true
 tokio = { workspace = true, features = ["rt", "sync"] }

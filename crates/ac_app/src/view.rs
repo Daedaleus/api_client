@@ -9,6 +9,7 @@ use crate::text::UserText;
 
 /// Result of one request run.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(
     tag = "kind",
     rename_all = "camelCase",
@@ -26,15 +27,15 @@ pub enum RunOutcomeView {
 
 /// A response prepared for display.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "camelCase")]
 pub struct ResponseView {
     /// Status code, e.g. 404.
     pub status: u16,
     /// Standard reason phrase, if known.
     pub reason: Option<&'static str>,
-    /// `informational`, `success`, `redirection`, `clientError`,
-    /// `serverError` or `nonstandard`.
-    pub status_class: &'static str,
+    /// Class of the status, for colouring.
+    pub status_class: StatusClassView,
     /// Duration in milliseconds.
     pub elapsed_ms: u64,
     /// Body size in bytes.
@@ -45,8 +46,41 @@ pub struct ResponseView {
     pub body: BodyView,
 }
 
+/// Class of a status code as the UI sees it (serialized in camelCase).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(rename_all = "camelCase")]
+pub enum StatusClassView {
+    /// `1xx`
+    Informational,
+    /// `2xx`
+    Success,
+    /// `3xx`
+    Redirection,
+    /// `4xx`
+    ClientError,
+    /// `5xx`
+    ServerError,
+    /// `6xx`–`9xx`
+    Nonstandard,
+}
+
+impl From<StatusClass> for StatusClassView {
+    fn from(class: StatusClass) -> Self {
+        match class {
+            StatusClass::Informational => Self::Informational,
+            StatusClass::Success => Self::Success,
+            StatusClass::Redirection => Self::Redirection,
+            StatusClass::ClientError => Self::ClientError,
+            StatusClass::ServerError => Self::ServerError,
+            StatusClass::Nonstandard => Self::Nonstandard,
+        }
+    }
+}
+
 /// One header line.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct HeaderView {
     /// Name as received.
     pub name: String,
@@ -61,7 +95,7 @@ impl ResponseView {
         Self {
             status: response.status.as_u16(),
             reason: response.status.canonical_reason(),
-            status_class: class_name(response.status.class()),
+            status_class: response.status.class().into(),
             elapsed_ms: u64::try_from(response.elapsed.as_millis()).unwrap_or(u64::MAX),
             size_bytes: u64::try_from(response.size()).unwrap_or(u64::MAX),
             headers: response
@@ -74,17 +108,6 @@ impl ResponseView {
                 .collect(),
             body: preview(response.header(header::CONTENT_TYPE), &response.body),
         }
-    }
-}
-
-fn class_name(class: StatusClass) -> &'static str {
-    match class {
-        StatusClass::Informational => "informational",
-        StatusClass::Success => "success",
-        StatusClass::Redirection => "redirection",
-        StatusClass::ClientError => "clientError",
-        StatusClass::ServerError => "serverError",
-        StatusClass::Nonstandard => "nonstandard",
     }
 }
 
