@@ -1,6 +1,9 @@
 //! Turns what the user entered into a [`ResolvedRequest`].
 
+use std::collections::HashMap;
+
 use ac_domain::collection::{Body, HeaderEntry};
+use ac_domain::environment::{UnresolvedVariable, interpolate};
 use ac_domain::exchange::{Header, ResolvedRequest};
 use ac_domain::protocol::{HttpMethod, header, is_token, media_type};
 use url::Url;
@@ -14,21 +17,44 @@ const SUPPORTED_SCHEMES: [&str; 2] = ["http", "https"];
 
 /// Validates method, URL and headers as entered and prepares the body.
 ///
-/// Disabled headers and rows without a name are left out. A JSON or text
-/// body gets a matching `Content-Type` unless the request sets one itself.
+/// Every `{{name}}` in the URL, header names and values and the body is
+/// replaced from `variables` first. Disabled headers and rows without a name
+/// are left out. A JSON or text body gets a matching `Content-Type` unless
+/// the request sets one itself.
 pub(crate) fn resolve_request(
     method: &str,
     url: &str,
     headers: &[HeaderEntry],
     body: &Body,
+    variables: &HashMap<&str, &str>,
 ) -> Result<ResolvedRequest, AppError> {
+    let fill = |text: &str| interpolate(text, |name| variables.get(name).copied());
     let method: HttpMethod = method.trim().parse()?;
-    let url = resolve_url(url)?;
-    let mut headers = resolve_headers(headers)?;
+    let url = resolve_url(&fill(url)?)?;
+    let headers: Vec<HeaderEntry> = headers
+        .iter()
+        .filter(|entry| entry.enabled)
+        .map(|entry| {
+            Ok(HeaderEntry {
+                name: fill(&entry.name)?,
+                value: fill(&entry.value)?,
+                enabled: true,
+            })
+        })
+        .collect::<Result<_, UnresolvedVariable>>()?;
+    let mut headers = resolve_headers(&headers)?;
     let body = match body {
         Body::None => None,
-        Body::Json(content) => Some(with_content_type(&mut headers, media_type::JSON, content)),
-        Body::Text(content) => Some(with_content_type(&mut headers, media_type::TEXT, content)),
+        Body::Json(content) => Some(with_content_type(
+            &mut headers,
+            media_type::JSON,
+            &fill(content)?,
+        )),
+        Body::Text(content) => Some(with_content_type(
+            &mut headers,
+            media_type::TEXT,
+            &fill(content)?,
+        )),
     };
     Ok(ResolvedRequest {
         method,

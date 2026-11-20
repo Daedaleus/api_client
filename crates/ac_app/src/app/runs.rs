@@ -5,12 +5,13 @@ use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
 use super::App;
+use super::environments::values;
 use crate::command::{CommandAck, RunId};
 use crate::error::AppError;
 use crate::event::AppEvent;
 use crate::ports::{CollectionStore, HttpSender};
 use crate::resolve::resolve_request;
-use crate::view::{BodyDraft, HeaderDraft, ResponseView, RunOutcomeView};
+use crate::view::{BodyDraft, EnvironmentRef, HeaderDraft, ResponseView, RunOutcomeView};
 
 impl<H: HttpSender, S: CollectionStore> App<H, S> {
     pub(super) fn send_request(
@@ -19,9 +20,12 @@ impl<H: HttpSender, S: CollectionStore> App<H, S> {
         url: &str,
         headers: &[HeaderDraft],
         body: &BodyDraft,
+        environment: Option<&EnvironmentRef>,
     ) -> Result<CommandAck, AppError> {
+        let environment = self.environment(environment)?;
         let headers: Vec<_> = headers.iter().map(HeaderDraft::to_entry).collect();
-        let request = resolve_request(method, url, &headers, &body.to_body())?;
+        let variables = values(environment.as_ref());
+        let request = resolve_request(method, url, &headers, &body.to_body(), &variables)?;
         let run_id = RunId(self.inner.next_run.fetch_add(1, Ordering::Relaxed));
         let inner = Arc::clone(&self.inner);
         self.inner.runtime.spawn(async move {

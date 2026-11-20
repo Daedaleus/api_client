@@ -210,4 +210,95 @@ describe('Workspace', () => {
     await workspace.restore();
     expect(workspace.collections.collections).toHaveLength(1);
   });
+
+  it('sends saved requests with the chosen environment, scratch ones without', async () => {
+    const { api, workspace } = await setup();
+    await workspace.send(workspace.tabs.active!);
+    expect(api.commands.at(-1)).toMatchObject({ type: 'sendRequest', environment: null });
+
+    await workspace.openRequest('c1', 'r2');
+    const tab = workspace.tabs.active!;
+    expect(workspace.collectionOf(tab)?.name).toBe('Shop');
+    await workspace.send(tab);
+    expect(api.commands.at(-1)).toMatchObject({ environment: null });
+
+    workspace.environments.choose('c1', 'e1');
+    await workspace.send(tab);
+    expect(api.commands.at(-1)).toMatchObject({
+      environment: { collectionId: 'c1', environmentId: 'e1' },
+    });
+  });
+
+  it('creates an environment, chooses it and opens it in the editor', async () => {
+    const { api, workspace } = await setup();
+    const created = shop();
+    created.environments.push({ id: 'e2', name: 'Prod', variables: [], readOnly: false });
+
+    const creating = workspace.newEnvironment('c1');
+    api.answers.push(changed(created, 'e2'));
+    await answer(workspace, 'Prod');
+    await creating;
+    expect(api.commands.at(-1)).toEqual({
+      type: 'createEnvironment',
+      collectionId: 'c1',
+      name: 'Prod',
+    });
+    expect(workspace.environments.of(workspace.collections.find('c1'))?.name).toBe('Prod');
+    expect(workspace.editing?.draft.name).toBe('Prod');
+
+    const cancelled = workspace.newEnvironment('c1');
+    await answer(workspace, null);
+    await cancelled;
+    expect(api.commands).toHaveLength(1);
+  });
+
+  it('saves an edited copy and keeps the editor open on failure', async () => {
+    const { api, workspace } = await setup();
+    workspace.editEnvironment('c1', 'missing');
+    expect(workspace.editing).toBeNull();
+
+    workspace.editEnvironment('c1', 'e1');
+    workspace.editing!.draft.variables.push({ name: 'token', value: 't', enabled: true });
+    expect(workspace.collections.find('c1')?.environments[0]?.variables).toHaveLength(1);
+
+    api.answers.push({ fail: { key: 'error.write_failed', args: {} } });
+    await workspace.saveEnvironment();
+    expect(workspace.editing).not.toBeNull();
+    expect(workspace.collections.error?.key).toBe('error.write_failed');
+
+    api.answers.push(changed(shop()));
+    await workspace.saveEnvironment();
+    expect(api.commands.at(-1)).toMatchObject({
+      type: 'saveEnvironment',
+      collectionId: 'c1',
+      environment: { id: 'e1', variables: [{ name: 'baseUrl' }, { name: 'token' }] },
+    });
+    expect(workspace.editing).toBeNull();
+    await workspace.saveEnvironment();
+    expect(api.commands).toHaveLength(2);
+  });
+
+  it('deletes the edited environment after asking and forgets the choice', async () => {
+    const { api, workspace } = await setup();
+    await workspace.deleteEnvironment();
+    workspace.environments.choose('c1', 'e1');
+    workspace.editEnvironment('c1', 'e1');
+
+    const declined = workspace.deleteEnvironment();
+    await answer(workspace, false);
+    await declined;
+    expect(api.commands).toHaveLength(0);
+
+    const deleting = workspace.deleteEnvironment();
+    const dialog = await openDialog(workspace);
+    expect(dialog).toMatchObject({
+      message: { key: 'dialog.delete_environment', args: { name: 'Dev' } },
+    });
+    api.answers.push(changed({ ...shop(), environments: [] }));
+    if (dialog.kind === 'confirm') dialog.answer(true);
+    await deleting;
+    expect(api.commands.at(-1)).toEqual({ type: 'deleteItem', collectionId: 'c1', itemId: 'e1' });
+    expect(workspace.editing).toBeNull();
+    expect(workspace.environments.reference(shop())).toBeNull();
+  });
 });

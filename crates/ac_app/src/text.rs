@@ -48,6 +48,8 @@ pub mod keys {
     pub const METHOD_INVALID: &str = "error.method_invalid";
     /// A header cannot be sent. Argument: `name`.
     pub const HEADER_INVALID: &str = "error.header_invalid";
+    /// A `{{name}}` has no value. Argument: `name`.
+    pub const VARIABLE_UNKNOWN: &str = "error.variable_unknown";
     /// No answer in time.
     pub const TIMEOUT: &str = "error.timeout";
     /// No connection. Argument: `detail`.
@@ -76,12 +78,13 @@ pub mod keys {
 
     /// All keys with the names of their placeholders, checked against the
     /// translation file by a test.
-    pub const ALL: [(&str, &[&str]); 17] = [
+    pub const ALL: [(&str, &[&str]); 18] = [
         (URL_EMPTY, &[]),
         (URL_INVALID, &["reason"]),
         (URL_SCHEME, &["scheme"]),
         (METHOD_INVALID, &["method"]),
         (HEADER_INVALID, &["name"]),
+        (VARIABLE_UNKNOWN, &["name"]),
         (TIMEOUT, &[]),
         (CONNECT, &["detail"]),
         (REQUEST, &["detail"]),

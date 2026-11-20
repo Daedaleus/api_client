@@ -72,6 +72,7 @@ describe('TabsState', () => {
         url: 'example.com',
         headers: [],
         body: { kind: 'none' },
+        environment: null,
       },
     ]);
     expect(tab.sending).toBe(true);

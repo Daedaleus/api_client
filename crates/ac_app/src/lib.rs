@@ -23,6 +23,9 @@ pub mod error;
 pub mod event;
 pub mod ports;
 mod resolve;
+#[cfg(test)]
+#[path = "tests/support.rs"]
+mod test_support;
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
 pub mod text;

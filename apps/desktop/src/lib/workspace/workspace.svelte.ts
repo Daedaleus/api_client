@@ -4,25 +4,40 @@
 
 import type { Api } from '../api';
 import { toUserText } from '../errors';
-import type { TreeItemView } from '../types';
+import type { KeyValueStorage } from '../storage';
+import type { CollectionView, EnvironmentDraft, TreeItemView } from '../types';
 import { CollectionsState } from './collections.svelte';
 import { Dialogs } from './dialogs.svelte';
+import { EnvironmentChoice } from './environments.svelte';
 import type { RequestTab } from './request-tab.svelte';
 import { TabsState } from './tabs.svelte';
 import { baseName } from './tree';
 
-type PathStorage = Pick<Storage, 'getItem' | 'setItem'>;
+/** An environment open in the editor: a copy, so cancelling changes nothing. */
+export interface EnvironmentEdit {
+  collectionId: string;
+  draft: EnvironmentDraft;
+}
 
 export class Workspace {
   readonly collections: CollectionsState;
   readonly tabs: TabsState;
   readonly dialogs = new Dialogs();
+  readonly environments: EnvironmentChoice;
+  /** The environment being edited, if the editor is open. */
+  editing = $state<EnvironmentEdit | null>(null);
   readonly #api: Api;
 
-  constructor(api: Api, storage: PathStorage | null) {
+  constructor(api: Api, storage: KeyValueStorage | null) {
     this.#api = api;
     this.collections = new CollectionsState(api, storage);
     this.tabs = new TabsState(api);
+    this.environments = new EnvironmentChoice(storage);
+  }
+
+  /** The collection a tab's request belongs to (none for scratch tabs). */
+  collectionOf(tab: RequestTab): CollectionView | undefined {
+    return tab.saved ? this.collections.find(tab.saved.collectionId) : undefined;
   }
 
   /** Listens for run results; resolves to an unsubscribe function. */
@@ -107,6 +122,63 @@ export class Workspace {
       itemId: item.id,
     });
     if (changed) this.tabs.closeMissing(changed.collection);
+  }
+
+  /** Sends a tab's request with the environment chosen for its collection. */
+  send(tab: RequestTab): Promise<void> {
+    return this.tabs.send(tab, this.environments.reference(this.collectionOf(tab)));
+  }
+
+  async newEnvironment(collectionId: string): Promise<void> {
+    const name = await this.dialogs.askName({ key: 'dialog.new_environment', args: {} });
+    if (!name) return;
+    const changed = await this.collections.run({ type: 'createEnvironment', collectionId, name });
+    if (!changed?.createdId) return;
+    this.environments.choose(collectionId, changed.createdId);
+    this.editEnvironment(collectionId, changed.createdId);
+  }
+
+  /** Opens the editor with a copy of an environment. */
+  editEnvironment(collectionId: string, environmentId: string): void {
+    const environment = this.collections
+      .find(collectionId)
+      ?.environments.find((candidate) => candidate.id === environmentId);
+    if (environment) {
+      this.collections.error = null;
+      this.editing = { collectionId, draft: $state.snapshot(environment) };
+    }
+  }
+
+  /** Saves the edited environment; the editor stays open if that fails. */
+  async saveEnvironment(): Promise<void> {
+    if (!this.editing) return;
+    const { collectionId, draft } = this.editing;
+    const changed = await this.collections.run({
+      type: 'saveEnvironment',
+      collectionId,
+      environment: $state.snapshot(draft),
+    });
+    if (changed) this.editing = null;
+  }
+
+  async deleteEnvironment(): Promise<void> {
+    if (!this.editing) return;
+    const { collectionId, draft } = this.editing;
+    const ok = await this.dialogs.confirm(
+      { key: 'dialog.delete', args: {} },
+      { key: 'dialog.delete_environment', args: { name: draft.name } },
+    );
+    if (!ok) return;
+    const changed = await this.collections.run({
+      type: 'deleteItem',
+      collectionId,
+      itemId: draft.id,
+    });
+    if (!changed) return;
+    this.editing = null;
+    if (this.environments.of(changed.collection) === null) {
+      this.environments.choose(collectionId, null);
+    }
   }
 
   async save(tab: RequestTab): Promise<void> {

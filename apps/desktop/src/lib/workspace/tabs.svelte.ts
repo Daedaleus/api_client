@@ -3,7 +3,7 @@
 
 import type { Api } from '../api';
 import { toUserText } from '../errors';
-import type { AppEvent, CollectionView, RunOutcome } from '../types';
+import type { AppEvent, CollectionView, EnvironmentRef, RunOutcome } from '../types';
 import { RequestTab } from './request-tab.svelte';
 import { requestIds } from './tree';
 
@@ -82,7 +82,8 @@ export class TabsState {
     this.tabs.find((tab) => tab.isFor(collectionId, requestId))?.renamed(name);
   }
 
-  async send(tab: RequestTab): Promise<void> {
+  /** Sends a tab's request, resolving `{{variables}}` from `environment`. */
+  async send(tab: RequestTab, environment: EnvironmentRef | null = null): Promise<void> {
     tab.error = null;
     try {
       const ack = await this.#api.execute({
@@ -91,6 +92,7 @@ export class TabsState {
         url: tab.draft.url,
         headers: tab.draft.headers,
         body: tab.draft.body,
+        environment,
       });
       if (ack.type !== 'runStarted') {
         throw new Error(`unexpected answer ${ack.type}`);

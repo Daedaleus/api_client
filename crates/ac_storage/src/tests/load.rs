@@ -72,8 +72,8 @@ fn entries_know_paths_kinds_and_read_only_files() {
     assert_eq!(root_entry.path, root);
     let products = folder(&loaded.collection.items, "Products");
     assert_eq!(loaded.entries[&products.id].kind, EntryKind::Folder);
-    // 1 collection + 2 folders + 5 requests.
-    assert_eq!(loaded.entries.len(), 8);
+    // 1 collection + 2 folders + 5 requests + 1 environment.
+    assert_eq!(loaded.entries.len(), 9);
 }
 
 #[test]
@@ -153,7 +153,7 @@ fn copied_files_get_their_own_id() {
     let auth = folder(&loaded.collection.items, "auth");
     assert_eq!(auth.items.len(), 2);
     assert_ne!(auth.items[0].id(), auth.items[1].id());
-    assert_eq!(loaded.entries.len(), 9);
+    assert_eq!(loaded.entries.len(), 10);
 }
 
 #[test]

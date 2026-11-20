@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::error::AppError;
 use crate::ports::{Location, OpenedCollection, StoreError};
 use crate::text::UserText;
+use crate::view::EnvironmentDraft;
 
 /// An open collection.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -21,6 +22,8 @@ pub struct CollectionView {
     pub root: String,
     /// Top-level folders and requests in display order.
     pub items: Vec<TreeItemView>,
+    /// Environments, sorted by name.
+    pub environments: Vec<EnvironmentDraft>,
     /// Files that could not be loaded.
     pub problems: Vec<UserText>,
 }
@@ -68,6 +71,17 @@ impl CollectionView {
             name: collection.name.clone(),
             root: opened.root.display().to_string(),
             items: tree(&collection.items, opened),
+            environments: opened
+                .environments
+                .iter()
+                .map(|environment| {
+                    let read_only = opened
+                        .locations
+                        .get(&environment.id)
+                        .is_some_and(|location| location.read_only);
+                    EnvironmentDraft::from_environment(environment, read_only)
+                })
+                .collect(),
             problems: opened.problems.iter().map(StoreError::user_text).collect(),
         }
     }

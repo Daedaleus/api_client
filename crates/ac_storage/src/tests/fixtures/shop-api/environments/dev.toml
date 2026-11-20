@@ -1,1 +1,14 @@
+# Local development - hand-written comment, must survive saving.
 format = "api-client/environment"
+version = 1
+id = "0193a8f2-7c1e-7b40-9d3a-5f2c8e1b4a80"
+name = "Dev"
+
+[[variables]]
+name = "baseUrl"
+value = "http://localhost:8080"
+
+[[variables]]
+name = "debug"
+value = "1"
+enabled = false

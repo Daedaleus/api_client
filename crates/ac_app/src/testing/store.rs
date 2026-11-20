@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use ac_domain::collection::{Collection, Folder, Item, ItemId, Request};
+use ac_domain::environment::Environment;
 
 use super::lock;
 use crate::ports::{CollectionStore, Location, OpenedCollection, StoreError, StoreErrorKind};
@@ -16,6 +17,7 @@ use crate::ports::{CollectionStore, Location, OpenedCollection, StoreError, Stor
 #[derive(Debug, Default)]
 pub struct MemoryStore {
     collections: Mutex<HashMap<PathBuf, Collection>>,
+    environments: Mutex<HashMap<PathBuf, Vec<Environment>>>,
     read_only: Mutex<HashSet<ItemId>>,
     problems: Mutex<Vec<StoreError>>,
     fail_next: Mutex<Option<StoreError>>,
@@ -33,6 +35,25 @@ impl MemoryStore {
     pub fn with(self, root: impl Into<PathBuf>, collection: Collection) -> Self {
         lock(&self.collections).insert(root.into(), collection);
         self
+    }
+
+    /// Adds an environment to the collection at `root`.
+    #[must_use]
+    pub fn with_environment(self, root: impl Into<PathBuf>, environment: Environment) -> Self {
+        lock(&self.environments)
+            .entry(root.into())
+            .or_default()
+            .push(environment);
+        self
+    }
+
+    /// The current environments of the collection at `root`.
+    #[must_use]
+    pub fn environments(&self, root: &Path) -> Vec<Environment> {
+        lock(&self.environments)
+            .get(root)
+            .cloned()
+            .unwrap_or_default()
     }
 
     /// Marks an item as read-only (e.g. from a newer format version).
@@ -104,9 +125,14 @@ impl CollectionStore for MemoryStore {
         };
         add(collection.id, root.to_owned());
         collect_locations(&collection.items, root, &mut add);
+        let environments = self.environments(root);
+        for environment in &environments {
+            add(environment.id, environment_path(root, environment.id));
+        }
         Ok(OpenedCollection {
             root: root.to_owned(),
             collection,
+            environments,
             locations,
             problems: lock(&self.problems).clone(),
         })
@@ -176,10 +202,54 @@ impl CollectionStore for MemoryStore {
 
     fn remove(&self, path: &Path) -> Result<(), StoreError> {
         let id = id_of(path)?;
+        if let Some(environments) = self.environments_at(path) {
+            if let Some(list) = lock(&self.environments).get_mut(&environments) {
+                list.retain(|environment| environment.id != id);
+            }
+            return Ok(());
+        }
         self.with_items(parent_of(path), |items| {
             items.retain(|item| item.id() != id);
         })
     }
+
+    fn save_environment(&self, file: &Path, environment: &Environment) -> Result<(), StoreError> {
+        self.check_failure()?;
+        let root = self.environments_at(file).ok_or_else(|| not_found(file))?;
+        let id = id_of(file)?;
+        for existing in lock(&self.environments).entry(root).or_default() {
+            if existing.id == id {
+                *existing = environment.clone();
+            }
+        }
+        Ok(())
+    }
+
+    fn create_environment(&self, root: &Path, environment: &Environment) -> Result<(), StoreError> {
+        self.check_failure()?;
+        lock(&self.environments)
+            .entry(root.to_owned())
+            .or_default()
+            .push(environment.clone());
+        Ok(())
+    }
+}
+
+impl MemoryStore {
+    /// The collection root if `path` is an environment file of a collection.
+    fn environments_at(&self, path: &Path) -> Option<PathBuf> {
+        let root = path.parent()?.parent()?;
+        let is_environment = path.parent() == Some(&root.join(ENVIRONMENTS))
+            && lock(&self.collections).contains_key(root);
+        is_environment.then(|| root.to_owned())
+    }
+}
+
+/// Folder of the made-up environment paths.
+const ENVIRONMENTS: &str = "environments";
+
+fn environment_path(root: &Path, id: ItemId) -> PathBuf {
+    root.join(ENVIRONMENTS).join(id.to_string())
 }
 
 fn collect_locations(items: &[Item], base: &Path, add: &mut impl FnMut(ItemId, PathBuf)) {

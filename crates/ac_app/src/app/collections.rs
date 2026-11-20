@@ -121,7 +121,12 @@ impl<H: HttpSender, S: CollectionStore> App<H, S> {
     ) -> Result<CommandAck, AppError> {
         let opened = self.current(collection_id)?;
         let id = item_id_from(item_id)?;
-        if opened.collection.find(id).is_none() {
+        let in_tree = opened.collection.find(id).is_some();
+        let is_environment = opened
+            .environments
+            .iter()
+            .any(|environment| environment.id == id);
+        if !in_tree && !is_environment {
             return Err(AppError::UnknownItem);
         }
         let path = location(&opened, id)?.path.clone();
@@ -153,7 +158,7 @@ impl<H: HttpSender, S: CollectionStore> App<H, S> {
     }
 
     /// The open collection, read anew from disk.
-    fn current(&self, collection_id: &str) -> Result<OpenedCollection, AppError> {
+    pub(super) fn current(&self, collection_id: &str) -> Result<OpenedCollection, AppError> {
         let id = collection_id_from(collection_id)?;
         let root = self
             .open_collections()
@@ -165,7 +170,11 @@ impl<H: HttpSender, S: CollectionStore> App<H, S> {
     }
 
     /// Answers with the collection as it is on disk after a change.
-    fn reload(&self, root: &Path, created: Option<ItemId>) -> Result<CommandAck, AppError> {
+    pub(super) fn reload(
+        &self,
+        root: &Path,
+        created: Option<ItemId>,
+    ) -> Result<CommandAck, AppError> {
         let opened = self.inner.store.open(root)?;
         Ok(changed(&opened, created))
     }
@@ -191,16 +200,16 @@ fn collection_id_from(text: &str) -> Result<ItemId, AppError> {
     text.parse().map_err(|_| AppError::UnknownCollection)
 }
 
-fn item_id_from(text: &str) -> Result<ItemId, AppError> {
+pub(super) fn item_id_from(text: &str) -> Result<ItemId, AppError> {
     text.parse().map_err(|_| AppError::UnknownItem)
 }
 
-fn location(opened: &OpenedCollection, id: ItemId) -> Result<&Location, AppError> {
+pub(super) fn location(opened: &OpenedCollection, id: ItemId) -> Result<&Location, AppError> {
     opened.locations.get(&id).ok_or(AppError::UnknownItem)
 }
 
 /// The path of an item that may be written.
-fn writable(opened: &OpenedCollection, id: ItemId) -> Result<&PathBuf, AppError> {
+pub(super) fn writable(opened: &OpenedCollection, id: ItemId) -> Result<&PathBuf, AppError> {
     let location = location(opened, id)?;
     if location.read_only {
         return Err(AppError::Store(StoreError {

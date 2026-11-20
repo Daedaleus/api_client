@@ -9,9 +9,10 @@ import RequestEditor from './RequestEditor.svelte';
 
 function setup(
   tab = new RequestTab(draft('r1', 'Login'), { collectionId: 'c1', requestId: 'r1' }),
+  variables: ReadonlyMap<string, string> | null = null,
 ) {
   const onsave = vi.fn();
-  render(RequestEditor, { tab, onsend: vi.fn(), onsave });
+  render(RequestEditor, { tab, onsend: vi.fn(), onsave, variables });
   return { tab, onsave };
 }
 
@@ -74,5 +75,24 @@ describe('RequestEditor', () => {
     );
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
     expect(screen.getByText(/newer version/)).toBeInTheDocument();
+  });
+
+  it('previews the URL with variables and warns about unknown ones', async () => {
+    const tab = new RequestTab(draft('r1', 'Login', { url: '{{baseUrl}}/{{path}}' }), {
+      collectionId: 'c1',
+      requestId: 'r1',
+    });
+    setup(tab, new Map([['baseUrl', 'http://localhost:8080']]));
+    expect(screen.getByText('Sent to: http://localhost:8080/{{path}}')).toBeInTheDocument();
+    expect(screen.getByText('Unknown variables: path')).toBeInTheDocument();
+
+    await userEvent.clear(screen.getByLabelText('URL'));
+    await userEvent.type(screen.getByLabelText('URL'), 'https://plain.test');
+    expect(screen.queryByText(/Sent to/)).not.toBeInTheDocument();
+  });
+
+  it('asks for an environment when the URL has variables', () => {
+    setup(new RequestTab(draft('r1', 'Login', { url: '{{baseUrl}}/x' }), null));
+    expect(screen.getByText(/please choose an environment/)).toBeInTheDocument();
   });
 });

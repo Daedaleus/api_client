@@ -16,6 +16,8 @@
 //! - [`load`]: reading a collection into the domain tree.
 //! - [`request_file`]: reading and writing one request file.
 //! - [`settings`]: folder settings (name, id).
+//! - [`environment_file`]: environment files (variables).
+//! - `rows`: name/value/enabled lists (headers, variables).
 //! - [`create`]: creating collections, folders and requests.
 //! - [`remove`]: removing requests and folders.
 //! - [`store`]: [`FileStore`], the `CollectionStore` port of `ac_app`.
@@ -25,6 +27,7 @@
 
 pub mod create;
 mod document;
+pub mod environment_file;
 pub mod error;
 pub mod format;
 pub mod load;
@@ -32,6 +35,7 @@ pub mod names;
 mod order;
 pub mod remove;
 pub mod request_file;
+mod rows;
 pub mod settings;
 pub mod store;
 #[cfg(test)]
@@ -39,6 +43,7 @@ pub mod store;
 mod test_support;
 
 pub use create::{create_collection, create_folder, create_request};
+pub use environment_file::{create_environment, read_environment, save_environment};
 pub use error::{LoadProblem, StorageError};
 pub use load::{Entry, EntryKind, LoadedCollection, load_collection};
 pub use remove::remove_item;

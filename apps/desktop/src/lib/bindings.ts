@@ -76,7 +76,10 @@ export type BodyView = {
 };
 
 /**  An open collection. */
-export type CollectionView = {
+export type CollectionView = CollectionView_Serialize | CollectionView_Deserialize;
+
+/**  An open collection. */
+export type CollectionView_Deserialize = {
 	/**  Collection id. */
 	id: string,
 	/**  Display name. */
@@ -85,6 +88,24 @@ export type CollectionView = {
 	root: string,
 	/**  Top-level folders and requests in display order. */
 	items: TreeItemView[],
+	/**  Environments, sorted by name. */
+	environments: EnvironmentDraft_Deserialize[],
+	/**  Files that could not be loaded. */
+	problems: UserText[],
+};
+
+/**  An open collection. */
+export type CollectionView_Serialize = {
+	/**  Collection id. */
+	id: string,
+	/**  Display name. */
+	name: string,
+	/**  Collection folder. */
+	root: string,
+	/**  Top-level folders and requests in display order. */
+	items: TreeItemView[],
+	/**  Environments, sorted by name. */
+	environments: EnvironmentDraft_Serialize[],
 	/**  Files that could not be loaded. */
 	problems: UserText[],
 };
@@ -104,7 +125,7 @@ runId: RunId } |
 /**  A collection was opened or changed; here is its current tree. */
 { type: "collectionChanged"; 
 /**  The collection as it is now on disk. */
-collection: CollectionView; 
+collection: CollectionView_Deserialize; 
 /**  The item a create command made, if any. */
 createdId?: string | null } | 
 /**  A collection was closed. */
@@ -121,7 +142,7 @@ runId: RunId } |
 /**  A collection was opened or changed; here is its current tree. */
 { type: "collectionChanged"; 
 /**  The collection as it is now on disk. */
-collection: CollectionView; 
+collection: CollectionView_Serialize; 
 /**  The item a create command made, if any. */
 createdId: string | null } | 
 /**  A collection was closed. */
@@ -140,7 +161,12 @@ url: string;
 /**  Header rows; disabled rows and rows without a name are not sent. */
 headers?: HeaderDraft[]; 
 /**  Body; JSON and text get a `Content-Type` unless a header sets one. */
-body?: BodyDraft } | 
+body?: BodyDraft; 
+/**
+ *  Environment for `{{variables}}`; without one, placeholders are
+ *  an error.
+ */
+environment?: EnvironmentRef | null } | 
 /**  Open the collection in a folder. */
 { type: "openCollection"; 
 /**  The collection folder. */
@@ -185,12 +211,24 @@ collectionId: string;
 itemId: string; 
 /**  New display name. */
 name: string } | 
-/**  Move a folder or request to the trash. */
+/**  Move a folder, request or environment to the trash. */
 { type: "deleteItem"; 
 /**  The collection. */
 collectionId: string; 
-/**  The folder or request. */
-itemId: string };
+/**  The folder, request or environment. */
+itemId: string } | 
+/**  Create a new, empty environment. */
+{ type: "createEnvironment"; 
+/**  The collection. */
+collectionId: string; 
+/**  Display name. */
+name: string } | 
+/**  Save an environment edited in the editor (name and variables). */
+{ type: "saveEnvironment"; 
+/**  The collection. */
+collectionId: string; 
+/**  The edited environment (identified by its id). */
+environment: EnvironmentDraft_Deserialize };
 
 /**  Something the user wants the application to do. */
 export type Command_Serialize = 
@@ -203,7 +241,12 @@ url: string;
 /**  Header rows; disabled rows and rows without a name are not sent. */
 headers: HeaderDraft[]; 
 /**  Body; JSON and text get a `Content-Type` unless a header sets one. */
-body: BodyDraft } | 
+body: BodyDraft; 
+/**
+ *  Environment for `{{variables}}`; without one, placeholders are
+ *  an error.
+ */
+environment: EnvironmentRef | null } | 
 /**  Open the collection in a folder. */
 { type: "openCollection"; 
 /**  The collection folder. */
@@ -248,12 +291,59 @@ collectionId: string;
 itemId: string; 
 /**  New display name. */
 name: string } | 
-/**  Move a folder or request to the trash. */
+/**  Move a folder, request or environment to the trash. */
 { type: "deleteItem"; 
 /**  The collection. */
 collectionId: string; 
-/**  The folder or request. */
-itemId: string };
+/**  The folder, request or environment. */
+itemId: string } | 
+/**  Create a new, empty environment. */
+{ type: "createEnvironment"; 
+/**  The collection. */
+collectionId: string; 
+/**  Display name. */
+name: string } | 
+/**  Save an environment edited in the editor (name and variables). */
+{ type: "saveEnvironment"; 
+/**  The collection. */
+collectionId: string; 
+/**  The edited environment (identified by its id). */
+environment: EnvironmentDraft_Serialize };
+
+/**  An environment with its variables. */
+export type EnvironmentDraft = EnvironmentDraft_Serialize | EnvironmentDraft_Deserialize;
+
+/**  An environment with its variables. */
+export type EnvironmentDraft_Deserialize = {
+	/**  Environment id. */
+	id: string,
+	/**  Display name. */
+	name: string,
+	/**  Variables in display order. */
+	variables: VariableDraft[],
+	/**  The file is never written (set by the app, ignored when saving). */
+	readOnly?: boolean,
+};
+
+/**  An environment with its variables. */
+export type EnvironmentDraft_Serialize = {
+	/**  Environment id. */
+	id: string,
+	/**  Display name. */
+	name: string,
+	/**  Variables in display order. */
+	variables: VariableDraft[],
+	/**  The file is never written (set by the app, ignored when saving). */
+	readOnly: boolean,
+};
+
+/**  The environment to resolve `{{variables}}` with when sending. */
+export type EnvironmentRef = {
+	/**  The collection the environment belongs to. */
+	collectionId: string,
+	/**  The environment. */
+	environmentId: string,
+};
 
 /**  A header of a [`RequestDraft`]. */
 export type HeaderDraft = {
@@ -294,7 +384,7 @@ export type QueryResult_Deserialize =
 /**  The collection tree. */
 { type: "collection"; 
 /**  The collection. */
-collection: CollectionView } | 
+collection: CollectionView_Deserialize } | 
 /**  The request. */
 { type: "request"; 
 /**  The request. */
@@ -305,7 +395,7 @@ export type QueryResult_Serialize =
 /**  The collection tree. */
 { type: "collection"; 
 /**  The collection. */
-collection: CollectionView } | 
+collection: CollectionView_Serialize } | 
 /**  The request. */
 { type: "request"; 
 /**  The request. */
@@ -461,6 +551,16 @@ export type UserText = {
 	key: string,
 	/**  Values for the `{name}` placeholders of the text. */
 	args: { [key in string]: string },
+};
+
+/**  A variable of an [`EnvironmentDraft`]. */
+export type VariableDraft = {
+	/**  Name used in `{{name}}`. */
+	name: string,
+	/**  Value. */
+	value: string,
+	/**  Used when sending. */
+	enabled: boolean,
 };
 
 /* Tauri Specta runtime */

@@ -3,7 +3,7 @@ use crate::text::keys;
 
 /// Method and URL only.
 fn simple(method: &str, url: &str) -> Result<ResolvedRequest, AppError> {
-    resolve_request(method, url, &[], &Body::None)
+    resolve_request(method, url, &[], &Body::None, &HashMap::new())
 }
 
 fn entry(name: &str, value: &str, enabled: bool) -> HeaderEntry {
@@ -38,7 +38,8 @@ fn enabled_named_headers_are_sent_in_order() {
         entry("  ", "ignored", true),
         entry(" X-Trace ", "a b", true),
     ];
-    let request = resolve_request("GET", "example.com", &headers, &Body::None).unwrap();
+    let request =
+        resolve_request("GET", "example.com", &headers, &Body::None, &HashMap::new()).unwrap();
     assert_eq!(
         request.headers,
         [
@@ -50,21 +51,42 @@ fn enabled_named_headers_are_sent_in_order() {
 
 #[test]
 fn bodies_get_a_content_type_unless_one_is_set() {
-    let json = resolve_request("POST", "x.example", &[], &Body::Json("{\"a\":1}".into())).unwrap();
+    let json = resolve_request(
+        "POST",
+        "x.example",
+        &[],
+        &Body::Json("{\"a\":1}".into()),
+        &HashMap::new(),
+    )
+    .unwrap();
     assert_eq!(json.body.as_deref(), Some(b"{\"a\":1}".as_slice()));
     assert_eq!(
         json.headers,
         [Header::new("Content-Type", "application/json")]
     );
 
-    let text = resolve_request("POST", "x.example", &[], &Body::Text("hi".into())).unwrap();
+    let text = resolve_request(
+        "POST",
+        "x.example",
+        &[],
+        &Body::Text("hi".into()),
+        &HashMap::new(),
+    )
+    .unwrap();
     assert_eq!(
         text.headers,
         [Header::new("Content-Type", "text/plain; charset=utf-8")]
     );
 
     let own = [entry("content-type", "application/vnd.api+json", true)];
-    let custom = resolve_request("POST", "x.example", &own, &Body::Json("{}".into())).unwrap();
+    let custom = resolve_request(
+        "POST",
+        "x.example",
+        &own,
+        &Body::Json("{}".into()),
+        &HashMap::new(),
+    )
+    .unwrap();
     assert_eq!(
         custom.headers,
         [Header::new("content-type", "application/vnd.api+json")]
@@ -72,8 +94,14 @@ fn bodies_get_a_content_type_unless_one_is_set() {
 
     // A disabled Content-Type does not count.
     let disabled = [entry("Content-Type", "text/xml", false)];
-    let request =
-        resolve_request("POST", "x.example", &disabled, &Body::Json("{}".into())).unwrap();
+    let request = resolve_request(
+        "POST",
+        "x.example",
+        &disabled,
+        &Body::Json("{}".into()),
+        &HashMap::new(),
+    )
+    .unwrap();
     assert_eq!(
         request.headers,
         [Header::new("Content-Type", "application/json")]
@@ -101,7 +129,8 @@ fn headers_that_cannot_be_sent_are_refused() {
         entry("Bad Name", "x", true),
         entry("X-Inject", "a\r\nEvil: yes", true),
     ] {
-        let error = resolve_request("GET", "x.example", &[header], &Body::None).unwrap_err();
+        let error = resolve_request("GET", "x.example", &[header], &Body::None, &HashMap::new())
+            .unwrap_err();
         assert_eq!(error.user_text().key, keys::HEADER_INVALID);
         assert!(error.to_string().contains("invalid header"));
     }
@@ -110,9 +139,54 @@ fn headers_that_cannot_be_sent_are_refused() {
         "x.example",
         &[entry("Bad Name", "x", true)],
         &Body::None,
+        &HashMap::new(),
     )
     .unwrap_err();
     assert_eq!(error.user_text().args["name"], "Bad Name");
+}
+
+#[test]
+fn variables_are_resolved_in_url_headers_and_body() {
+    let variables = HashMap::from([
+        ("baseUrl", "https://api.example.com"),
+        ("token", "secret"),
+        ("header", "X-Token"),
+        ("id", "42"),
+    ]);
+    let request = resolve_request(
+        "PUT",
+        "{{baseUrl}}/items/{{ id }}",
+        &[
+            entry("{{header}}", "Bearer {{token}}", true),
+            entry("X-Off", "{{missing}}", false),
+        ],
+        &Body::Json("{\"id\": {{id}}}".into()),
+        &variables,
+    )
+    .unwrap();
+    assert_eq!(request.url.as_str(), "https://api.example.com/items/42");
+    assert_eq!(request.headers[0], Header::new("X-Token", "Bearer secret"));
+    assert_eq!(request.body.as_deref(), Some(b"{\"id\": 42}".as_slice()));
+}
+
+#[test]
+fn unknown_variables_stop_the_request() {
+    for (url, header, body) in [
+        ("{{missing}}/x", "a", "b"),
+        ("x.example", "{{missing}}", "b"),
+        ("x.example", "a", "{{missing}}"),
+    ] {
+        let error = resolve_request(
+            "POST",
+            url,
+            &[entry("X-A", header, true)],
+            &Body::Text(body.into()),
+            &HashMap::new(),
+        )
+        .unwrap_err();
+        assert_eq!(error.user_text().key, keys::VARIABLE_UNKNOWN);
+        assert_eq!(error.user_text().args["name"], "missing");
+    }
 }
 
 #[test]

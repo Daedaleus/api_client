@@ -1,18 +1,38 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import Button from '../atoms/Button.svelte';
   import BodyEditor from '../molecules/BodyEditor.svelte';
-  import HeadersEditor from '../molecules/HeadersEditor.svelte';
+  import RowsEditor, { type RowLabels } from '../molecules/RowsEditor.svelte';
   import UrlBar from '../molecules/UrlBar.svelte';
   import { i18n } from '../../lib/i18n/i18n.svelte';
+  import { hasPlaceholders, preview } from '../../lib/variables';
   import type { RequestTab } from '../../lib/workspace/request-tab.svelte';
 
   interface Props {
     tab: RequestTab;
     onsend: () => void;
     onsave: () => void;
+    /** Values of the chosen environment, `null` without one. */
+    variables?: ReadonlyMap<string, string> | null;
+    /** The environment picker, shown next to the name of a saved request. */
+    environment?: Snippet;
   }
 
-  let { tab, onsend, onsave }: Props = $props();
+  let { tab, onsend, onsave, variables = null, environment }: Props = $props();
+
+  // What the URL looks like with its `{{variables}}` filled in.
+  let urlPreview = $derived(
+    hasPlaceholders(tab.draft.url) && variables ? preview(tab.draft.url, variables) : null,
+  );
+
+  const HEADER_LABELS: RowLabels = {
+    enabled: 'editor.header_enabled',
+    name: 'editor.header_name',
+    value: 'editor.header_value',
+    add: 'editor.add_header',
+    remove: 'editor.remove_header',
+    empty: 'editor.no_headers',
+  };
 
   type Section = 'headers' | 'body';
   const SECTIONS: Section[] = ['headers', 'body'];
@@ -29,6 +49,7 @@
         <span class="request-editor__label">{i18n.t('editor.name')}</span>
         <input class="request-editor__input" type="text" bind:value={tab.draft.name} />
       </label>
+      {@render environment?.()}
       <Button
         variant={tab.dirty ? 'primary' : 'secondary'}
         disabled={tab.saving || tab.draft.readOnly}
@@ -50,6 +71,18 @@
     error={tab.error}
     {onsend}
   />
+  {#if urlPreview}
+    <p class="request-editor__preview">
+      {i18n.t('editor.preview', { url: urlPreview.text })}
+    </p>
+    {#if urlPreview.missing.length > 0}
+      <p class="request-editor__warning">
+        {i18n.t('editor.variables_missing', { names: urlPreview.missing.join(', ') })}
+      </p>
+    {/if}
+  {:else if hasPlaceholders(tab.draft.url)}
+    <p class="request-editor__warning">{i18n.t('editor.variables_no_environment')}</p>
+  {/if}
   <div class="request-editor__sections" role="tablist" aria-label={i18n.t('editor.sections')}>
     {#each SECTIONS as name (name)}
       <button
@@ -71,7 +104,7 @@
   </div>
   <div class="request-editor__panel" role="tabpanel">
     {#if section === 'headers'}
-      <HeadersEditor bind:headers={tab.draft.headers} />
+      <RowsEditor bind:rows={tab.draft.headers} labels={HEADER_LABELS} />
     {:else}
       <BodyEditor bind:body={tab.draft.body} />
     {/if}
@@ -154,6 +187,20 @@
   .request-editor__panel {
     max-height: 40vh;
     overflow-y: auto;
+  }
+
+  .request-editor__preview {
+    margin: 0;
+    color: var(--color-muted);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-s);
+    overflow-wrap: anywhere;
+  }
+
+  .request-editor__warning {
+    margin: 0;
+    color: var(--color-warning);
+    font-size: var(--font-size-s);
   }
 
   .request-editor__note {

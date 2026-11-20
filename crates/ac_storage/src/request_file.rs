@@ -5,11 +5,12 @@ use std::path::Path;
 
 use ac_domain::collection::{Body, HeaderEntry, Request};
 use ac_domain::protocol::HttpMethod;
-use toml_edit::{ArrayOfTables, DocumentMut, Item, Table, TableLike, Value};
+use toml_edit::{DocumentMut, Item, Table, TableLike};
 
 use crate::document;
 use crate::error::StorageError;
 use crate::format::{CURRENT_VERSION, REQUEST_FORMAT, body_type};
+use crate::rows::{self, Row};
 
 const REQUEST_TABLE: &str = "request";
 const HEADERS: &str = "headers";
@@ -58,31 +59,25 @@ pub(crate) fn request_from(doc: &DocumentMut, path: &Path) -> Result<Request, St
 }
 
 fn headers_from(item: Option<&Item>, path: &Path) -> Result<Vec<HeaderEntry>, StorageError> {
-    let invalid = || StorageError::invalid(path, "request.headers", "must be an array of tables");
-    match item {
-        None => Ok(Vec::new()),
-        Some(Item::ArrayOfTables(tables)) => tables
-            .iter()
-            .map(|table| header_from(table, path))
-            .collect(),
-        Some(Item::Value(Value::Array(values))) => values
-            .iter()
-            .map(|value| {
-                let table = value.as_inline_table().ok_or_else(invalid)?;
-                header_from(table, path)
-            })
-            .collect(),
-        Some(_) => Err(invalid()),
-    }
+    Ok(rows::read(item, path, "request.headers")?
+        .into_iter()
+        .map(|row| HeaderEntry {
+            name: row.name,
+            value: row.value,
+            enabled: row.enabled,
+        })
+        .collect())
 }
 
-fn header_from(table: &dyn TableLike, path: &Path) -> Result<HeaderEntry, StorageError> {
-    Ok(HeaderEntry {
-        name: document::opt_str(table, "name", path)?
-            .ok_or_else(|| StorageError::invalid(path, "name", "every header needs a name"))?,
-        value: document::opt_str(table, "value", path)?.unwrap_or_default(),
-        enabled: document::opt_bool(table, "enabled", path)?.unwrap_or(true),
-    })
+fn header_rows(headers: &[HeaderEntry]) -> Vec<Row> {
+    headers
+        .iter()
+        .map(|header| Row {
+            name: header.name.clone(),
+            value: header.value.clone(),
+            enabled: header.enabled,
+        })
+        .collect()
 }
 
 fn body_from(item: Option<&Item>, path: &Path) -> Result<Body, StorageError> {
@@ -155,12 +150,12 @@ fn apply(doc: &mut DocumentMut, request: &Request, path: &Path) -> Result<(), St
     document::set(table, "method", request.method.as_str());
     document::set(table, "url", request.url.as_str());
 
-    if before.headers != request.headers {
-        table.remove(HEADERS);
-        if !request.headers.is_empty() {
-            table.insert(HEADERS, headers_item(&request.headers));
-        }
-    }
+    rows::write(
+        table,
+        HEADERS,
+        &header_rows(&before.headers),
+        &header_rows(&request.headers),
+    );
     if before.body != request.body {
         table.remove(BODY);
         if let Some(item) = body_item(&request.body) {
@@ -168,18 +163,6 @@ fn apply(doc: &mut DocumentMut, request: &Request, path: &Path) -> Result<(), St
         }
     }
     Ok(())
-}
-
-fn headers_item(headers: &[HeaderEntry]) -> Item {
-    let mut tables = ArrayOfTables::new();
-    for header in headers {
-        let mut table = Table::new();
-        table.insert("name", toml_edit::value(header.name.as_str()));
-        table.insert("value", toml_edit::value(header.value.as_str()));
-        table.insert("enabled", toml_edit::value(header.enabled));
-        tables.push(table);
-    }
-    Item::ArrayOfTables(tables)
 }
 
 fn body_item(body: &Body) -> Option<Item> {

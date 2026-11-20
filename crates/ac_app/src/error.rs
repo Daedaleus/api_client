@@ -1,5 +1,6 @@
 //! Why a command or query cannot be carried out.
 
+use ac_domain::environment::UnresolvedVariable;
 use ac_domain::protocol::InvalidMethod;
 
 use crate::ports::StoreError;
@@ -23,6 +24,9 @@ pub enum AppError {
     /// A header name is not a token or its value contains a line break.
     #[error("invalid header {0:?}")]
     InvalidHeader(String),
+    /// A `{{name}}` without a value in the chosen environment (or none chosen).
+    #[error(transparent)]
+    UnresolvedVariable(#[from] UnresolvedVariable),
     /// The collection is not open.
     #[error("collection is not open")]
     UnknownCollection,
@@ -57,6 +61,9 @@ impl AppError {
             }
             Self::InvalidHeader(name) => {
                 UserText::new(keys::HEADER_INVALID).with("name", name.clone())
+            }
+            Self::UnresolvedVariable(UnresolvedVariable(name)) => {
+                UserText::new(keys::VARIABLE_UNKNOWN).with("name", name.clone())
             }
             Self::UnknownCollection => UserText::new(keys::UNKNOWN_COLLECTION),
             Self::UnknownItem => UserText::new(keys::UNKNOWN_ITEM),
