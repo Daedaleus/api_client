@@ -1,6 +1,7 @@
 # Checks the workspace on Windows, Linux and macOS with the same mise tasks
 # developers run locally (mise.toml). Formatting and test coverage run once
-# (Linux); clippy and tests on all three systems. Release builds, virus scans,
+# (Linux); clippy and tests on all three systems. The end-to-end smoke test
+# runs locally only for now (`mise run e2e`); CI is issue #24. Release builds, virus scans,
 # checksums and the GitHub release join once there is a program to ship (see
 # CLAUDE.md, "Releases").
 name: CI

@@ -37,6 +37,7 @@ The same tasks run locally and in CI, on Windows, Linux and macOS:
 | `mise run test` | All tests (cargo and Vitest) |
 | `mise run coverage` | Line coverage, at least 90 % each; reports in `target/llvm-cov/html/` and `apps/desktop/coverage/` |
 | `mise run audit` | Dependencies: advisories, licenses, sources (`deny.toml`) |
+| `mise run e2e` | Windows: release build, then drives the real window (send to a local server and to a closed port) – part of `ci` |
 | `mise run release` | Release build of the desktop app (`target/release/`) |
 | `mise run install` | Windows: release build, copy to `dist\` and a desktop shortcut "API Client" |
 | `mise run changelog` | Preview of the changelog for unreleased commits |
