@@ -1,0 +1,50 @@
+# Changelog from the commit messages (Conventional Commits with icon, see
+# CONTRIBUTING.md), generated with git-cliff for the release notes.
+# Preview of unreleased changes: git cliff --unreleased
+
+[changelog]
+header = ""
+# Groups carry an invisible number for ordering (<!-- 00 -->), which
+# `striptags` removes when displaying.
+body = """
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | striptags | trim }}
+{% for commit in commits %}
+- {% if commit.scope %}**{{ commit.scope }}:** {% endif %}\
+{{ commit.message | split(pat="\n") | first | trim | upper_first }}\
+{% if commit.breaking %} – **breaking change**{% endif %} \
+([{{ commit.id | truncate(length=7, end="") }}](https://github.com/Daedaleus/api_client/commit/{{ commit.id }}))
+{%- endfor %}
+{% endfor %}
+"""
+trim = true
+footer = ""
+
+[git]
+conventional_commits = true
+filter_unconventional = false
+split_commits = false
+commit_preprocessors = [
+    # Remove the icon after the colon – the heading shows it.
+    { pattern = '^(\w+(?:\([^)]*\))?!?: )[^\x00-\x7F]+ ', replace = "${1}" },
+]
+commit_parsers = [
+    { message = "^Merge ", skip = true },
+    # The version commit of a release does not belong in its list.
+    { message = "^chore\\(release\\)", skip = true },
+    { message = "^feat", group = "<!-- 00 -->✨ Features" },
+    { message = "^fix", group = "<!-- 01 -->🐛 Bug fixes" },
+    { message = "^perf", group = "<!-- 02 -->⚡️ Performance" },
+    { message = "^refactor", group = "<!-- 03 -->♻️ Refactoring" },
+    { message = "^docs", group = "<!-- 04 -->📝 Documentation" },
+    { message = "^test", group = "<!-- 05 -->✅ Tests" },
+    { message = "^build", group = "<!-- 06 -->📦️ Build and dependencies" },
+    { message = "^ci", group = "<!-- 07 -->👷 CI" },
+    { message = "^style", group = "<!-- 08 -->🎨 Style" },
+    { message = "^revert", group = "<!-- 09 -->⏪️ Reverts" },
+    { message = "^chore", group = "<!-- 10 -->🔧 Chores" },
+    { message = ".*", group = "<!-- 11 -->Other" },
+]
+protect_breaking_commits = true
+tag_pattern = "v[0-9].*"
+sort_commits = "oldest"

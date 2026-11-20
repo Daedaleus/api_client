@@ -1,0 +1,82 @@
+# Checks the workspace on Windows, Linux and macOS.
+# Formatting and test coverage run once (Linux); Clippy and tests on all
+# three systems. Release builds, virus scans, checksums and the GitHub
+# release join once there is a program to ship (see CLAUDE.md, "Releases").
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  fmt:
+    name: Formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - run: cargo fmt --all -- --check
+
+  check:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            os: windows-latest
+            optional: false
+          - name: Linux
+            os: ubuntu-latest
+            optional: false
+          - name: macOS
+            os: macos-latest
+            # GitHub often assigns macOS runners late or not at all; a failure
+            # there does not turn the run red (Windows and Linux do).
+            optional: true
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.optional }}
+    # Without cache Windows can take over 30 minutes once the app exists.
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Tests
+        run: cargo test --workspace --locked
+
+  coverage:
+    name: Test coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@cargo-llvm-cov
+      # Like coverage.ps1: user interfaces, program start and test helpers
+      # do not count.
+      - name: Measure coverage (at least 90 %)
+        run: >
+          cargo llvm-cov --workspace --lib --locked
+          --ignore-filename-regex '[\\/]apps[\\/]|[\\/]ac_testutil[\\/]|main\.rs$|[\\/]tests[\\/]'
+          --fail-under-lines 90
