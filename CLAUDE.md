@@ -261,7 +261,17 @@ language only determines how they are implemented idiomatically.
   secrets crate (age encryption, recipients), HTTP crate (sending, behind a
   trait), scripting crate (Python runtime, sandbox, checker/completion behind
   traits), import/export crate, app crate (UI), CLI crate.
-- **Open decisions** *(open)*: UI framework (e.g. egui, Iced, Slint, Tauri),
+- **Replaceable UI:** the user interface must be swappable. Everything below
+  the UI (domain, storage, secrets, HTTP, scripting incl. checker/completion)
+  lives in UI-agnostic crates; an application crate exposes use cases
+  (commands, queries, events) and view models as plain Rust types. A UI crate
+  only renders view models and sends commands – no domain logic, no direct
+  file or network access. A second UI (e.g. egui instead of Tauri) must be
+  possible without touching the crates below.
+- **UI framework (current direction):** Tauri 2 with a web frontend and
+  CodeMirror 6 as script editor; egui remains the fallback for a pure-Rust UI.
+  Not final until a prototype has been evaluated.
+- **Open decisions** *(open)*: final UI framework,
   license (e.g. MIT/Apache-2.0 dual or GPL-3.0), project name, Python runtime
   (embedded pure-Rust interpreter such as RustPython vs. CPython via PyO3 –
   trade-off: no system Python needed and easier sandboxing vs. full
@@ -270,5 +280,6 @@ language only determines how they are implemented idiomatically.
   stubs).
 - **Name caution:** "Bruno" and "Postman" are third-party names – use them only
   to describe compatibility/import, not as or in the project name or branding.
-- **Repository and branch:** local repository, branch `main`; no GitHub remote
-  yet *(open)*.
+- **Repository and branch:** <https://github.com/Daedaleus/api_client>
+  (public), branch `main`. "api_client" is the repository name; the product
+  name is still open.
