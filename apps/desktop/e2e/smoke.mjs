@@ -21,7 +21,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const TIMEOUT_MS = 60_000;
+const TIMEOUT_MS = 180_000;
+/** A fresh CI machine needs a while to set up the WebView2 profile. */
+const WINDOW_TIMEOUT_MS = 120_000;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const program = process.argv[2] ?? path.join(ROOT, 'target', 'release', 'api-client.exe');
 
@@ -100,17 +102,27 @@ app.on('error', (error) => finish(`cannot start ${program}: ${error.message}`));
 app.on('exit', (code) => (exitCode = code));
 
 let page;
-for (let attempt = 0; attempt < 120 && !page; attempt++) {
+let lastProbe = 'no answer yet';
+const started = Date.now();
+while (!page && Date.now() - started < WINDOW_TIMEOUT_MS) {
   await sleep(250);
   if (exitCode !== null) finish(`program exited during start (code ${exitCode})`);
   try {
     const targets = await (await fetch(`http://127.0.0.1:${debugPort}/json`)).json();
     page = targets.find((target) => target.type === 'page');
-  } catch {
+    lastProbe = `targets: ${JSON.stringify(targets.map((target) => target.type))}`;
+  } catch (error) {
     // WebView2 not up yet
+    lastProbe = `debug port: ${error.cause?.code ?? error.message}`;
   }
 }
-check(page, 'window opened');
+if (!page) {
+  finish(
+    `no window after ${(Date.now() - started) / 1000} s ` +
+      `(program running: ${exitCode === null}, ${lastProbe})`,
+  );
+}
+check(page, `window opened after ${((Date.now() - started) / 1000).toFixed(1)} s`);
 
 // --- DevTools connection ---------------------------------------------------
 
