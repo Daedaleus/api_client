@@ -6,10 +6,13 @@ issue forms (Bug report, Idea).
 
 ## Prerequisites
 
-- Rust (stable, edition 2024) via [rustup](https://rustup.rs)
-- Optional for coverage:
-  `rustup component add llvm-tools-preview` and
-  `cargo install cargo-llvm-cov --locked`
+- [rustup](https://rustup.rs). The Rust version is pinned in
+  `rust-toolchain.toml`; rustup installs it (with rustfmt, clippy and
+  llvm-tools) automatically on the first `cargo` call.
+- Optional for coverage: `cargo install cargo-llvm-cov --locked`
+- From milestone M1 (desktop app): Node.js in the version from
+  `.node-version` (any version manager that reads it: fnm, nvm, Volta,
+  mise); packages via `npm ci`, the Tauri CLI comes as a dev dependency.
 
 Once per clone, enable the commit message hook:
 

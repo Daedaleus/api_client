@@ -133,6 +133,14 @@ language only determines how they are implemented idiomatically.
   test server or a fake; time via an injectable clock; temporary folders.
 - Contract tests against real services allowed only as `#[ignore]` / manual.
 - Test data and helpers central (`testutil/`), tests separated per module.
+- **Frontend (TypeScript/Svelte) is tested too:** `svelte-check` with strict
+  TypeScript, ESLint/Prettier, Vitest for logic (stores, i18n, editor glue;
+  also ≥ 90 % lines) and Testing Library for component behaviour; the Rust
+  side is replaced by Tauri's `mockIPC`. A few end-to-end flows via
+  WebdriverIO + `tauri-driver`.
+- **Tool versions are pinned:** Rust in `rust-toolchain.toml`, Node in
+  `.node-version` (+ `engines`), npm packages via committed lock file and
+  `npm ci`, Tauri CLI as dev dependency; CI reads the same files.
 
 ## Before every commit
 
