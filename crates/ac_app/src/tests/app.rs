@@ -9,9 +9,12 @@ use crate::text::{UserText, keys};
 
 fn app(fake: FakeHttpSender) -> (App<Arc<FakeHttpSender>>, Arc<FakeHttpSender>) {
     let fake = Arc::new(fake);
-    let app = App::new(Ports {
-        http: Arc::clone(&fake),
-    });
+    let app = App::new(
+        Ports {
+            http: Arc::clone(&fake),
+        },
+        Handle::current(),
+    );
     (app, fake)
 }
 
@@ -51,6 +54,26 @@ async fn sending_reports_the_response_as_event() {
     let sent = fake.sent();
     assert_eq!(sent.len(), 1);
     assert_eq!(sent[0].url.as_str(), "http://example.com/a");
+}
+
+/// Regression: Tauri runs synchronous commands on the main thread, which has
+/// no Tokio runtime. Sending from there must work, not panic.
+#[tokio::test]
+async fn sending_works_from_a_thread_without_runtime() {
+    let (app, _) = app(FakeHttpSender::new().reply(Ok(response(204, "text/plain", ""))));
+    let mut events = app.subscribe();
+
+    let caller = app.clone();
+    let ack = std::thread::spawn(move || caller.execute(send("GET", "example.com")))
+        .join()
+        .expect("execute must not panic outside a runtime")
+        .unwrap();
+    let CommandAck::RunStarted { run_id } = ack;
+
+    let AppEvent::RunFinished {
+        run_id: finished, ..
+    } = next_event(&mut events).await;
+    assert_eq!(finished, run_id);
 }
 
 #[tokio::test]

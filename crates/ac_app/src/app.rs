@@ -3,6 +3,7 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
+use tokio::runtime::Handle;
 use tokio::sync::broadcast;
 
 use crate::command::{AppError, Command, CommandAck, RunId};
@@ -29,6 +30,9 @@ pub struct App<H> {
 
 struct Inner<H> {
     http: H,
+    /// Background work runs here, whichever thread calls `execute` – UIs
+    /// may call from threads without a runtime (Tauri: the main thread).
+    runtime: Handle,
     events: broadcast::Sender<AppEvent>,
     next_run: AtomicU64,
 }
@@ -42,13 +46,15 @@ impl<H> Clone for App<H> {
 }
 
 impl<H: HttpSender> App<H> {
-    /// Creates the application with its adapters.
+    /// Creates the application with its adapters; background work runs on
+    /// `runtime`.
     #[must_use]
-    pub fn new(ports: Ports<H>) -> Self {
+    pub fn new(ports: Ports<H>, runtime: Handle) -> Self {
         let (events, _) = broadcast::channel(EVENT_CAPACITY);
         Self {
             inner: Arc::new(Inner {
                 http: ports.http,
+                runtime,
                 events,
                 next_run: AtomicU64::new(1),
             }),
@@ -62,9 +68,7 @@ impl<H: HttpSender> App<H> {
     }
 
     /// Carries out a command. Long work continues in the background and
-    /// reports through [`App::subscribe`].
-    ///
-    /// Must be called within a Tokio runtime.
+    /// reports through [`App::subscribe`]. May be called from any thread.
     ///
     /// # Errors
     /// [`AppError`] if the command cannot be carried out as given.
@@ -78,7 +82,7 @@ impl<H: HttpSender> App<H> {
         let request = resolve_request(method, url)?;
         let run_id = RunId(self.inner.next_run.fetch_add(1, Ordering::Relaxed));
         let inner = Arc::clone(&self.inner);
-        tokio::spawn(async move {
+        self.inner.runtime.spawn(async move {
             let outcome = match inner.http.send(request).await {
                 Ok(response) => RunOutcomeView::Completed(ResponseView::from_response(&response)),
                 Err(error) => RunOutcomeView::Failed {

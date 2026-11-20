@@ -29,9 +29,15 @@ fn execute(app: State<'_, DesktopApp>, command: Command) -> Result<CommandAck, U
 pub fn run() {
     tauri::Builder::default()
         .setup(|tauri_app| {
-            let app = App::new(Ports {
-                http: ReqwestSender::new(DEFAULT_TIMEOUT)?,
-            });
+            // Commands run on the main thread; the app spawns its work on
+            // Tauri's Tokio runtime instead.
+            let runtime = tauri::async_runtime::handle().inner().clone();
+            let app = App::new(
+                Ports {
+                    http: ReqwestSender::new(DEFAULT_TIMEOUT)?,
+                },
+                runtime,
+            );
             tauri::async_runtime::spawn(forward_events(
                 tauri_app.handle().clone(),
                 app.subscribe(),
