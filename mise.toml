@@ -80,6 +80,15 @@ depends = ["release"]
 run_windows = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-desktop.ps1"
 run = "echo The desktop shortcut is only created on Windows; the program is in target/release."
 
+# Drives the real program: catches wiring errors unit tests cannot see
+# (threads, IPC, event names, permissions). Windows only for now (WebView2
+# DevTools protocol); Linux/macOS via tauri-driver is issue #7.
+[tasks.e2e]
+description = "End-to-end smoke test of the release build (Windows): send a request, check the window"
+depends = ["release"]
+run_windows = "node apps/desktop/e2e/smoke.mjs"
+run = "echo The end-to-end smoke test runs on Windows only for now."
+
 [tasks.changelog]
 description = "Preview the changelog of unreleased commits"
 run = "git cliff --unreleased"
@@ -90,4 +99,5 @@ run = [
     "mise run lint",
     "mise run test",
     "mise run coverage",
+    "mise run e2e",
 ]

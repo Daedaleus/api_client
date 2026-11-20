@@ -129,6 +129,13 @@ language only determines how they are implemented idiomatically.
 
 - New logic gets tests. **At least 90 % line coverage** excluding UI and
   program start; a script measures it, CI enforces it.
+- **Test the real program, not only its parts.** Unit tests cannot see how
+  the UI shell calls the application (threads, IPC, event names,
+  permissions) – a send that crashed the app passed every unit test. Every
+  user-visible flow gets a step in the end-to-end smoke test
+  (`apps/desktop/e2e/`, `mise run e2e`, CI job "End-to-end (Windows)");
+  "the app starts" is not a test of a feature. A bug found by hand first gets
+  a test that fails without the fix.
 - Tests touch **neither the internet nor real user data**: HTTP against a local
   test server or a fake; time via an injectable clock; temporary folders.
 - Contract tests against real services allowed only as `#[ignore]` / manual.
