@@ -56,7 +56,8 @@ A Cargo workspace; details and dependency rules in
 | `crates/ac_domain` | Domain model: requests, responses, protocol types. No I/O. |
 | `crates/ac_app` | Application layer: commands, events, view models, ports; test doubles behind the `testing` feature. |
 | `crates/ac_http` | HTTP adapter (reqwest). |
-| `crates/…` | Further crates join with their milestone (storage, secrets, scripting). |
+| `crates/ac_storage` | Collections as folders of TOML files (format: `docs/format/v1.md`); test data in `src/tests/fixtures/`. |
+| `crates/…` | Further crates join with their milestone (secrets, scripting). |
 | `apps/desktop` | Desktop app: Svelte 5 + TypeScript frontend (`src/`), Tauri shell (`src-tauri/`, crate `ac_desktop`). Only wiring and presentation. |
 | `locales/app.json` | All display texts in German and English, shared by Rust and the frontend. |
 | `spikes/` | Time-boxed experiments, not part of the workspace. |

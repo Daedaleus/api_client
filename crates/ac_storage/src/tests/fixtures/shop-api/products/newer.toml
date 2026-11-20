@@ -1,0 +1,8 @@
+format = "api-client/request"
+version = 2
+id = "0193a8f2-7c1e-7b40-9d3a-5f2c8e1b4a75"
+name = "From the future"
+
+[request]
+method = "GET"
+url = "https://example.com/future"

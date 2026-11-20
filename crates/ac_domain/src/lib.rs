@@ -6,8 +6,11 @@
 //! Modules:
 //! - [`protocol`]: values from the HTTP protocol (methods, status codes,
 //!   header names) as types.
+//! - [`collection`]: collections, folders and saved requests as the user
+//!   edits them.
 //! - [`exchange`]: one HTTP exchange – the request as sent and the response
 //!   as received.
 
+pub mod collection;
 pub mod exchange;
 pub mod protocol;

@@ -1,0 +1,5 @@
+format = "api-client/folder"
+version = 1
+id = "0193a8f2-7c1e-7b40-9d3a-5f2c8e1b4a71"
+name = "Products"
+order = ["list-products.toml"]

@@ -1,0 +1,6 @@
+# Example collection for the storage tests.
+format = "api-client/collection"
+version = 1
+id = "0193a8f2-7c1e-7b40-9d3a-5f2c8e1b4a70"
+name = "Shop API"
+order = ["products", "health.toml", "missing.toml"]

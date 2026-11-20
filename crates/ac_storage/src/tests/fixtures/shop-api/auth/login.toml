@@ -1,0 +1,15 @@
+format = "api-client/request"
+version = 1
+id = "0193a8f2-7c1e-7b40-9d3a-5f2c8e1b4a74"
+name = "Login"
+
+[request]
+method = "POST"
+url = "{{baseUrl}}/auth/login"
+headers = [{ name = "Content-Type", value = "application/json" }]
+
+[request.body]
+type = "json"
+content = '''
+{ "user": "demo" }
+'''
