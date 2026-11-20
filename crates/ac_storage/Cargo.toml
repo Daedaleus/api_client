@@ -1,0 +1,19 @@
+[package]
+name = "ac_storage"
+description = "Storage adapter: collections as folders of TOML files (format v1, docs/format/v1.md)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+ac_domain.workspace = true
+thiserror.workspace = true
+toml_edit.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

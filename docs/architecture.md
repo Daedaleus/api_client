@@ -105,9 +105,10 @@ switch also covers messages that are already shown.
 
 TOML, one file per request, comments and order preserved on save
 (`toml_edit`). Every file carries `version`; loading migrates in memory, files
-are rewritten only when the user saves. Damaged files are backed up and never
-overwritten; files from a newer version open read-only. Specification:
-`docs/format/` (M2).
+are rewritten only when the user saves, atomically (temporary file, then
+rename). Damaged files are reported, skipped and never overwritten; files from
+a newer version open read-only. Specification: [`docs/format/v1.md`](format/v1.md);
+implementation: `ac_storage`.
 
 ```
 my-api/

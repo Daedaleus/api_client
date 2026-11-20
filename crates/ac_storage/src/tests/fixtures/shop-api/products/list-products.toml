@@ -1,0 +1,19 @@
+# List all products - hand-written comment, must survive saving.
+format = "api-client/request"
+version = 1
+id = "0193a8f2-7c1e-7b40-9d3a-5f2c8e1b4a72"
+name = "List products"
+tags = ["read"] # unknown key, kept
+
+[request]
+method = "GET"
+url = "{{baseUrl}}/products?limit=20" # page size
+
+[[request.headers]]
+name = "Accept"
+value = "application/json"
+
+[[request.headers]]
+name = "X-Debug"
+value = "1"
+enabled = false

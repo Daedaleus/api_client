@@ -27,9 +27,12 @@ tauri = "2"
 tauri-build = "2"
 tauri-specta = { version = "=2.0.0-rc.29", features = ["derive", "typescript"] }
 thiserror = "2"
+toml_edit = "0.25"
 tokio = "1"
 url = "2"
+uuid = { version = "1", features = ["v7"] }
 wiremock = "0.6"
+tempfile = "3"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

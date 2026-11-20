@@ -6,3 +6,5 @@
 # PowerShell scripts with CRLF (and UTF-8 with BOM), otherwise Windows
 # PowerShell 5.1 shows umlauts wrongly.
 *.ps1 text eol=crlf
+# Test fixtures of the collection format: exact bytes matter.
+crates/ac_storage/src/tests/fixtures/** text eol=lf
