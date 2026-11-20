@@ -16,6 +16,7 @@ import type {
   ResponseView_Serialize,
   RunOutcomeView_Serialize,
   UserText,
+  VariableDraft_Serialize,
 } from './bindings';
 
 export type {
@@ -28,7 +29,6 @@ export type {
   StatusClassView as StatusClass,
   TreeItemView,
   UserText,
-  VariableDraft,
 } from './bindings';
 
 export type AppEvent = AppEvent_Serialize;
@@ -39,6 +39,8 @@ export type CollectionView = CollectionView_Serialize;
 export type EnvironmentDraft = EnvironmentDraft_Serialize;
 /** An environment as the editor sends it back. */
 export type EnvironmentDraftInput = EnvironmentDraft_Deserialize;
+/** A variable as the app reports it (secret values always empty). */
+export type VariableDraft = VariableDraft_Serialize;
 export type QueryResult = QueryResult_Serialize;
 /** A saved request as the editor receives it. */
 export type RequestDraft = RequestDraft_Serialize;

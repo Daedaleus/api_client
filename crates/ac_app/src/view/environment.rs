@@ -28,10 +28,14 @@ pub struct EnvironmentDraft {
 pub struct VariableDraft {
     /// Name used in `{{name}}`.
     pub name: String,
-    /// Value.
+    /// Value. For a secret always empty towards the UI (never shown); from
+    /// the UI a new value, or empty to keep the stored one.
     pub value: String,
     /// Used when sending.
     pub enabled: bool,
+    /// Stored encrypted (ADR S4).
+    #[serde(default)]
+    pub secret: bool,
 }
 
 /// The environment to resolve `{{variables}}` with when sending.
@@ -57,8 +61,13 @@ impl EnvironmentDraft {
                 .iter()
                 .map(|variable| VariableDraft {
                     name: variable.name.clone(),
-                    value: variable.value.clone(),
+                    value: if variable.secret {
+                        String::new()
+                    } else {
+                        variable.value.clone()
+                    },
                     enabled: variable.enabled,
+                    secret: variable.secret,
                 })
                 .collect(),
             read_only,
@@ -80,6 +89,7 @@ impl EnvironmentDraft {
                     name: variable.name.clone(),
                     value: variable.value.clone(),
                     enabled: variable.enabled,
+                    secret: variable.secret,
                 })
                 .collect(),
         })

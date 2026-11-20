@@ -35,8 +35,11 @@ fn environment_from(doc: &DocumentMut, path: &Path) -> Result<Environment, Stora
             .into_iter()
             .map(|row| Variable {
                 name: row.name,
-                value: row.value,
+                // A plain value next to `secret = true` is ignored (and
+                // dropped on the next save): secrets are never plain text.
+                value: if row.secret { String::new() } else { row.value },
                 enabled: row.enabled,
+                secret: row.secret,
             })
             .collect(),
     })
@@ -99,8 +102,14 @@ fn variable_rows(variables: &[Variable]) -> Vec<Row> {
         .iter()
         .map(|variable| Row {
             name: variable.name.clone(),
-            value: variable.value.clone(),
+            // Secret values are never written here (encrypted elsewhere).
+            value: if variable.secret {
+                String::new()
+            } else {
+                variable.value.clone()
+            },
             enabled: variable.enabled,
+            secret: variable.secret,
         })
         .collect()
 }

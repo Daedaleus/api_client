@@ -18,6 +18,10 @@ use crate::ports::{CollectionStore, Location, OpenedCollection, StoreError, Stor
 pub struct MemoryStore {
     collections: Mutex<HashMap<PathBuf, Collection>>,
     environments: Mutex<HashMap<PathBuf, Vec<Environment>>>,
+    /// Encrypted secrets by environment file.
+    secrets: Mutex<HashMap<PathBuf, Vec<u8>>>,
+    /// Recipients by collection root.
+    recipients: Mutex<HashMap<PathBuf, Vec<String>>>,
     read_only: Mutex<HashSet<ItemId>>,
     problems: Mutex<Vec<StoreError>>,
     fail_next: Mutex<Option<StoreError>>,
@@ -54,6 +58,33 @@ impl MemoryStore {
             .get(root)
             .cloned()
             .unwrap_or_default()
+    }
+
+    /// The encrypted secrets stored for the environment `id` in `root`.
+    #[must_use]
+    pub fn secrets(&self, root: &Path, id: ItemId) -> Option<Vec<u8>> {
+        lock(&self.secrets)
+            .get(&environment_path(root, id))
+            .cloned()
+    }
+
+    /// Stores encrypted secrets for the environment `id` in `root`.
+    pub fn set_secrets(&self, root: &Path, id: ItemId, data: Vec<u8>) {
+        lock(&self.secrets).insert(environment_path(root, id), data);
+    }
+
+    /// The recipients set up for the collection at `root`.
+    #[must_use]
+    pub fn recipients_of(&self, root: &Path) -> Vec<String> {
+        lock(&self.recipients)
+            .get(root)
+            .cloned()
+            .unwrap_or_default()
+    }
+
+    /// Sets the recipients of the collection at `root`.
+    pub fn set_recipients(&self, root: &Path, recipients: Vec<String>) {
+        lock(&self.recipients).insert(root.to_owned(), recipients);
     }
 
     /// Marks an item as read-only (e.g. from a newer format version).
@@ -206,6 +237,7 @@ impl CollectionStore for MemoryStore {
             if let Some(list) = lock(&self.environments).get_mut(&environments) {
                 list.retain(|environment| environment.id != id);
             }
+            lock(&self.secrets).remove(path);
             return Ok(());
         }
         self.with_items(parent_of(path), |items| {
@@ -231,6 +263,36 @@ impl CollectionStore for MemoryStore {
             .entry(root.to_owned())
             .or_default()
             .push(environment.clone());
+        Ok(())
+    }
+
+    fn read_secrets(&self, environment_file: &Path) -> Result<Option<Vec<u8>>, StoreError> {
+        self.check_failure()?;
+        Ok(lock(&self.secrets).get(environment_file).cloned())
+    }
+
+    fn write_secrets(
+        &self,
+        environment_file: &Path,
+        data: Option<&[u8]>,
+    ) -> Result<(), StoreError> {
+        self.check_failure()?;
+        let mut secrets = lock(&self.secrets);
+        match data {
+            Some(data) => secrets.insert(environment_file.to_owned(), data.to_vec()),
+            None => secrets.remove(environment_file),
+        };
+        Ok(())
+    }
+
+    fn recipients(&self, root: &Path) -> Result<Vec<String>, StoreError> {
+        self.check_failure()?;
+        Ok(self.recipients_of(root))
+    }
+
+    fn create_recipients(&self, root: &Path, recipients: &[String]) -> Result<(), StoreError> {
+        self.check_failure()?;
+        self.set_recipients(root, recipients.to_vec());
         Ok(())
     }
 }

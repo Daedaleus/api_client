@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { hasPlaceholders, preview, variableValues } from './variables';
+import { SECRET_MASK, hasPlaceholders, preview, variableValues } from './variables';
 
 describe('variables', () => {
   it('takes enabled variables by trimmed name, later rows winning', () => {
     const values = variableValues([
-      { name: ' host ', value: 'a', enabled: true },
-      { name: 'host', value: 'b', enabled: true },
-      { name: 'token', value: 'secret', enabled: false },
+      { name: ' host ', value: 'a', enabled: true, secret: false },
+      { name: 'host', value: 'b', enabled: true, secret: false },
+      { name: 'token', value: 'secret', enabled: false, secret: false },
     ]);
     expect([...values]).toEqual([['host', 'b']]);
   });
@@ -29,5 +29,10 @@ describe('variables', () => {
     expect(hasPlaceholders('{{host}}/x')).toBe(true);
     expect(hasPlaceholders('{{host')).toBe(false);
     expect(hasPlaceholders('plain')).toBe(false);
+  });
+
+  it('never shows secret values, not even ones just typed', () => {
+    const values = variableValues([{ name: 'token', value: 'typed', enabled: true, secret: true }]);
+    expect(preview('?t={{token}}', values).text).toBe(`?t=${SECRET_MASK}`);
   });
 });

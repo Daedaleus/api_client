@@ -23,6 +23,7 @@
     add: 'env.add_variable',
     remove: 'env.remove_variable',
     empty: 'env.no_variables',
+    secret: { toggle: 'env.variable_secret', placeholder: 'env.secret_placeholder' },
   };
 
   function submit(event: SubmitEvent) {

@@ -8,6 +8,9 @@
 //! enabled = false        # optional, default true
 //! ```
 //!
+//! Environment variables may be secret (`secret = true`); they have no
+//! `value` in the file – it is stored encrypted elsewhere.
+//!
 //! Inline arrays (`headers = [{ name = "A", value = "b" }]`) are read too;
 //! written are always arrays of tables, which diff best.
 
@@ -24,6 +27,8 @@ pub(crate) struct Row {
     pub name: String,
     pub value: String,
     pub enabled: bool,
+    /// Only variables: the value is stored encrypted, not in this file.
+    pub secret: bool,
 }
 
 /// Reads the rows in `item` (missing = none). `field` names the list in
@@ -51,6 +56,7 @@ fn row(table: &dyn TableLike, path: &Path) -> Result<Row, StorageError> {
             .ok_or_else(|| StorageError::invalid(path, "name", "every row needs a name"))?,
         value: document::opt_str(table, "value", path)?.unwrap_or_default(),
         enabled: document::opt_bool(table, "enabled", path)?.unwrap_or(true),
+        secret: document::opt_bool(table, "secret", path)?.unwrap_or(false),
     })
 }
 
@@ -68,7 +74,11 @@ pub(crate) fn write(table: &mut dyn TableLike, key: &str, before: &[Row], rows: 
     for row in rows {
         let mut entry = Table::new();
         entry.insert("name", toml_edit::value(row.name.as_str()));
-        entry.insert("value", toml_edit::value(row.value.as_str()));
+        if row.secret {
+            entry.insert("secret", toml_edit::value(true));
+        } else {
+            entry.insert("value", toml_edit::value(row.value.as_str()));
+        }
         entry.insert("enabled", toml_edit::value(row.enabled));
         tables.push(entry);
     }

@@ -7,21 +7,25 @@ fn staging() -> Environment {
             name: "baseUrl".into(),
             value: "https://staging.example.com".into(),
             enabled: true,
+            secret: false,
         },
         Variable {
             name: "token".into(),
             value: "old".into(),
             enabled: true,
+            secret: false,
         },
         Variable {
             name: " token ".into(),
             value: "new".into(),
             enabled: true,
+            secret: false,
         },
         Variable {
             name: "debug".into(),
             value: "1".into(),
             enabled: false,
+            secret: false,
         },
     ];
     environment
@@ -69,4 +73,16 @@ fn unknown_variables_are_reported() {
     .unwrap_err();
     assert_eq!(error, UnresolvedVariable("missing".into()));
     assert!(error.to_string().contains("not defined"));
+}
+
+#[test]
+fn secret_values_are_masked_in_debug_output() {
+    let mut environment = staging();
+    assert!(!environment.has_secrets());
+    environment.variables[1].secret = true;
+    assert!(environment.has_secrets());
+    let debug = format!("{environment:?}");
+    assert!(!debug.contains("\"old\""), "{debug}");
+    assert!(debug.contains("\"***\""));
+    assert!(debug.contains("\"https://staging.example.com\""));
 }

@@ -74,8 +74,28 @@ fn environments_go_through_the_port() {
         .collect();
     assert_eq!(names, ["Development", "Staging"]);
 
-    store.remove(&reopened.locations[&dev.id].path).unwrap();
+    let dev_file = &reopened.locations[&dev.id].path;
+    assert_eq!(store.read_secrets(dev_file).unwrap(), None);
+    store.write_secrets(dev_file, Some(b"armored")).unwrap();
+    assert_eq!(
+        store.read_secrets(dev_file).unwrap().as_deref(),
+        Some(&b"armored"[..])
+    );
+    store.write_secrets(dev_file, None).unwrap();
+    assert_eq!(store.read_secrets(dev_file).unwrap(), None);
+    assert!(root.join("secrets").join(".trashed-dev.age").is_file());
+    store.write_secrets(dev_file, None).unwrap();
+
+    // Removing an environment discards its secrets too.
+    store.write_secrets(dev_file, Some(b"armored")).unwrap();
+    store.remove(dev_file).unwrap();
     assert_eq!(store.open(&root).unwrap().environments.len(), 1);
+    assert!(!root.join("secrets").join("dev.age").exists());
+
+    assert_eq!(store.recipients(&root).unwrap(), Vec::<String>::new());
+    store.create_recipients(&root, &["age1me".into()]).unwrap();
+    assert_eq!(store.recipients(&root).unwrap(), ["age1me"]);
+    assert!(store.create_recipients(&root, &["age1me".into()]).is_err());
 
     let error = store
         .create_environment(&root.join("health.toml"), &Environment::new("x"))

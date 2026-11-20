@@ -40,7 +40,10 @@ export function shop(): CollectionView {
         id: 'e1',
         name: 'Dev',
         readOnly: false,
-        variables: [{ name: 'baseUrl', value: 'http://localhost:8080', enabled: true }],
+        variables: [
+          { name: 'baseUrl', value: 'http://localhost:8080', enabled: true, secret: false },
+          { name: 'token', value: '', enabled: true, secret: true },
+        ],
       },
     ],
     items: [

@@ -4,6 +4,8 @@
     name: string;
     value: string;
     enabled: boolean;
+    /** Only variables: the value is never shown (see `RowLabels.secret`). */
+    secret?: boolean;
   }
 
   /** Translation keys for the texts of one kind of row. */
@@ -14,18 +16,30 @@
     add: string;
     remove: string;
     empty: string;
+    /** Rows may be secret: a toggle per row, values masked. */
+    secret?: {
+      /** Label of the toggle. */
+      toggle: string;
+      /** Hint in the empty value field of a secret. */
+      placeholder: string;
+    };
   }
 </script>
 
 <script lang="ts">
   import Button from '../atoms/Button.svelte';
+  import Icon from '../atoms/Icon.svelte';
   import IconButton from '../atoms/IconButton.svelte';
   import { i18n } from '../../lib/i18n/i18n.svelte';
 
   let { rows = $bindable(), labels }: { rows: Row[]; labels: RowLabels } = $props();
 
   function add() {
-    rows.push({ name: '', value: '', enabled: true });
+    rows.push(
+      labels.secret
+        ? { name: '', value: '', enabled: true, secret: false }
+        : { name: '', value: '', enabled: true },
+    );
   }
 
   function remove(index: number) {
@@ -43,6 +57,11 @@
           </th>
           <th>{i18n.t(labels.name)}</th>
           <th>{i18n.t(labels.value)}</th>
+          {#if labels.secret}
+            <th class="rows-editor__toggle-cell">
+              <span class="rows-editor__hidden">{i18n.t(labels.secret.toggle)}</span>
+            </th>
+          {/if}
           <th><span class="rows-editor__hidden">{i18n.t(labels.remove)}</span></th>
         </tr>
       </thead>
@@ -68,12 +87,27 @@
             <td>
               <input
                 class="rows-editor__input"
-                type="text"
+                type={row.secret ? 'password' : 'text'}
                 spellcheck="false"
+                autocomplete="off"
                 aria-label={i18n.t(labels.value)}
+                placeholder={row.secret && labels.secret ? i18n.t(labels.secret.placeholder) : ''}
                 bind:value={row.value}
               />
             </td>
+            {#if labels.secret}
+              <td class="rows-editor__toggle-cell">
+                <label class="rows-editor__secret" title={i18n.t(labels.secret.toggle)}>
+                  <input
+                    type="checkbox"
+                    class="rows-editor__secret-input"
+                    aria-label={i18n.t(labels.secret.toggle)}
+                    bind:checked={row.secret}
+                  />
+                  <Icon name="lock" />
+                </label>
+              </td>
+            {/if}
             <td>
               <IconButton
                 icon="trash"
@@ -135,6 +169,32 @@
   .rows-editor__row--disabled .rows-editor__input {
     color: var(--color-muted);
     text-decoration: line-through;
+  }
+
+  .rows-editor__secret {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    color: var(--color-muted);
+    cursor: pointer;
+  }
+
+  .rows-editor__secret:has(:checked) {
+    background: var(--color-raised);
+    color: var(--color-accent);
+  }
+
+  .rows-editor__secret:has(:focus-visible) {
+    outline: 2px solid var(--color-accent);
+  }
+
+  .rows-editor__secret-input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
   }
 
   .rows-editor__empty {

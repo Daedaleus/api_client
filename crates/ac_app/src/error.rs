@@ -3,7 +3,7 @@
 use ac_domain::environment::UnresolvedVariable;
 use ac_domain::protocol::InvalidMethod;
 
-use crate::ports::StoreError;
+use crate::ports::{SecretError, StoreError};
 use crate::text::{UserText, keys};
 
 /// A command or query that cannot be carried out as given.
@@ -27,6 +27,17 @@ pub enum AppError {
     /// A `{{name}}` without a value in the chosen environment (or none chosen).
     #[error(transparent)]
     UnresolvedVariable(#[from] UnresolvedVariable),
+    /// A secret variable is used, but the secrets cannot be decrypted.
+    #[error("secret {name:?} unavailable: {reason}")]
+    SecretUnavailable {
+        /// The variable.
+        name: String,
+        /// Why it cannot be decrypted.
+        reason: SecretError,
+    },
+    /// Encrypting or decrypting secrets failed.
+    #[error(transparent)]
+    Secret(#[from] SecretError),
     /// The collection is not open.
     #[error("collection is not open")]
     UnknownCollection,
@@ -65,6 +76,12 @@ impl AppError {
             Self::UnresolvedVariable(UnresolvedVariable(name)) => {
                 UserText::new(keys::VARIABLE_UNKNOWN).with("name", name.clone())
             }
+            Self::SecretUnavailable {
+                name,
+                reason: SecretError::NoKey,
+            } => UserText::new(keys::SECRET_UNAVAILABLE).with("name", name.clone()),
+            Self::SecretUnavailable { reason, .. } => reason.user_text(),
+            Self::Secret(error) => error.user_text(),
             Self::UnknownCollection => UserText::new(keys::UNKNOWN_COLLECTION),
             Self::UnknownItem => UserText::new(keys::UNKNOWN_ITEM),
             Self::NotAFolder => UserText::new(keys::NOT_A_FOLDER),

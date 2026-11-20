@@ -21,10 +21,17 @@ pub const EXTENSION: &str = "toml";
 
 /// Folder names in the collection root that belong to later milestones
 /// (environments and secrets, M3) and are not part of the request tree.
-pub const RESERVED_ROOT_FOLDERS: [&str; 2] = [ENVIRONMENTS_FOLDER, "secrets"];
+pub const RESERVED_ROOT_FOLDERS: [&str; 2] = [ENVIRONMENTS_FOLDER, SECRETS_FOLDER];
 
 /// Folder in the collection root that holds the environment files.
 pub const ENVIRONMENTS_FOLDER: &str = "environments";
+/// Folder in the collection root with the encrypted secrets of each
+/// environment (`secrets/dev.age` belongs to `environments/dev.toml`).
+pub const SECRETS_FOLDER: &str = "secrets";
+/// Extension of encrypted secrets files.
+pub const SECRETS_EXTENSION: &str = "age";
+/// File in the collection root listing who secrets are encrypted for.
+pub const RECIPIENTS_FILE: &str = ".age-recipients";
 
 /// Body types in request files.
 pub mod body_type {

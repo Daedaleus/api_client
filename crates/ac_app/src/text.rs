@@ -50,6 +50,19 @@ pub mod keys {
     pub const HEADER_INVALID: &str = "error.header_invalid";
     /// A `{{name}}` has no value. Argument: `name`.
     pub const VARIABLE_UNKNOWN: &str = "error.variable_unknown";
+    /// A secret variable is used, but none of the user's keys can decrypt
+    /// it. Argument: `name`.
+    pub const SECRET_UNAVAILABLE: &str = "error.secret_unavailable";
+    /// None of the user's keys can decrypt the secrets.
+    pub const SECRET_NO_KEY: &str = "error.secret_no_key";
+    /// Nobody to encrypt the secrets for.
+    pub const SECRET_NO_RECIPIENTS: &str = "error.secret_no_recipients";
+    /// A line of `.age-recipients` is no public key. Argument: `recipient`.
+    pub const SECRET_INVALID_RECIPIENT: &str = "error.secret_invalid_recipient";
+    /// The encrypted secrets are damaged. Argument: `detail`.
+    pub const SECRET_DAMAGED: &str = "error.secret_damaged";
+    /// The user's own key cannot be read or created. Argument: `detail`.
+    pub const SECRET_KEY: &str = "error.secret_key";
     /// No answer in time.
     pub const TIMEOUT: &str = "error.timeout";
     /// No connection. Argument: `detail`.
@@ -78,13 +91,19 @@ pub mod keys {
 
     /// All keys with the names of their placeholders, checked against the
     /// translation file by a test.
-    pub const ALL: [(&str, &[&str]); 18] = [
+    pub const ALL: [(&str, &[&str]); 24] = [
         (URL_EMPTY, &[]),
         (URL_INVALID, &["reason"]),
         (URL_SCHEME, &["scheme"]),
         (METHOD_INVALID, &["method"]),
         (HEADER_INVALID, &["name"]),
         (VARIABLE_UNKNOWN, &["name"]),
+        (SECRET_UNAVAILABLE, &["name"]),
+        (SECRET_NO_KEY, &[]),
+        (SECRET_NO_RECIPIENTS, &[]),
+        (SECRET_INVALID_RECIPIENT, &["recipient"]),
+        (SECRET_DAMAGED, &["detail"]),
+        (SECRET_KEY, &["detail"]),
         (TIMEOUT, &[]),
         (CONNECT, &["detail"]),
         (REQUEST, &["detail"]),

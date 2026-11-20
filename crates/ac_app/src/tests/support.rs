@@ -12,15 +12,16 @@ use tokio::runtime::Handle;
 use crate::app::{App, Ports};
 use crate::command::{Command, CommandAck, Query, QueryResult};
 use crate::error::AppError;
-use crate::testing::{FakeHttpSender, MemoryStore};
+use crate::testing::{FakeHttpSender, FakeVault, MemoryStore};
 use crate::view::{CollectionView, RequestDraft, TreeItemView};
 
 /// `Shop` with `Auth/Login` and `Health`, and the environment `Dev`
 /// (`baseUrl`); opened in an app. Must be created inside a Tokio runtime.
 pub(crate) struct Fixture {
-    pub app: App<Arc<FakeHttpSender>, Arc<MemoryStore>>,
+    pub app: App<Arc<FakeHttpSender>, Arc<MemoryStore>, Arc<FakeVault>>,
     pub http: Arc<FakeHttpSender>,
     pub store: Arc<MemoryStore>,
+    pub vault: Arc<FakeVault>,
     pub root: PathBuf,
     pub collection: String,
     pub auth: String,
@@ -55,6 +56,7 @@ impl Fixture {
             name: "baseUrl".into(),
             value: "https://dev.example.com".into(),
             enabled: true,
+            secret: false,
         });
         let root = PathBuf::from("shop");
         let store = Arc::new(
@@ -63,10 +65,12 @@ impl Fixture {
                 .with_environment(&root, dev.clone()),
         );
         let http = Arc::new(http);
+        let vault = Arc::new(FakeVault::default());
         let app = App::new(
             Ports {
                 http: Arc::clone(&http),
                 store: Arc::clone(&store),
+                vault: Arc::clone(&vault),
             },
             Handle::current(),
         );
@@ -74,6 +78,7 @@ impl Fixture {
             app,
             http,
             store,
+            vault,
             root,
             collection: collection.id.to_string(),
             auth: auth.id.to_string(),

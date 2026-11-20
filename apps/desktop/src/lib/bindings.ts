@@ -320,7 +320,7 @@ export type EnvironmentDraft_Deserialize = {
 	/**  Display name. */
 	name: string,
 	/**  Variables in display order. */
-	variables: VariableDraft[],
+	variables: VariableDraft_Deserialize[],
 	/**  The file is never written (set by the app, ignored when saving). */
 	readOnly?: boolean,
 };
@@ -332,7 +332,7 @@ export type EnvironmentDraft_Serialize = {
 	/**  Display name. */
 	name: string,
 	/**  Variables in display order. */
-	variables: VariableDraft[],
+	variables: VariableDraft_Serialize[],
 	/**  The file is never written (set by the app, ignored when saving). */
 	readOnly: boolean,
 };
@@ -554,13 +554,36 @@ export type UserText = {
 };
 
 /**  A variable of an [`EnvironmentDraft`]. */
-export type VariableDraft = {
+export type VariableDraft = VariableDraft_Serialize | VariableDraft_Deserialize;
+
+/**  A variable of an [`EnvironmentDraft`]. */
+export type VariableDraft_Deserialize = {
 	/**  Name used in `{{name}}`. */
 	name: string,
-	/**  Value. */
+	/**
+	 *  Value. For a secret always empty towards the UI (never shown); from
+	 *  the UI a new value, or empty to keep the stored one.
+	 */
 	value: string,
 	/**  Used when sending. */
 	enabled: boolean,
+	/**  Stored encrypted (ADR S4). */
+	secret?: boolean,
+};
+
+/**  A variable of an [`EnvironmentDraft`]. */
+export type VariableDraft_Serialize = {
+	/**  Name used in `{{name}}`. */
+	name: string,
+	/**
+	 *  Value. For a secret always empty towards the UI (never shown); from
+	 *  the UI a new value, or empty to keep the stored one.
+	 */
+	value: string,
+	/**  Used when sending. */
+	enabled: boolean,
+	/**  Stored encrypted (ADR S4). */
+	secret: boolean,
 };
 
 /* Tauri Specta runtime */

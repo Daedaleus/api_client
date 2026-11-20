@@ -11,6 +11,16 @@ ignore = [
     # advisory is "unmaintained", not a vulnerability; it goes away when
     # specta replaces it.
     { id = "RUSTSEC-2024-0436", reason = "unmaintained, build-time only, via specta; no safe upgrade available" },
+    # The next three come with age (secrets, ADR S4); no fixed age release yet.
+    # rsa: only for ssh-rsa keys. The Marvin attack needs an attacker timing
+    # many RSA decryptions over the network; here a user's own key decrypts a
+    # local file once, nothing remote can trigger or time it.
+    { id = "RUSTSEC-2023-0071", reason = "via age (ssh-rsa); local decryption only, no network timing oracle" },
+    # crypto-bigint 0.5 via p256/hpke in age: only used for age's p256 "tag"
+    # recipients, which this app neither parses nor creates (x25519 and SSH).
+    { id = "RUSTSEC-2026-0387", reason = "via age p256 tag recipients, a code path this app never uses" },
+    # basic-toml: unmaintained, read at compile time by age's i18n macros.
+    { id = "RUSTSEC-2026-0374", reason = "unmaintained, build-time only, via age's i18n macros; no safe upgrade" },
 ]
 
 [licenses]

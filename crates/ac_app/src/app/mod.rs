@@ -5,10 +5,12 @@
 //! - `runs`: sending requests in the background.
 //! - `collections`: open collections and changes to them.
 //! - `environments`: environments of open collections.
+//! - `secrets`: secret variable values (decrypt for sending, encrypt on save).
 
 mod collections;
 mod environments;
 mod runs;
+mod secrets;
 
 use std::path::PathBuf;
 use std::sync::atomic::AtomicU64;
@@ -21,30 +23,33 @@ use tokio::sync::broadcast;
 use crate::command::{Command, CommandAck, Query, QueryResult};
 use crate::error::AppError;
 use crate::event::AppEvent;
-use crate::ports::{CollectionStore, HttpSender};
+use crate::ports::{CollectionStore, HttpSender, SecretVault};
 
 /// Events kept for slow subscribers before they start missing some.
 const EVENT_CAPACITY: usize = 64;
 
 /// The adapters the application works with.
-pub struct Ports<H, S> {
+pub struct Ports<H, S, V> {
     /// Sends HTTP requests.
     pub http: H,
     /// Reads and writes collections.
     pub store: S,
+    /// Encrypts and decrypts secrets.
+    pub vault: V,
 }
 
 /// The application: send [`Command`]s and [`Query`]s, receive
 /// [`AppEvent`]s.
 ///
 /// Cheap to clone; clones share state.
-pub struct App<H, S> {
-    inner: Arc<Inner<H, S>>,
+pub struct App<H, S, V> {
+    inner: Arc<Inner<H, S, V>>,
 }
 
-struct Inner<H, S> {
+struct Inner<H, S, V> {
     http: H,
     store: S,
+    vault: V,
     /// Background work runs here, whichever thread calls `execute` – UIs
     /// may call from threads without a runtime (Tauri: the main thread).
     runtime: Handle,
@@ -56,7 +61,7 @@ struct Inner<H, S> {
     open: Mutex<Vec<(ItemId, PathBuf)>>,
 }
 
-impl<H, S> Clone for App<H, S> {
+impl<H, S, V> Clone for App<H, S, V> {
     fn clone(&self) -> Self {
         Self {
             inner: Arc::clone(&self.inner),
@@ -64,16 +69,17 @@ impl<H, S> Clone for App<H, S> {
     }
 }
 
-impl<H: HttpSender, S: CollectionStore> App<H, S> {
+impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
     /// Creates the application with its adapters; background work runs on
     /// `runtime`.
     #[must_use]
-    pub fn new(ports: Ports<H, S>, runtime: Handle) -> Self {
+    pub fn new(ports: Ports<H, S, V>, runtime: Handle) -> Self {
         let (events, _) = broadcast::channel(EVENT_CAPACITY);
         Self {
             inner: Arc::new(Inner {
                 http: ports.http,
                 store: ports.store,
+                vault: ports.vault,
                 runtime,
                 events,
                 next_run: AtomicU64::new(1),

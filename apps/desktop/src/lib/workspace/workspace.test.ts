@@ -258,8 +258,13 @@ describe('Workspace', () => {
     expect(workspace.editing).toBeNull();
 
     workspace.editEnvironment('c1', 'e1');
-    workspace.editing!.draft.variables.push({ name: 'token', value: 't', enabled: true });
-    expect(workspace.collections.find('c1')?.environments[0]?.variables).toHaveLength(1);
+    workspace.editing!.draft.variables.push({
+      name: 'apiKey',
+      value: 't',
+      enabled: true,
+      secret: true,
+    });
+    expect(workspace.collections.find('c1')?.environments[0]?.variables).toHaveLength(2);
 
     api.answers.push({ fail: { key: 'error.write_failed', args: {} } });
     await workspace.saveEnvironment();
@@ -271,7 +276,10 @@ describe('Workspace', () => {
     expect(api.commands.at(-1)).toMatchObject({
       type: 'saveEnvironment',
       collectionId: 'c1',
-      environment: { id: 'e1', variables: [{ name: 'baseUrl' }, { name: 'token' }] },
+      environment: {
+        id: 'e1',
+        variables: [{ name: 'baseUrl' }, { name: 'token' }, { name: 'apiKey', secret: true }],
+      },
     });
     expect(workspace.editing).toBeNull();
     await workspace.saveEnvironment();

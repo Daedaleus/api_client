@@ -6,14 +6,15 @@ use std::sync::atomic::Ordering;
 
 use super::App;
 use super::environments::values;
+use super::secrets::explain;
 use crate::command::{CommandAck, RunId};
 use crate::error::AppError;
 use crate::event::AppEvent;
-use crate::ports::{CollectionStore, HttpSender};
+use crate::ports::{CollectionStore, HttpSender, SecretVault};
 use crate::resolve::resolve_request;
 use crate::view::{BodyDraft, EnvironmentRef, HeaderDraft, ResponseView, RunOutcomeView};
 
-impl<H: HttpSender, S: CollectionStore> App<H, S> {
+impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
     pub(super) fn send_request(
         &self,
         method: &str,
@@ -22,10 +23,11 @@ impl<H: HttpSender, S: CollectionStore> App<H, S> {
         body: &BodyDraft,
         environment: Option<&EnvironmentRef>,
     ) -> Result<CommandAck, AppError> {
-        let environment = self.environment(environment)?;
+        let unlocked = self.environment(environment)?;
         let headers: Vec<_> = headers.iter().map(HeaderDraft::to_entry).collect();
-        let variables = values(environment.as_ref());
-        let request = resolve_request(method, url, &headers, &body.to_body(), &variables)?;
+        let variables = values(unlocked.as_ref().map(|unlocked| &unlocked.environment));
+        let request = resolve_request(method, url, &headers, &body.to_body(), &variables)
+            .map_err(|error| explain(error, unlocked.as_ref()))?;
         let run_id = RunId(self.inner.next_run.fetch_add(1, Ordering::Relaxed));
         let inner = Arc::clone(&self.inner);
         self.inner.runtime.spawn(async move {

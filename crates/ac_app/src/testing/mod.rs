@@ -2,11 +2,14 @@
 //!
 //! - [`http`]: [`FakeHttpSender`] with queued replies.
 //! - [`store`]: [`MemoryStore`], collections kept in memory.
+//! - [`secrets`]: [`FakeVault`], readable "encryption" with fake keys.
 
 pub mod http;
+pub mod secrets;
 pub mod store;
 
 pub use http::{FakeHttpSender, response};
+pub use secrets::FakeVault;
 pub use store::MemoryStore;
 
 use std::sync::{Mutex, MutexGuard, PoisonError};
