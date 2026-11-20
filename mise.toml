@@ -1,0 +1,53 @@
+# Development tools and tasks for everyone: `mise install`, then `mise run ci`.
+# Rust itself is pinned in rust-toolchain.toml (installed by rustup), so plain
+# cargo works without mise too. Node joins with the desktop app (M1).
+#
+# Tasks are plain commands so they run the same in sh, cmd and PowerShell.
+
+[tools]
+"aqua:taiki-e/cargo-llvm-cov" = "0.9.1"
+cargo-deny = "0.21.0"
+git-cliff = "2.14.2"
+
+[tasks.fmt]
+description = "Format all code"
+run = "cargo fmt --all"
+
+[tasks.lint]
+description = "Check formatting and run clippy (warnings are errors)"
+run = [
+    "cargo fmt --all -- --check",
+    "cargo clippy --workspace --all-targets --locked -- -D warnings",
+]
+
+[tasks.test]
+description = "Run all tests"
+run = "cargo test --workspace --locked"
+
+# User interfaces (apps/), program start, test helpers and tests do not count.
+[tasks.coverage]
+description = "Measure line coverage (at least 90 %); HTML report in target/llvm-cov/html"
+run = [
+    'cargo llvm-cov --workspace --lib --locked --html --ignore-filename-regex "(apps|ac_testutil|tests)[^a-zA-Z0-9_]|main[.]rs$"',
+    'cargo llvm-cov report --summary-only --fail-under-lines 90 --ignore-filename-regex "(apps|ac_testutil|tests)[^a-zA-Z0-9_]|main[.]rs$"',
+]
+
+[tasks.audit]
+description = "Check dependencies: advisories, licenses, sources (deny.toml)"
+run = "cargo deny check advisories licenses bans sources"
+
+[tasks.release]
+description = "Build the release version"
+run = "cargo build --workspace --release --locked"
+
+[tasks.changelog]
+description = "Preview the changelog of unreleased commits"
+run = "git cliff --unreleased"
+
+[tasks.ci]
+description = "Everything CI checks; run before every commit"
+run = [
+    "mise run lint",
+    "mise run test",
+    "mise run coverage",
+]

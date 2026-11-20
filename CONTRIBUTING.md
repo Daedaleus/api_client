@@ -9,32 +9,36 @@ issue forms (Bug report, Idea).
 - [rustup](https://rustup.rs). The Rust version is pinned in
   `rust-toolchain.toml`; rustup installs it (with rustfmt, clippy and
   llvm-tools) automatically on the first `cargo` call.
-- Optional for coverage: `cargo install cargo-llvm-cov --locked`
-- From milestone M1 (desktop app): Node.js in the version from
-  `.node-version` (any version manager that reads it: fnm, nvm, Volta,
-  mise); packages via `npm ci`, the Tauri CLI comes as a dev dependency.
+- [mise](https://mise.jdx.dev) for the other tools and the tasks
+  (Windows: `winget install jdx.mise`). The versions are pinned in
+  `mise.toml`; from milestone M1 this includes Node.js, npm packages come via
+  `npm ci` and the Tauri CLI as a dev dependency.
 
-Once per clone, enable the commit message hook:
+Once per clone:
 
-```powershell
-git config core.hooksPath .githooks
+```sh
+git config core.hooksPath .githooks   # commit message hook
+mise trust                            # allow this repo's mise.toml
+mise install                          # tools in the pinned versions
 ```
 
 ## Build and test
 
-```powershell
-.\build.ps1             # formatting, clippy (-D warnings), tests
-.\build.ps1 -Coverage   # additionally test coverage (at least 90 %)
-.\coverage.ps1 -Open    # coverage report in the browser
-```
+The same tasks run locally and in CI, on Windows, Linux and macOS:
 
-On Linux/macOS run the same steps directly:
+| Command | What it does |
+|---|---|
+| `mise run ci` | Everything CI checks – run it before every commit |
+| `mise run fmt` | Format all code |
+| `mise run lint` | Check formatting, clippy with `-D warnings` |
+| `mise run test` | All tests |
+| `mise run coverage` | Line coverage, at least 90 %; report in `target/llvm-cov/html/index.html` |
+| `mise run audit` | Dependencies: advisories, licenses, sources (`deny.toml`) |
+| `mise run release` | Release build |
+| `mise run changelog` | Preview of the changelog for unreleased commits |
 
-```sh
-cargo fmt --all -- --check
-cargo clippy --workspace --all-targets --locked -- -D warnings
-cargo test --workspace --locked
-```
+`mise tasks` lists them all. Without mise, the plain `cargo` commands in
+`mise.toml` work as well.
 
 ## Structure
 
