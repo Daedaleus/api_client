@@ -53,6 +53,41 @@ fn the_port_reads_and_changes_collection_files() {
 }
 
 #[test]
+fn environments_go_through_the_port() {
+    let (_temp, root) = shop_api();
+    let store = store();
+    let opened = store.open(&root).unwrap();
+    let mut dev = opened.environments[0].clone();
+    dev.name = "Development".into();
+    store
+        .save_environment(&opened.locations[&dev.id].path, &dev)
+        .unwrap();
+    store
+        .create_environment(&root, &Environment::new("Staging"))
+        .unwrap();
+
+    let reopened = store.open(&root).unwrap();
+    let names: Vec<_> = reopened
+        .environments
+        .iter()
+        .map(|e| e.name.as_str())
+        .collect();
+    assert_eq!(names, ["Development", "Staging"]);
+
+    store.remove(&reopened.locations[&dev.id].path).unwrap();
+    assert_eq!(store.open(&root).unwrap().environments.len(), 1);
+
+    let error = store
+        .create_environment(&root.join("health.toml"), &Environment::new("x"))
+        .unwrap_err();
+    assert_eq!(error.kind, StoreErrorKind::Io);
+    let error = store
+        .save_environment(&root.join("products").join("broken.toml"), &dev)
+        .unwrap_err();
+    assert_eq!(error.kind, StoreErrorKind::Damaged);
+}
+
+#[test]
 fn collections_are_created_through_the_port() {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path().join("new");

@@ -1,16 +1,19 @@
 <script lang="ts">
   import AppHeader from '../components/organisms/AppHeader.svelte';
+  import EnvironmentPicker from '../components/molecules/EnvironmentPicker.svelte';
   import DialogHost from '../components/organisms/DialogHost.svelte';
+  import EnvironmentEditor from '../components/organisms/EnvironmentEditor.svelte';
   import RequestEditor from '../components/organisms/RequestEditor.svelte';
   import ResponseViewer from '../components/organisms/ResponseViewer.svelte';
   import Sidebar from '../components/organisms/Sidebar.svelte';
   import TabBar from '../components/organisms/TabBar.svelte';
   import type { Api } from '../lib/api';
+  import { variableValues } from '../lib/variables';
   import { Workspace } from '../lib/workspace/workspace.svelte';
 
   interface Props {
     api: Api;
-    /** Remembers the open collections for the next start. */
+    /** Remembers open collections and chosen environments for the next start. */
     storage: Pick<Storage, 'getItem' | 'setItem'> | null;
   }
 
@@ -53,17 +56,41 @@
       <TabBar {workspace} />
       {#if workspace.tabs.active}
         {@const tab = workspace.tabs.active}
+        {@const collection = workspace.collectionOf(tab)}
+        {@const chosen = workspace.environments.of(collection)}
         <div class="workspace-page__editor">
           <RequestEditor
             {tab}
-            onsend={() => workspace.tabs.send(tab)}
+            onsend={() => workspace.send(tab)}
             onsave={() => workspace.save(tab)}
-          />
+            variables={chosen ? variableValues(chosen.variables) : null}
+          >
+            {#snippet environment()}
+              {#if collection}
+                <EnvironmentPicker
+                  environments={collection.environments}
+                  chosen={chosen?.id ?? null}
+                  onchoose={(id) => workspace.environments.choose(collection.id, id)}
+                  onedit={(id) => workspace.editEnvironment(collection.id, id)}
+                  onnew={() => workspace.newEnvironment(collection.id)}
+                />
+              {/if}
+            {/snippet}
+          </RequestEditor>
           <ResponseViewer outcome={tab.outcome} sending={tab.sending} />
         </div>
       {/if}
     </main>
   </div>
+  {#if workspace.editing}
+    <EnvironmentEditor
+      draft={workspace.editing.draft}
+      error={workspace.collections.error}
+      onsave={() => workspace.saveEnvironment()}
+      oncancel={() => (workspace.editing = null)}
+      ondelete={() => workspace.deleteEnvironment()}
+    />
+  {/if}
   <DialogHost dialogs={workspace.dialogs} />
 </div>
 

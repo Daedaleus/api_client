@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use ac_domain::collection::{Collection, ItemId, Request};
+use ac_domain::environment::Environment;
 
 use crate::text::{UserText, keys};
 
@@ -49,11 +50,24 @@ pub trait CollectionStore: Send + Sync + 'static {
     /// If the folder settings are damaged, read-only or cannot be written.
     fn rename_folder(&self, dir: &Path, id: ItemId, name: &str) -> Result<(), StoreError>;
 
-    /// Moves a request file or folder to the trash (never deletes for good).
+    /// Moves a request file, folder or environment file to the trash (never
+    /// deletes for good).
     ///
     /// # Errors
     /// If it cannot be moved.
     fn remove(&self, path: &Path) -> Result<(), StoreError>;
+
+    /// Writes `environment` to its file, changing only what differs.
+    ///
+    /// # Errors
+    /// If the file is damaged, read-only or cannot be written.
+    fn save_environment(&self, file: &Path, environment: &Environment) -> Result<(), StoreError>;
+
+    /// Creates a file for `environment` in the collection `root`.
+    ///
+    /// # Errors
+    /// If the file cannot be written.
+    fn create_environment(&self, root: &Path, environment: &Environment) -> Result<(), StoreError>;
 }
 
 impl<T: CollectionStore> CollectionStore for Arc<T> {
@@ -78,6 +92,12 @@ impl<T: CollectionStore> CollectionStore for Arc<T> {
     fn remove(&self, path: &Path) -> Result<(), StoreError> {
         T::remove(self, path)
     }
+    fn save_environment(&self, file: &Path, environment: &Environment) -> Result<(), StoreError> {
+        T::save_environment(self, file, environment)
+    }
+    fn create_environment(&self, root: &Path, environment: &Environment) -> Result<(), StoreError> {
+        T::create_environment(self, root, environment)
+    }
 }
 
 /// A loaded collection with the place of every item.
@@ -87,7 +107,9 @@ pub struct OpenedCollection {
     pub root: PathBuf,
     /// The request tree.
     pub collection: Collection,
-    /// Where each item (collection, folder, request) lives.
+    /// Environments of the collection, sorted by name.
+    pub environments: Vec<Environment>,
+    /// Where each item (collection, folder, request, environment) lives.
     pub locations: HashMap<ItemId, Location>,
     /// Files that could not be loaded (they are left untouched).
     pub problems: Vec<StoreError>,

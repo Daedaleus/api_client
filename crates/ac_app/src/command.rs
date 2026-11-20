@@ -7,7 +7,9 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::view::{BodyDraft, CollectionView, HeaderDraft, RequestDraft};
+use crate::view::{
+    BodyDraft, CollectionView, EnvironmentDraft, EnvironmentRef, HeaderDraft, RequestDraft,
+};
 
 /// Something the user wants the application to do.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -30,6 +32,10 @@ pub enum Command {
         /// Body; JSON and text get a `Content-Type` unless a header sets one.
         #[serde(default)]
         body: BodyDraft,
+        /// Environment for `{{variables}}`; without one, placeholders are
+        /// an error.
+        #[serde(default)]
+        environment: Option<EnvironmentRef>,
     },
     /// Open the collection in a folder.
     OpenCollection {
@@ -82,12 +88,26 @@ pub enum Command {
         /// New display name.
         name: String,
     },
-    /// Move a folder or request to the trash.
+    /// Move a folder, request or environment to the trash.
     DeleteItem {
         /// The collection.
         collection_id: String,
-        /// The folder or request.
+        /// The folder, request or environment.
         item_id: String,
+    },
+    /// Create a new, empty environment.
+    CreateEnvironment {
+        /// The collection.
+        collection_id: String,
+        /// Display name.
+        name: String,
+    },
+    /// Save an environment edited in the editor (name and variables).
+    SaveEnvironment {
+        /// The collection.
+        collection_id: String,
+        /// The edited environment (identified by its id).
+        environment: EnvironmentDraft,
     },
 }
 

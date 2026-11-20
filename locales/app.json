@@ -84,6 +84,31 @@
     "de": "Kein gültiges JSON: {detail}",
     "en": "Not valid JSON: {detail}"
   },
+  "env.label": { "de": "Umgebung", "en": "Environment" },
+  "env.none": { "de": "Keine Umgebung", "en": "No environment" },
+  "env.new": { "de": "Neue Umgebung", "en": "New environment" },
+  "env.edit": { "de": "Umgebung bearbeiten", "en": "Edit environment" },
+  "env.title": { "de": "Umgebung bearbeiten", "en": "Edit environment" },
+  "env.delete": { "de": "Löschen", "en": "Delete" },
+  "env.read_only": {
+    "de": "Diese Datei hat ein neueres Format und wird nur angezeigt.",
+    "en": "This file has a newer format and is shown read-only."
+  },
+  "env.no_variables": { "de": "Keine Variablen.", "en": "No variables." },
+  "env.add_variable": { "de": "Variable hinzufügen", "en": "Add variable" },
+  "env.remove_variable": { "de": "Variable entfernen", "en": "Remove variable" },
+  "env.variable_enabled": { "de": "Aktiv", "en": "Active" },
+  "env.variable_name": { "de": "Variablenname", "en": "Variable name" },
+  "env.variable_value": { "de": "Wert", "en": "Value" },
+  "editor.preview": { "de": "Wird gesendet an: {url}", "en": "Sent to: {url}" },
+  "editor.variables_missing": {
+    "de": "Unbekannte Variablen: {names}",
+    "en": "Unknown variables: {names}"
+  },
+  "editor.variables_no_environment": {
+    "de": "Die URL enthält Variablen – bitte eine Umgebung wählen.",
+    "en": "The URL contains variables – please choose an environment."
+  },
   "dialog.name": { "de": "Name", "en": "Name" },
   "dialog.ok": { "de": "OK", "en": "OK" },
   "dialog.cancel": { "de": "Abbrechen", "en": "Cancel" },
@@ -100,6 +125,11 @@
     "de": "Ordner „{name}“ mit allem Inhalt in den Papierkorb verschieben?",
     "en": "Move folder “{name}” with all its contents to the trash?"
   },
+  "dialog.delete_environment": {
+    "de": "Umgebung „{name}“ in den Papierkorb verschieben?",
+    "en": "Move environment “{name}” to the trash?"
+  },
+  "dialog.new_environment": { "de": "Neue Umgebung", "en": "New environment" },
   "dialog.discard": { "de": "Änderungen verwerfen?", "en": "Discard changes?" },
   "dialog.discard_message": {
     "de": "Es gibt ungespeicherte Änderungen. Trotzdem schließen?",
@@ -114,6 +144,10 @@
   "error.header_invalid": {
     "de": "Der Header „{name}“ kann so nicht gesendet werden (ungültiger Name oder Zeilenumbruch im Wert).",
     "en": "Header “{name}” cannot be sent (invalid name or line break in the value)."
+  },
+  "error.variable_unknown": {
+    "de": "Die Variable „{name}“ ist in der gewählten Umgebung nicht definiert.",
+    "en": "Variable “{name}” is not defined in the chosen environment."
   },
   "error.method_invalid": {
     "de": "Ungültige Methode „{method}“.",

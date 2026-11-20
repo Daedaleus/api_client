@@ -8,6 +8,8 @@
 //      request in it is edited, saved to its file and sent,
 //   4. the same request as POST with a header and a JSON body: saved to the
 //      file and received by the server exactly as entered,
+//   5. with the collection's environment chosen, `{{baseUrl}}` in the URL is
+//      previewed and resolved when sending,
 // and the program is still running after each send.
 //
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
@@ -21,7 +23,7 @@
 // without it the test would fail while the app is open on the same machine.
 
 import { spawn, spawnSync } from 'node:child_process';
-import { cpSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import http from 'node:http';
 import net from 'node:net';
 import os from 'node:os';
@@ -132,8 +134,9 @@ server = http.createServer((request, response) => {
   });
 });
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-const okUrl = `http://127.0.0.1:${server.address().port}/json`;
-const echoUrl = `http://127.0.0.1:${server.address().port}/echo`;
+const origin = `http://127.0.0.1:${server.address().port}`;
+const okUrl = `${origin}/json`;
+const echoUrl = `${origin}/echo`;
 const closedUrl = `http://127.0.0.1:${await freePort()}/`;
 
 // --- Start the program -----------------------------------------------------
@@ -255,6 +258,10 @@ const clickTreeEntry = (name) => `(() => {
   return Boolean(entry);
 })()`;
 
+// The collection's environment "Dev" points at the test server (step 5).
+const devFile = path.join(collectionDir, 'environments', 'dev.toml');
+writeFileSync(devFile, readFileSync(devFile, 'utf8').replace('http://localhost:8080', origin));
+
 // The app reopens remembered collections on start: remember the copy, reload.
 await evaluate(`(() => {
   localStorage.setItem('openCollections', ${JSON.stringify(JSON.stringify([collectionDir]))});
@@ -274,7 +281,7 @@ await evaluate(`(() => {
   const input = document.querySelector('.url-bar__input');
   input.value = ${JSON.stringify(savedUrl)};
   input.dispatchEvent(new Event('input', { bubbles: true }));
-  document.querySelector('.request-editor__header button').click();
+  document.querySelector('.request-editor__header .button').click();
 })()`);
 const healthFile = path.join(collectionDir, 'health.toml');
 let saved = '';
@@ -304,11 +311,11 @@ const jsonBody = '{"price": 1.10}';
 await evaluate(setValue('.url-bar__select', 'POST', 'change'));
 await evaluate(setValue('.url-bar__input', echoUrl));
 // Headers section: add a row and fill it.
-await evaluate(`[...document.querySelectorAll('.headers-editor button')].at(-1).click()`);
-await waitFor(`document.querySelectorAll('.headers-editor__input').length === 2`, 'header row');
-await evaluate(setValue('.headers-editor__input', 'X-Client'));
+await evaluate(`[...document.querySelectorAll('.rows-editor button')].at(-1).click()`);
+await waitFor(`document.querySelectorAll('.rows-editor__input').length === 2`, 'header row');
+await evaluate(setValue('.rows-editor__input', 'X-Client'));
 await evaluate(`(() => {
-  const value = document.querySelectorAll('.headers-editor__input')[1];
+  const value = document.querySelectorAll('.rows-editor__input')[1];
   value.value = 'e2e';
   value.dispatchEvent(new Event('input', { bubbles: true }));
 })()`);
@@ -320,7 +327,7 @@ await waitFor(`!!document.querySelector('.body-editor__text')`, 'body text field
 await evaluate(setValue('.body-editor__text', jsonBody));
 steps.push('method, header and JSON body entered');
 
-await evaluate(`document.querySelector('.request-editor__header button').click()`);
+await evaluate(`document.querySelector('.request-editor__header .button').click()`);
 saved = '';
 for (let attempt = 0; attempt < 40 && !saved.includes('X-Client'); attempt++) {
   await sleep(250);
@@ -344,5 +351,34 @@ check(echoed.includes('"xClient": "e2e"'), 'header received by the server');
 check(echoed.includes('"contentType": "application/json"'), 'Content-Type set for the JSON body');
 check(echoed.includes('{\\"price\\": 1.10}'), 'body received exactly as entered');
 check(exitCode === null, 'program still running after sending headers and body');
+
+// --- 5. Environment and variables -------------------------------------------
+
+await evaluate(`(() => {
+  const select = document.querySelector('.environment-picker__select');
+  select.value = [...select.options].find((option) => option.text === 'Dev').value;
+  select.dispatchEvent(new Event('change', { bubbles: true }));
+})()`);
+await evaluate(setValue('.url-bar__select', 'GET', 'change'));
+await evaluate(setValue('.url-bar__input', '{{baseUrl}}/echo'));
+const previewed = await waitFor(
+  `(() => {
+    const text = document.querySelector('.request-editor__preview')?.textContent ?? '';
+    return text.includes(${JSON.stringify(echoUrl)}) ? text : null;
+  })()`,
+  'URL preview with the environment',
+);
+steps.push(`environment chosen, URL previewed: ${previewed.trim()}`);
+
+await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);
+const resolved = await waitFor(
+  `(() => {
+    const body = document.querySelector('.response__body')?.textContent ?? '';
+    return body.includes('"method": "GET"') ? body : null;
+  })()`,
+  'echo of the request sent with the environment',
+);
+check(resolved.length > 0, '{{baseUrl}} resolved from the environment when sending');
+check(exitCode === null, 'program still running after sending with an environment');
 
 finish(null);

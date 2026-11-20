@@ -35,6 +35,14 @@ export function shop(): CollectionView {
     name: 'Shop',
     root: 'C:\\apis\\shop',
     problems: [],
+    environments: [
+      {
+        id: 'e1',
+        name: 'Dev',
+        readOnly: false,
+        variables: [{ name: 'baseUrl', value: 'http://localhost:8080', enabled: true }],
+      },
+    ],
     items: [
       {
         kind: 'folder',

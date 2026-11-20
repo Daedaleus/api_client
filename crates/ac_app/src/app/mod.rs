@@ -4,8 +4,10 @@
 //!   commands and queries.
 //! - `runs`: sending requests in the background.
 //! - `collections`: open collections and changes to them.
+//! - `environments`: environments of open collections.
 
 mod collections;
+mod environments;
 mod runs;
 
 use std::path::PathBuf;
@@ -98,7 +100,8 @@ impl<H: HttpSender, S: CollectionStore> App<H, S> {
                 url,
                 headers,
                 body,
-            } => self.send_request(&method, &url, &headers, &body),
+                environment,
+            } => self.send_request(&method, &url, &headers, &body, environment.as_ref()),
             Command::OpenCollection { path } => self.open_collection(&path),
             Command::CreateCollection { path, name } => self.create_collection(&path, &name),
             Command::CloseCollection { collection_id } => self.close_collection(&collection_id),
@@ -125,6 +128,14 @@ impl<H: HttpSender, S: CollectionStore> App<H, S> {
                 collection_id,
                 item_id,
             } => self.delete_item(&collection_id, &item_id),
+            Command::CreateEnvironment {
+                collection_id,
+                name,
+            } => self.create_environment(&collection_id, &name),
+            Command::SaveEnvironment {
+                collection_id,
+                environment,
+            } => self.save_environment(&collection_id, &environment),
         }
     }
 

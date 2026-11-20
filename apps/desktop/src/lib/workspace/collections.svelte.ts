@@ -3,11 +3,14 @@
 
 import type { Api } from '../api';
 import { toUserText } from '../errors';
+import { type KeyValueStorage, readJson, writeJson } from '../storage';
 import type { ChangedCollection, CollectionView, Command, UserText } from '../types';
 
 const STORAGE_KEY = 'openCollections';
 
-type PathStorage = Pick<Storage, 'getItem' | 'setItem'>;
+function isPathList(value: unknown): value is string[] {
+  return Array.isArray(value);
+}
 
 export class CollectionsState {
   collections = $state<CollectionView[]>([]);
@@ -15,9 +18,9 @@ export class CollectionsState {
   error = $state<UserText | null>(null);
 
   readonly #api: Api;
-  readonly #storage: PathStorage | null;
+  readonly #storage: KeyValueStorage | null;
 
-  constructor(api: Api, storage: PathStorage | null) {
+  constructor(api: Api, storage: KeyValueStorage | null) {
     this.#api = api;
     this.#storage = storage;
   }
@@ -75,22 +78,16 @@ export class CollectionsState {
   }
 
   #storedPaths(): string[] {
-    try {
-      const value: unknown = JSON.parse(this.#storage?.getItem(STORAGE_KEY) ?? '[]');
-      return Array.isArray(value) ? value.filter((path) => typeof path === 'string') : [];
-    } catch {
-      return [];
-    }
+    return readJson(this.#storage, STORAGE_KEY, [], isPathList).filter(
+      (path) => typeof path === 'string',
+    );
   }
 
   #persist(): void {
-    try {
-      this.#storage?.setItem(
-        STORAGE_KEY,
-        JSON.stringify(this.collections.map((collection) => collection.root)),
-      );
-    } catch {
-      // Not remembered for the next start (storage disabled) – still open now.
-    }
+    writeJson(
+      this.#storage,
+      STORAGE_KEY,
+      this.collections.map((collection) => collection.root),
+    );
   }
 }

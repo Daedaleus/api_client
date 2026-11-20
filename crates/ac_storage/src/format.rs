@@ -4,6 +4,8 @@
 pub const COLLECTION_FORMAT: &str = "api-client/collection";
 /// `format` of `folder.toml`.
 pub const FOLDER_FORMAT: &str = "api-client/folder";
+/// `format` of environment files.
+pub const ENVIRONMENT_FORMAT: &str = "api-client/environment";
 /// `format` of request files.
 pub const REQUEST_FORMAT: &str = "api-client/request";
 
@@ -19,7 +21,10 @@ pub const EXTENSION: &str = "toml";
 
 /// Folder names in the collection root that belong to later milestones
 /// (environments and secrets, M3) and are not part of the request tree.
-pub const RESERVED_ROOT_FOLDERS: [&str; 2] = ["environments", "secrets"];
+pub const RESERVED_ROOT_FOLDERS: [&str; 2] = [ENVIRONMENTS_FOLDER, "secrets"];
+
+/// Folder in the collection root that holds the environment files.
+pub const ENVIRONMENTS_FOLDER: &str = "environments";
 
 /// Body types in request files.
 pub mod body_type {

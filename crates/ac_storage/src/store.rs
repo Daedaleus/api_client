@@ -5,10 +5,11 @@ use std::path::Path;
 
 use ac_app::ports::{CollectionStore, Location, OpenedCollection, StoreError, StoreErrorKind};
 use ac_domain::collection::{ItemId, Request};
+use ac_domain::environment::Environment;
 
 use crate::error::StorageError;
 use crate::load::{LoadedCollection, load_collection};
-use crate::{create, remove, request_file, settings};
+use crate::{create, environment_file, remove, request_file, settings};
 
 /// How removed items are discarded.
 pub type Discard = fn(&Path) -> std::io::Result<()>;
@@ -81,12 +82,23 @@ impl CollectionStore for FileStore {
     fn remove(&self, path: &Path) -> Result<(), StoreError> {
         remove::remove_item(path, self.discard).map_err(store_error)
     }
+
+    fn save_environment(&self, file: &Path, environment: &Environment) -> Result<(), StoreError> {
+        environment_file::save_environment(file, environment).map_err(store_error)
+    }
+
+    fn create_environment(&self, root: &Path, environment: &Environment) -> Result<(), StoreError> {
+        environment_file::create_environment(root, environment)
+            .map(|_| ())
+            .map_err(store_error)
+    }
 }
 
 fn opened(loaded: LoadedCollection) -> OpenedCollection {
     OpenedCollection {
         root: loaded.root,
         collection: loaded.collection,
+        environments: loaded.environments,
         locations: loaded
             .entries
             .into_iter()

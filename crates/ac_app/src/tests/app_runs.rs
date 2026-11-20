@@ -38,6 +38,7 @@ fn send(method: &str, url: &str) -> Command {
         url: url.into(),
         headers: Vec::new(),
         body: BodyDraft::None,
+        environment: None,
     }
 }
 
@@ -55,6 +56,7 @@ async fn headers_and_body_are_sent() {
         body: BodyDraft::Json {
             content: "{\"a\":1}".into(),
         },
+        environment: None,
     })
     .unwrap();
     tokio::task::yield_now().await;

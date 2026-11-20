@@ -5,9 +5,11 @@
 
 import type {
   AppEvent_Serialize,
-  CollectionView,
+  CollectionView_Serialize,
   CommandAck_Serialize,
   Command_Deserialize,
+  EnvironmentDraft_Deserialize,
+  EnvironmentDraft_Serialize,
   QueryResult_Serialize,
   RequestDraft_Deserialize,
   RequestDraft_Serialize,
@@ -19,18 +21,24 @@ import type {
 export type {
   BodyDraft,
   BodyView,
-  CollectionView,
+  EnvironmentRef,
   HeaderDraft,
   HeaderView,
   Query,
   StatusClassView as StatusClass,
   TreeItemView,
   UserText,
+  VariableDraft,
 } from './bindings';
 
 export type AppEvent = AppEvent_Serialize;
 export type Command = Command_Deserialize;
 export type CommandAck = CommandAck_Serialize;
+export type CollectionView = CollectionView_Serialize;
+/** An environment as the app reports it. */
+export type EnvironmentDraft = EnvironmentDraft_Serialize;
+/** An environment as the editor sends it back. */
+export type EnvironmentDraftInput = EnvironmentDraft_Deserialize;
 export type QueryResult = QueryResult_Serialize;
 /** A saved request as the editor receives it. */
 export type RequestDraft = RequestDraft_Serialize;

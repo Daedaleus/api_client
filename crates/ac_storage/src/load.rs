@@ -7,11 +7,13 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use ac_domain::collection::{Collection, Folder, Item, ItemId};
+use ac_domain::environment::Environment;
 
 use crate::document;
+use crate::environment_file::read_environment;
 use crate::error::{LoadProblem, StorageError};
 use crate::format::{
-    COLLECTION_FILE, COLLECTION_FORMAT, EXTENSION, FOLDER_FILE, FOLDER_FORMAT,
+    COLLECTION_FILE, COLLECTION_FORMAT, ENVIRONMENTS_FOLDER, EXTENSION, FOLDER_FILE, FOLDER_FORMAT,
     RESERVED_ROOT_FOLDERS, is_visible,
 };
 use crate::names::file_stem;
@@ -24,7 +26,9 @@ pub struct LoadedCollection {
     pub root: PathBuf,
     /// The request tree.
     pub collection: Collection,
-    /// Where each item (collection, folder, request) lives.
+    /// Environments, sorted by name.
+    pub environments: Vec<Environment>,
+    /// Where each item (collection, folder, request, environment) lives.
     pub entries: HashMap<ItemId, Entry>,
     /// Files and folders that could not be loaded.
     pub problems: Vec<LoadProblem>,
@@ -50,6 +54,8 @@ pub enum EntryKind {
     Folder,
     /// A request file.
     Request,
+    /// An environment file.
+    Environment,
 }
 
 /// Loads the collection in `root`.
@@ -81,9 +87,11 @@ pub fn load_collection(root: &Path) -> Result<LoadedCollection, StorageError> {
         },
     );
     let items = loader.items(root, &order, true);
+    let environments = loader.environments(&root.join(ENVIRONMENTS_FOLDER));
     Ok(LoadedCollection {
         root: root.to_owned(),
         collection: Collection { id, name, items },
+        environments,
         entries: loader.entries,
         problems: loader.problems,
     })
@@ -204,6 +212,43 @@ impl Loader {
             document::order(table, settings)?,
             parsed.read_only(),
         ))
+    }
+
+    /// The environment files in `dir` (missing folder = none), by name.
+    fn environments(&mut self, dir: &Path) -> Vec<Environment> {
+        if !dir.is_dir() {
+            return Vec::new();
+        }
+        let names = match Self::names(dir, false) {
+            Ok(names) => names,
+            Err(error) => {
+                self.problem(error);
+                return Vec::new();
+            }
+        };
+        let mut environments = Vec::new();
+        for name in names {
+            let path = dir.join(name);
+            if path.is_dir() {
+                continue;
+            }
+            match read_environment(&path) {
+                Ok((mut environment, read_only)) => {
+                    environment.id = self.unique(environment.id, &path);
+                    self.entries.insert(
+                        environment.id,
+                        Entry {
+                            path,
+                            kind: EntryKind::Environment,
+                            read_only,
+                        },
+                    );
+                    environments.push(environment);
+                }
+                Err(error) => self.problem(error),
+            }
+        }
+        environments
     }
 
     fn request(&mut self, path: &Path) -> Option<Item> {

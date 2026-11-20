@@ -8,9 +8,11 @@
 //!   header names) as types.
 //! - [`collection`]: collections, folders and saved requests as the user
 //!   edits them.
+//! - [`environment`]: environments, variables and `{{name}}` placeholders.
 //! - [`exchange`]: one HTTP exchange – the request as sent and the response
 //!   as received.
 
 pub mod collection;
+pub mod environment;
 pub mod exchange;
 pub mod protocol;
