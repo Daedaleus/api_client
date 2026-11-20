@@ -93,9 +93,14 @@ fn environments_go_through_the_port() {
     assert!(!root.join("secrets").join("dev.age").exists());
 
     assert_eq!(store.recipients(&root).unwrap(), Vec::<String>::new());
-    store.create_recipients(&root, &["age1me".into()]).unwrap();
+    store.write_recipients(&root, &["age1me".into()]).unwrap();
     assert_eq!(store.recipients(&root).unwrap(), ["age1me"]);
-    assert!(store.create_recipients(&root, &["age1me".into()]).is_err());
+    std::fs::create_dir_all(root.join("dir").join(".age-recipients")).unwrap();
+    assert!(
+        store
+            .write_recipients(&root.join("dir"), &["age1me".into()])
+            .is_err()
+    );
 
     let error = store
         .create_environment(&root.join("health.toml"), &Environment::new("x"))

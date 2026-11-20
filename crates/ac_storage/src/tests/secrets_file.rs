@@ -31,11 +31,11 @@ fn reads_and_writes_encrypted_secrets() {
 }
 
 #[test]
-fn recipients_are_listed_without_comments_and_never_replaced() {
+fn recipients_are_listed_without_comments_and_updated_keeping_them() {
     let (_temp, root) = shop_api();
     assert_eq!(read_recipients(&root).unwrap(), Vec::<String>::new());
 
-    create_recipients(&root, &["age1alice".to_owned()]).unwrap();
+    write_recipients(&root, &["age1alice".to_owned()]).unwrap();
     let text = read(&root.join(".age-recipients"));
     assert!(text.starts_with("# Public keys"), "{text}");
     assert_eq!(read_recipients(&root).unwrap(), ["age1alice"]);
@@ -49,8 +49,23 @@ fn recipients_are_listed_without_comments_and_never_replaced() {
         read_recipients(&root).unwrap(),
         ["age1alice", "ssh-ed25519 AAAA bob"]
     );
-    assert!(create_recipients(&root, &["age1eve".to_owned()]).is_err());
-    assert!(read(&root.join(".age-recipients")).contains("bob"));
+    write_recipients(
+        &root,
+        &[
+            "ssh-ed25519 AAAA bob".to_owned(),
+            " age1eve ".to_owned(),
+            "age1eve".to_owned(),
+        ],
+    )
+    .unwrap();
+    assert_eq!(
+        read(&root.join(".age-recipients")),
+        "# team\n\n  ssh-ed25519 AAAA bob  \nage1eve\n"
+    );
+
+    std::fs::write(root.join(".age-recipients"), "age1eve\nage1eve\n").unwrap();
+    write_recipients(&root, &["age1eve".to_owned()]).unwrap();
+    assert_eq!(read(&root.join(".age-recipients")), "age1eve\n");
 
     std::fs::create_dir_all(root.join("dir").join(".age-recipients")).unwrap();
     assert!(read_recipients(&root.join("dir")).is_err());

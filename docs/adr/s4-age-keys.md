@@ -41,9 +41,11 @@ never end up in the collection folder.
 
 ## Consequences
 
-- Managing recipients in the UI and re-encrypting when they change follow in
-  a separate step; until then `.age-recipients` is edited by hand and the
-  next save re-encrypts.
+- Recipients are managed in the app (key button next to the environment
+  picker): it shows the user's own public key to pass on, and saving a
+  changed list re-encrypts the secrets of every environment. This happens
+  all or nothing: if the user cannot decrypt one environment's secrets,
+  nothing changes. Comments in `.age-recipients` survive.
 - Renaming a secret variable needs its value entered again (values are
   matched by name).
 - `ac_secrets` implements the `SecretVault` port of `ac_app`; tests use a

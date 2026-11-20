@@ -3,6 +3,7 @@
   import EnvironmentPicker from '../components/molecules/EnvironmentPicker.svelte';
   import DialogHost from '../components/organisms/DialogHost.svelte';
   import EnvironmentEditor from '../components/organisms/EnvironmentEditor.svelte';
+  import RecipientsDialog from '../components/organisms/RecipientsDialog.svelte';
   import RequestEditor from '../components/organisms/RequestEditor.svelte';
   import ResponseViewer from '../components/organisms/ResponseViewer.svelte';
   import Sidebar from '../components/organisms/Sidebar.svelte';
@@ -73,6 +74,7 @@
                   onchoose={(id) => workspace.environments.choose(collection.id, id)}
                   onedit={(id) => workspace.editEnvironment(collection.id, id)}
                   onnew={() => workspace.newEnvironment(collection.id)}
+                  onrecipients={() => workspace.recipients.open(collection.id)}
                 />
               {/if}
             {/snippet}
@@ -90,6 +92,9 @@
       oncancel={() => (workspace.editing = null)}
       ondelete={() => workspace.deleteEnvironment()}
     />
+  {/if}
+  {#if workspace.recipients.editing}
+    <RecipientsDialog recipients={workspace.recipients} />
   {/if}
   <DialogHost dialogs={workspace.dialogs} />
 </div>

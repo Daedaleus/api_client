@@ -53,6 +53,9 @@ pub mod keys {
     /// A secret variable is used, but none of the user's keys can decrypt
     /// it. Argument: `name`.
     pub const SECRET_UNAVAILABLE: &str = "error.secret_unavailable";
+    /// Recipients not changed: an environment's secrets cannot be decrypted.
+    /// Argument: `environment`.
+    pub const SECRET_NOT_REENCRYPTED: &str = "error.secret_not_reencrypted";
     /// None of the user's keys can decrypt the secrets.
     pub const SECRET_NO_KEY: &str = "error.secret_no_key";
     /// Nobody to encrypt the secrets for.
@@ -91,7 +94,7 @@ pub mod keys {
 
     /// All keys with the names of their placeholders, checked against the
     /// translation file by a test.
-    pub const ALL: [(&str, &[&str]); 24] = [
+    pub const ALL: [(&str, &[&str]); 25] = [
         (URL_EMPTY, &[]),
         (URL_INVALID, &["reason"]),
         (URL_SCHEME, &["scheme"]),
@@ -99,6 +102,7 @@ pub mod keys {
         (HEADER_INVALID, &["name"]),
         (VARIABLE_UNKNOWN, &["name"]),
         (SECRET_UNAVAILABLE, &["name"]),
+        (SECRET_NOT_REENCRYPTED, &["environment"]),
         (SECRET_NO_KEY, &[]),
         (SECRET_NO_RECIPIENTS, &[]),
         (SECRET_INVALID_RECIPIENT, &["recipient"]),

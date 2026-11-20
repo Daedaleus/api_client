@@ -10,9 +10,11 @@
     onchoose: (environmentId: string | null) => void;
     onedit: (environmentId: string) => void;
     onnew: () => void;
+    /** Opens who secrets are encrypted for. */
+    onrecipients: () => void;
   }
 
-  let { environments, chosen, onchoose, onedit, onnew }: Props = $props();
+  let { environments, chosen, onchoose, onedit, onnew, onrecipients }: Props = $props();
 
   /** Value of the "no environment" option (ids are never empty). */
   const NONE = '';
@@ -37,6 +39,7 @@
     <IconButton icon="edit" label={i18n.t('env.edit')} onclick={() => onedit(chosen)} />
   {/if}
   <IconButton icon="plus" label={i18n.t('env.new')} onclick={onnew} />
+  <IconButton icon="key" label={i18n.t('env.recipients')} onclick={onrecipients} />
 </div>
 
 <style>

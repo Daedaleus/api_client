@@ -66,6 +66,14 @@ impl SecretVault for FakeVault {
         Ok(self.key.clone())
     }
 
+    fn check_recipient(&self, recipient: &str) -> Result<(), SecretError> {
+        if recipient.starts_with("age1") {
+            Ok(())
+        } else {
+            Err(SecretError::InvalidRecipient(recipient.to_owned()))
+        }
+    }
+
     fn encrypt(
         &self,
         values: &SecretValues,
@@ -75,8 +83,8 @@ impl SecretVault for FakeVault {
         if recipients.is_empty() {
             return Err(SecretError::NoRecipients);
         }
-        if let Some(invalid) = recipients.iter().find(|r| !r.starts_with("age1")) {
-            return Err(SecretError::InvalidRecipient(invalid.clone()));
+        for recipient in recipients {
+            self.check_recipient(recipient)?;
         }
         let recipients: Vec<&str> = recipients.iter().map(String::as_str).collect();
         Ok(Self::seal(values, &recipients))

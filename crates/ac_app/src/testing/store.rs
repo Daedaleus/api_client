@@ -290,7 +290,7 @@ impl CollectionStore for MemoryStore {
         Ok(self.recipients_of(root))
     }
 
-    fn create_recipients(&self, root: &Path, recipients: &[String]) -> Result<(), StoreError> {
+    fn write_recipients(&self, root: &Path, recipients: &[String]) -> Result<(), StoreError> {
         self.check_failure()?;
         self.set_recipients(root, recipients.to_vec());
         Ok(())

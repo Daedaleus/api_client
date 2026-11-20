@@ -92,7 +92,12 @@ fn rejects_missing_and_invalid_recipients() {
         vault.encrypt(&values(), &[]),
         Err(SecretError::NoRecipients)
     );
+    assert_eq!(vault.check_recipient(SSH_PUBLIC_KEY), Ok(()));
     for invalid in ["age1nope", "ssh-ed25519 nope", "alice@example.com"] {
+        assert_eq!(
+            vault.check_recipient(invalid),
+            Err(SecretError::InvalidRecipient(invalid.to_owned())),
+        );
         assert_eq!(
             vault.encrypt(&values(), &[invalid.to_owned()]),
             Err(SecretError::InvalidRecipient(invalid.to_owned())),

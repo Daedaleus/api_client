@@ -228,7 +228,17 @@ name: string } |
 /**  The collection. */
 collectionId: string; 
 /**  The edited environment (identified by its id). */
-environment: EnvironmentDraft_Deserialize };
+environment: EnvironmentDraft_Deserialize } | 
+/**
+ *  Set who the collection's secrets are encrypted for and re-encrypt
+ *  the secrets of every environment. Nothing changes if any of them
+ *  cannot be decrypted.
+ */
+{ type: "setRecipients"; 
+/**  The collection. */
+collectionId: string; 
+/**  Public keys (`age1…`, `ssh-ed25519 …`, `ssh-rsa …`). */
+recipients: string[] };
 
 /**  Something the user wants the application to do. */
 export type Command_Serialize = 
@@ -308,7 +318,17 @@ name: string } |
 /**  The collection. */
 collectionId: string; 
 /**  The edited environment (identified by its id). */
-environment: EnvironmentDraft_Serialize };
+environment: EnvironmentDraft_Serialize } | 
+/**
+ *  Set who the collection's secrets are encrypted for and re-encrypt
+ *  the secrets of every environment. Nothing changes if any of them
+ *  cannot be decrypted.
+ */
+{ type: "setRecipients"; 
+/**  The collection. */
+collectionId: string; 
+/**  Public keys (`age1…`, `ssh-ed25519 …`, `ssh-rsa …`). */
+recipients: string[] };
 
 /**  An environment with its variables. */
 export type EnvironmentDraft = EnvironmentDraft_Serialize | EnvironmentDraft_Deserialize;
@@ -374,7 +394,14 @@ collectionId: string } |
 /**  The collection. */
 collectionId: string; 
 /**  The request. */
-requestId: string };
+requestId: string } | 
+/**
+ *  Who the collection's secrets are encrypted for, and the user's own
+ *  public key (created on first use).
+ */
+{ type: "recipients"; 
+/**  The collection. */
+collectionId: string };
 
 /**  Answer to a [`Query`]. */
 export type QueryResult = QueryResult_Serialize | QueryResult_Deserialize;
@@ -388,7 +415,11 @@ collection: CollectionView_Deserialize } |
 /**  The request. */
 { type: "request"; 
 /**  The request. */
-request: RequestDraft_Deserialize };
+request: RequestDraft_Deserialize } | 
+/**  The recipients. */
+{ type: "recipients"; 
+/**  The recipients and the user's own key. */
+recipients: RecipientsView };
 
 /**  Answer to a [`Query`]. */
 export type QueryResult_Serialize = 
@@ -399,7 +430,19 @@ collection: CollectionView_Serialize } |
 /**  The request. */
 { type: "request"; 
 /**  The request. */
-request: RequestDraft_Serialize };
+request: RequestDraft_Serialize } | 
+/**  The recipients. */
+{ type: "recipients"; 
+/**  The recipients and the user's own key. */
+recipients: RecipientsView };
+
+/**  The recipients of a collection and the user's own public key. */
+export type RecipientsView = {
+	/**  The user's own public key, to pass on to the team. */
+	own: string,
+	/**  Public keys in `.age-recipients`, in file order. */
+	recipients: string[],
+};
 
 /**  A saved request as the editor shows and returns it. */
 export type RequestDraft = RequestDraft_Serialize | RequestDraft_Deserialize;

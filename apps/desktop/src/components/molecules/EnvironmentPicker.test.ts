@@ -7,7 +7,7 @@ import { shop } from '../../test/fake-api';
 import EnvironmentPicker from './EnvironmentPicker.svelte';
 
 function setup(chosen: string | null) {
-  const props = { onchoose: vi.fn(), onedit: vi.fn(), onnew: vi.fn() };
+  const props = { onchoose: vi.fn(), onedit: vi.fn(), onnew: vi.fn(), onrecipients: vi.fn() };
   render(EnvironmentPicker, { environments: shop().environments, chosen, ...props });
   return props;
 }
@@ -28,11 +28,13 @@ describe('EnvironmentPicker', () => {
   });
 
   it('edits the chosen environment and creates new ones', async () => {
-    const { onedit, onnew } = setup('e1');
+    const { onedit, onnew, onrecipients } = setup('e1');
     expect(screen.getByLabelText('Environment')).toHaveValue('e1');
     await userEvent.click(screen.getByRole('button', { name: 'Edit environment' }));
     expect(onedit).toHaveBeenCalledWith('e1');
     await userEvent.click(screen.getByRole('button', { name: 'New environment' }));
     expect(onnew).toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Secret recipients' }));
+    expect(onrecipients).toHaveBeenCalled();
   });
 });

@@ -97,7 +97,7 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
             return Ok(recipients);
         }
         let own = vec![self.inner.vault.own_recipient()?];
-        self.inner.store.create_recipients(root, &own)?;
+        self.inner.store.write_recipients(root, &own)?;
         Ok(own)
     }
 }

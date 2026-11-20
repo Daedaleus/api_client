@@ -6,9 +6,11 @@
 //! - `collections`: open collections and changes to them.
 //! - `environments`: environments of open collections.
 //! - `secrets`: secret variable values (decrypt for sending, encrypt on save).
+//! - `recipients`: who secrets are encrypted for, re-encrypting on change.
 
 mod collections;
 mod environments;
+mod recipients;
 mod runs;
 mod secrets;
 
@@ -142,6 +144,10 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
                 collection_id,
                 environment,
             } => self.save_environment(&collection_id, &environment),
+            Command::SetRecipients {
+                collection_id,
+                recipients,
+            } => self.set_recipients(&collection_id, &recipients),
         }
     }
 
@@ -156,6 +162,7 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
                 collection_id,
                 request_id,
             } => self.query_request(&collection_id, &request_id),
+            Query::Recipients { collection_id } => self.query_recipients(&collection_id),
         }
     }
 

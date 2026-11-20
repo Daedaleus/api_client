@@ -26,6 +26,7 @@ export type {
   HeaderDraft,
   HeaderView,
   Query,
+  RecipientsView,
   StatusClassView as StatusClass,
   TreeItemView,
   UserText,

@@ -68,6 +68,10 @@ impl SecretVault for AgeVault {
             .to_string())
     }
 
+    fn check_recipient(&self, recipient: &str) -> Result<(), SecretError> {
+        recipients::parse(recipient.trim()).map(drop)
+    }
+
     fn encrypt(
         &self,
         values: &SecretValues,
