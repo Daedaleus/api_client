@@ -9,6 +9,9 @@
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
 // No network access beyond 127.0.0.1; ends within TIMEOUT_MS.
 //
+// Local only for now: on GitHub's Windows runner the DevTools port never
+// opens. Running it in CI (Linux via tauri-driver) is issue #24.
+//
 // The program gets its own temporary WebView2 data folder: WebView2 refuses
 // to share a folder between instances started with different options, so
 // without it the test would fail while the app is open on the same machine.
@@ -64,6 +67,27 @@ function check(condition, message) {
   steps.push(message);
 }
 
+/**
+ * What WebView2 is doing when no window shows up: its processes with their
+ * start options, the ports they listen on, the session and the installed
+ * runtime version.
+ */
+function webviewDiagnostics() {
+  const script = `
+    $ErrorActionPreference = 'SilentlyContinue'
+    "--- session: $([Environment]::UserInteractive) interactive, session id $((Get-Process -Id $PID).SessionId)"
+    "--- WebView2 runtime:"
+    Get-ItemProperty 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}' | ForEach-Object pv
+    "--- program and WebView2 processes:"
+    $procs = Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'api-client.exe' -or ($_.Name -eq 'msedgewebview2.exe' -and $_.CommandLine -match 'api-client') }
+    $procs | ForEach-Object { "{0} pid {1} parent {2}: {3}" -f $_.Name, $_.ProcessId, $_.ParentProcessId, ($_.CommandLine -replace '\\s+', ' ').Substring(0, [Math]::Min(400, ($_.CommandLine -replace '\\s+', ' ').Length)) }
+    "--- listening ports of these processes:"
+    Get-NetTCPConnection -State Listen | Where-Object { $_.OwningProcess -in $procs.ProcessId } | ForEach-Object { "{0}:{1} pid {2}" -f $_.LocalAddress, $_.LocalPort, $_.OwningProcess }
+  `;
+  const result = spawnSync('powershell', ['-NoProfile', '-Command', script], { encoding: 'utf8' });
+  return `--- diagnostics ---\n${result.stdout}${result.stderr}`;
+}
+
 /** A TCP port nobody listens on (bound once, then released). */
 async function freePort() {
   const probe = net.createServer();
@@ -117,6 +141,7 @@ while (!page && Date.now() - started < WINDOW_TIMEOUT_MS) {
   }
 }
 if (!page) {
+  console.log(webviewDiagnostics());
   finish(
     `no window after ${(Date.now() - started) / 1000} s ` +
       `(program running: ${exitCode === null}, ${lastProbe})`,

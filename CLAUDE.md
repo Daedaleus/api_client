@@ -133,7 +133,9 @@ language only determines how they are implemented idiomatically.
   the UI shell calls the application (threads, IPC, event names,
   permissions) – a send that crashed the app passed every unit test. Every
   user-visible flow gets a step in the end-to-end smoke test
-  (`apps/desktop/e2e/`, `mise run e2e`, CI job "End-to-end (Windows)");
+  (`apps/desktop/e2e/`, `mise run e2e`, part of `mise run ci`; locally on
+  Windows only for now – running it in CI is issue #24, so run it before
+  every PR that touches the UI or its wiring);
   "the app starts" is not a test of a feature. A bug found by hand first gets
   a test that fails without the fix.
 - Tests touch **neither the internet nor real user data**: HTTP against a local
