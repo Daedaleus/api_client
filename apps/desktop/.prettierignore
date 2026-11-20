@@ -3,3 +3,4 @@ coverage/
 node_modules/
 src-tauri/
 package-lock.json
+src/lib/bindings.ts

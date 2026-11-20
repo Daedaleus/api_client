@@ -7,6 +7,10 @@ ignore = [
     # bindings Tauri uses on Linux (gtk-rs via webkit2gtk). It runs only at
     # compile time and needs a Tauri/wry upgrade to go away.
     { id = "RUSTSEC-2024-0370", reason = "build-time only, via Tauri's Linux GTK bindings; needs upstream upgrade" },
+    # paste is a build-time macro helper used by specta (typed bindings). The
+    # advisory is "unmaintained", not a vulnerability; it goes away when
+    # specta replaces it.
+    { id = "RUSTSEC-2024-0436", reason = "unmaintained, build-time only, via specta; no safe upgrade available" },
 ]
 
 [licenses]

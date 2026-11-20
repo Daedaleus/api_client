@@ -11,6 +11,7 @@ use crate::text::{UserText, keys};
 
 /// Something the user wants the application to do.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(
     tag = "type",
     rename_all = "camelCase",
@@ -28,11 +29,13 @@ pub enum Command {
 
 /// Identifies one sending of a request, so the UI can match the result.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(transparent)]
 pub struct RunId(pub u64);
 
 /// Immediate answer to a [`Command`].
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(
     tag = "type",
     rename_all = "camelCase",

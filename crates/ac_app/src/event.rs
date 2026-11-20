@@ -9,6 +9,7 @@ use crate::view::RunOutcomeView;
 
 /// Something happened that a UI may want to show.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(
     tag = "type",
     rename_all = "camelCase",

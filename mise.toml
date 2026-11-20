@@ -39,14 +39,19 @@ depends = ["web:install"]
 run = ["cargo fmt --all", "npm --prefix apps/desktop run format"]
 
 [tasks.lint]
-description = "Check formatting, clippy (warnings are errors), types and ESLint"
+description = "Check formatting, clippy (warnings are errors), bindings, types and ESLint"
 depends = ["web:build"]
 run = [
     "cargo fmt --all -- --check",
     "cargo clippy --workspace --all-targets --locked -- -D warnings",
+    "cargo run -q -p ac_desktop --bin bindings --locked -- --check",
     "npm --prefix apps/desktop run check",
     "npm --prefix apps/desktop run lint",
 ]
+
+[tasks.bindings]
+description = "Regenerate the TypeScript bindings from the Rust types (apps/desktop/src/lib/bindings.ts)"
+run = "cargo run -q -p ac_desktop --bin bindings -- --write"
 
 [tasks.test]
 description = "Run all tests (Rust and frontend)"

@@ -12,6 +12,7 @@ const INDENT: &str = "  ";
 
 /// What the UI shows of a body.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "camelCase")]
 pub struct BodyView {
     /// Text to show (empty for binary bodies).

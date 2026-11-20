@@ -10,6 +10,7 @@ use serde::Serialize;
 
 /// A display text: translation key plus named arguments for its placeholders.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct UserText {
     /// Key in `locales/app.json`, e.g. `error.connect`.
     pub key: &'static str,

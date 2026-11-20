@@ -11,7 +11,7 @@ fn response_view_has_status_timing_size_headers_and_body() {
     let view = ResponseView::from_response(&response(404, "application/json", r#"{"a":1}"#));
     assert_eq!(view.status, 404);
     assert_eq!(view.reason, Some("Not Found"));
-    assert_eq!(view.status_class, "clientError");
+    assert_eq!(view.status_class, StatusClassView::ClientError);
     assert_eq!(view.elapsed_ms, 7);
     assert_eq!(view.size_bytes, 7);
     assert_eq!(view.headers[0].name, "Content-Type");
@@ -22,7 +22,10 @@ fn response_view_has_status_timing_size_headers_and_body() {
 fn every_status_class_has_a_name() {
     let names: Vec<_> = [101, 200, 302, 400, 500, 600]
         .into_iter()
-        .map(|code| class_name(StatusCode::new(code).unwrap().class()))
+        .map(|code| {
+            let class = StatusClassView::from(StatusCode::new(code).unwrap().class());
+            serde_json::to_value(class).unwrap()
+        })
         .collect();
     assert_eq!(
         names,
