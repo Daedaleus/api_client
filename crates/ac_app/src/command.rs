@@ -7,7 +7,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::view::{CollectionView, RequestDraft};
+use crate::view::{BodyDraft, CollectionView, HeaderDraft, RequestDraft};
 
 /// Something the user wants the application to do.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -24,6 +24,12 @@ pub enum Command {
         method: String,
         /// URL as entered; `http://` is assumed when no scheme is given.
         url: String,
+        /// Header rows; disabled rows and rows without a name are not sent.
+        #[serde(default)]
+        headers: Vec<HeaderDraft>,
+        /// Body; JSON and text get a `Content-Type` unless a header sets one.
+        #[serde(default)]
+        body: BodyDraft,
     },
     /// Open the collection in a folder.
     OpenCollection {

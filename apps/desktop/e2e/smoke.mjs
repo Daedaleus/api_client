@@ -6,6 +6,8 @@
 //   2. a request to a closed port shows a failure message,
 //   3. a collection (copy of the storage test fixture) opens as a tree; a
 //      request in it is edited, saved to its file and sent,
+//   4. the same request as POST with a header and a JSON body: saved to the
+//      file and received by the server exactly as entered,
 // and the program is still running after each send.
 //
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
@@ -108,13 +110,30 @@ async function freePort() {
 
 // --- Local test server -----------------------------------------------------
 
-server = http.createServer((_request, response) => {
+server = http.createServer((request, response) => {
   response.setHeader('Content-Type', 'application/json');
   response.setHeader('X-Test', 'e2e');
-  response.end('{"hello":"world","price":1.10,"items":[1,2]}');
+  if (!request.url.startsWith('/echo')) {
+    response.end('{"hello":"world","price":1.10,"items":[1,2]}');
+    return;
+  }
+  // /echo: what arrived, so the test can check headers and body were sent.
+  let received = '';
+  request.on('data', (chunk) => (received += chunk));
+  request.on('end', () => {
+    response.end(
+      JSON.stringify({
+        method: request.method,
+        contentType: request.headers['content-type'] ?? null,
+        xClient: request.headers['x-client'] ?? null,
+        body: received,
+      }),
+    );
+  });
 });
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const okUrl = `http://127.0.0.1:${server.address().port}/json`;
+const echoUrl = `http://127.0.0.1:${server.address().port}/echo`;
 const closedUrl = `http://127.0.0.1:${await freePort()}/`;
 
 // --- Start the program -----------------------------------------------------
@@ -270,5 +289,60 @@ await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`)
 const savedStatus = await waitFor(text('.response__status'), 'response of the saved request');
 check(savedStatus.startsWith('200'), `saved request sent: ${savedStatus}`);
 check(exitCode === null, 'program still running after saving and sending');
+
+// --- 4. Headers and body ------------------------------------------------------
+
+/** Sets a form control's value the way typing would. */
+const setValue = (selector, value, event = 'input') => `(() => {
+  const element = document.querySelector(${JSON.stringify(selector)});
+  element.value = ${JSON.stringify(value)};
+  element.dispatchEvent(new Event(${JSON.stringify(event)}, { bubbles: true }));
+  return true;
+})()`;
+
+const jsonBody = '{"price": 1.10}';
+await evaluate(setValue('.url-bar__select', 'POST', 'change'));
+await evaluate(setValue('.url-bar__input', echoUrl));
+// Headers section: add a row and fill it.
+await evaluate(`[...document.querySelectorAll('.headers-editor button')].at(-1).click()`);
+await waitFor(`document.querySelectorAll('.headers-editor__input').length === 2`, 'header row');
+await evaluate(setValue('.headers-editor__input', 'X-Client'));
+await evaluate(`(() => {
+  const value = document.querySelectorAll('.headers-editor__input')[1];
+  value.value = 'e2e';
+  value.dispatchEvent(new Event('input', { bubbles: true }));
+})()`);
+// Body section: JSON with a number that must arrive exactly as typed.
+await evaluate(`document.querySelectorAll('.request-editor__section')[1].click()`);
+await waitFor(`!!document.querySelector('input[name=body-kind][value=json]')`, 'body section');
+await evaluate(`document.querySelector('input[name=body-kind][value=json]').click()`);
+await waitFor(`!!document.querySelector('.body-editor__text')`, 'body text field');
+await evaluate(setValue('.body-editor__text', jsonBody));
+steps.push('method, header and JSON body entered');
+
+await evaluate(`document.querySelector('.request-editor__header button').click()`);
+saved = '';
+for (let attempt = 0; attempt < 40 && !saved.includes('X-Client'); attempt++) {
+  await sleep(250);
+  saved = readFileSync(healthFile, 'utf8');
+}
+check(
+  saved.includes('method = "POST"') && saved.includes('[[request.headers]]'),
+  'method and header saved to health.toml',
+);
+check(saved.includes('type = "json"') && saved.includes('1.10'), 'JSON body saved to health.toml');
+
+await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);
+const echoed = await waitFor(
+  `(() => {
+    const body = document.querySelector('.response__body')?.textContent ?? '';
+    return body.includes('"method": "POST"') ? body : null;
+  })()`,
+  'echo of the sent request',
+);
+check(echoed.includes('"xClient": "e2e"'), 'header received by the server');
+check(echoed.includes('"contentType": "application/json"'), 'Content-Type set for the JSON body');
+check(echoed.includes('{\\"price\\": 1.10}'), 'body received exactly as entered');
+check(exitCode === null, 'program still running after sending headers and body');
 
 finish(null);

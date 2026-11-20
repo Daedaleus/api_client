@@ -6,6 +6,10 @@ import { i18n } from '../lib/i18n/i18n.svelte';
 import { FakeApi, changed, memoryStorage, shop } from '../test/fake-api';
 import WorkspacePage from './WorkspacePage.svelte';
 
+/** The tabs of open requests (not the sections inside the editor). */
+const openTabs = () =>
+  within(screen.getByRole('tablist', { name: 'Open requests' })).getAllByRole('tab');
+
 /** The page with `Shop` restored from the last session. */
 async function setup() {
   const api = new FakeApi();
@@ -84,9 +88,9 @@ describe('WorkspacePage', () => {
     await setup();
     expect(screen.getByText(/Not saved/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'New tab' }));
-    expect(screen.getAllByRole('tab')).toHaveLength(2);
+    expect(openTabs()).toHaveLength(2);
     await userEvent.click(screen.getAllByRole('button', { name: 'Close tab' })[0]!);
-    expect(screen.getAllByRole('tab')).toHaveLength(1);
+    expect(openTabs()).toHaveLength(1);
   });
 
   it('shows load problems and errors of the collection', async () => {

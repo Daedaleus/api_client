@@ -10,11 +10,18 @@ use crate::error::AppError;
 use crate::event::AppEvent;
 use crate::ports::{CollectionStore, HttpSender};
 use crate::resolve::resolve_request;
-use crate::view::{ResponseView, RunOutcomeView};
+use crate::view::{BodyDraft, HeaderDraft, ResponseView, RunOutcomeView};
 
 impl<H: HttpSender, S: CollectionStore> App<H, S> {
-    pub(super) fn send_request(&self, method: &str, url: &str) -> Result<CommandAck, AppError> {
-        let request = resolve_request(method, url)?;
+    pub(super) fn send_request(
+        &self,
+        method: &str,
+        url: &str,
+        headers: &[HeaderDraft],
+        body: &BodyDraft,
+    ) -> Result<CommandAck, AppError> {
+        let headers: Vec<_> = headers.iter().map(HeaderDraft::to_entry).collect();
+        let request = resolve_request(method, url, &headers, &body.to_body())?;
         let run_id = RunId(self.inner.next_run.fetch_add(1, Ordering::Relaxed));
         let inner = Arc::clone(&self.inner);
         self.inner.runtime.spawn(async move {

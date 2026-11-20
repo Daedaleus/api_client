@@ -36,6 +36,8 @@ pub struct ResolvedRequest {
     pub url: Url,
     /// Headers in the order they are sent.
     pub headers: Vec<Header>,
+    /// Body bytes, if the request has a body.
+    pub body: Option<Vec<u8>>,
 }
 
 /// A response as received.

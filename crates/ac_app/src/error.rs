@@ -20,6 +20,9 @@ pub enum AppError {
     /// The URL uses a scheme other than http or https.
     #[error("unsupported URL scheme {0:?}")]
     UnsupportedScheme(String),
+    /// A header name is not a token or its value contains a line break.
+    #[error("invalid header {0:?}")]
+    InvalidHeader(String),
     /// The collection is not open.
     #[error("collection is not open")]
     UnknownCollection,
@@ -51,6 +54,9 @@ impl AppError {
             }
             Self::UnsupportedScheme(scheme) => {
                 UserText::new(keys::URL_SCHEME).with("scheme", scheme.clone())
+            }
+            Self::InvalidHeader(name) => {
+                UserText::new(keys::HEADER_INVALID).with("name", name.clone())
             }
             Self::UnknownCollection => UserText::new(keys::UNKNOWN_COLLECTION),
             Self::UnknownItem => UserText::new(keys::UNKNOWN_ITEM),

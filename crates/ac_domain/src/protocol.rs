@@ -73,8 +73,9 @@ impl FromStr for HttpMethod {
     }
 }
 
-/// `token = 1*tchar` (RFC 9110, section 5.6.2).
-fn is_token(text: &str) -> bool {
+/// `token = 1*tchar` (RFC 9110, section 5.6.2): methods and header names.
+#[must_use]
+pub fn is_token(text: &str) -> bool {
     const SPECIAL: &[u8] = b"!#$%&'*+-.^_`|~";
     !text.is_empty()
         && text
@@ -191,6 +192,21 @@ impl fmt::Display for StatusCode {
 pub mod header {
     /// `Content-Type`
     pub const CONTENT_TYPE: &str = "content-type";
+
+    /// Whether `value` can be sent as a header value: no line breaks or NUL,
+    /// which would split or end the header (RFC 9110, section 5.5).
+    #[must_use]
+    pub fn is_valid_value(value: &str) -> bool {
+        !value.contains(['\r', '\n', '\0'])
+    }
+}
+
+/// Media types the program sets itself.
+pub mod media_type {
+    /// JSON bodies.
+    pub const JSON: &str = "application/json";
+    /// Text bodies.
+    pub const TEXT: &str = "text/plain; charset=utf-8";
 }
 
 #[cfg(test)]
