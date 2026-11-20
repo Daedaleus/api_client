@@ -1,0 +1,21 @@
+[package]
+name = "ac_http"
+description = "HTTP adapter: implements the HttpSender port with reqwest."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+ac_app.workspace = true
+ac_domain.workspace = true
+reqwest.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt", "net"] }
+url.workspace = true
+wiremock.workspace = true
+
+[lints]
+workspace = true

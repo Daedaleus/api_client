@@ -3,15 +3,15 @@
 Project-specific rules (section "Project" at the end) take precedence over the
 general rules.
 
-> **Status:** milestone M0 (repository foundation). Architecture, crates,
+> **Status:** milestone M1 (walking skeleton). Architecture, crates,
 > milestones and spikes: [docs/architecture.md](docs/architecture.md).
 > Building and conventions: [CONTRIBUTING.md](CONTRIBUTING.md). Decisions
 > marked *(open)* are still to be made together with the maintainer.
 
-Open items and ideas are GitHub issues (`gh issue list`), not a file in the
-repo. Until the GitHub project exists they are collected in a local, untracked
-`ToDo.md` (excluded via `.git/info/exclude`, never committed); move them into
-issues once the repo is created, then delete the file.
+Open items and ideas are GitHub issues (`gh issue list`), grouped by GitHub
+milestones (M1–M6, "Spikes and decisions") – never a TODO file in the repo.
+Every change goes through a pull request with auto-merge (squash); link the
+issue it closes ("Closes #N").
 
 ## Collaboration
 

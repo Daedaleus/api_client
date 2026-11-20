@@ -11,8 +11,10 @@ issue forms (Bug report, Idea).
   llvm-tools) automatically on the first `cargo` call.
 - [mise](https://mise.jdx.dev) for the other tools and the tasks
   (Windows: `winget install jdx.mise`). The versions are pinned in
-  `mise.toml`; from milestone M1 this includes Node.js, npm packages come via
-  `npm ci` and the Tauri CLI as a dev dependency.
+  `mise.toml`, including Node.js; npm packages come via `npm ci` (done by the
+  tasks) and the Tauri CLI as a dev dependency.
+- Linux only, for Tauri: `libwebkit2gtk-4.1-dev libxdo-dev libssl-dev
+  libayatana-appindicator3-dev librsvg2-dev` (Debian/Ubuntu names).
 
 Once per clone:
 
@@ -28,17 +30,19 @@ The same tasks run locally and in CI, on Windows, Linux and macOS:
 
 | Command | What it does |
 |---|---|
+| `mise run dev` | Desktop app in development mode with hot reload |
 | `mise run ci` | Everything CI checks – run it before every commit |
-| `mise run fmt` | Format all code |
-| `mise run lint` | Check formatting, clippy with `-D warnings` |
-| `mise run test` | All tests |
-| `mise run coverage` | Line coverage, at least 90 %; report in `target/llvm-cov/html/index.html` |
+| `mise run fmt` | Format all code (Rust and frontend) |
+| `mise run lint` | Formatting, clippy with `-D warnings`, svelte-check, ESLint, Prettier |
+| `mise run test` | All tests (cargo and Vitest) |
+| `mise run coverage` | Line coverage, at least 90 % each; reports in `target/llvm-cov/html/` and `apps/desktop/coverage/` |
 | `mise run audit` | Dependencies: advisories, licenses, sources (`deny.toml`) |
-| `mise run release` | Release build |
+| `mise run release` | Release build of the desktop app (`target/release/`) |
+| `mise run install` | Windows: release build, copy to `dist\` and a desktop shortcut "API Client" |
 | `mise run changelog` | Preview of the changelog for unreleased commits |
 
-`mise tasks` lists them all. Without mise, the plain `cargo` commands in
-`mise.toml` work as well.
+`mise tasks` lists them all. Without mise, the plain `cargo` and `npm`
+commands in `mise.toml` work as well.
 
 ## Structure
 
@@ -47,15 +51,20 @@ A Cargo workspace; details and dependency rules in
 
 | Path | Content |
 |---|---|
-| `crates/ac_domain` | Domain model: requests, environments, variables. No I/O. |
-| `crates/…` | Further crates join with their milestone (application layer, HTTP, storage, secrets, scripting). |
-| `apps/` | User interfaces (desktop app, later command line). Only wiring and presentation. |
+| `crates/ac_domain` | Domain model: requests, responses, protocol types. No I/O. |
+| `crates/ac_app` | Application layer: commands, events, view models, ports; test doubles behind the `testing` feature. |
+| `crates/ac_http` | HTTP adapter (reqwest). |
+| `crates/…` | Further crates join with their milestone (storage, secrets, scripting). |
+| `apps/desktop` | Desktop app: Svelte 5 + TypeScript frontend (`src/`), Tauri shell (`src-tauri/`, crate `ac_desktop`). Only wiring and presentation. |
+| `locales/app.json` | All display texts in German and English, shared by Rust and the frontend. |
 | `spikes/` | Time-boxed experiments, not part of the workspace. |
 | `docs/` | Architecture, file format, decision records (`docs/adr/`). |
 
-Tests live per module in `src/tests/<module>.rs` and are included with
-`#[cfg(test)] #[path = "tests/<module>.rs"] mod tests;`. Tests touch neither
-the internet nor real user data.
+Rust tests live per module in `src/tests/<module>.rs` and are included with
+`#[cfg(test)] #[path = "tests/<module>.rs"] mod tests;`. Frontend tests sit
+next to the code as `*.test.ts` (Vitest, Testing Library); they use a fake
+`Api` instead of the Tauri backend. Tests touch neither the internet nor real
+user data.
 
 ## Commit messages
 

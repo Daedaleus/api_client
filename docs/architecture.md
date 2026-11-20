@@ -33,15 +33,16 @@ Local crates use the neutral prefix `ac_` until the product name is chosen.
   dependencies, no I/O and no async. `ac_app` depends only on `ac_domain`.
 - Adapters depend on `ac_app`/`ac_domain`, never on each other or on a UI.
 - Only composition roots (`apps/*`) know all crates.
-- `ac_testutil` (dev-dependency) holds fakes: `FakeHttpSender`, `FixedClock`,
-  temporary collection builders.
+- Test doubles for the ports (`FakeHttpSender`, later `FixedClock`, …) live
+  in `ac_app::testing`, compiled for `ac_app`'s own tests and for other
+  crates via the `testing` feature. A separate test-util crate would see a
+  different copy of the port traits in `ac_app`'s unit tests.
 
 | Crate | Milestone | Responsibility |
 |---|---|---|
 | `ac_domain` | M0 | Collection, folder, request, environment, variable, response, protocol types, `{{var}}` resolution |
 | `ac_app` | M1 | Facade, use cases, ports, view models, events |
 | `ac_http` | M1 | `HttpSender` adapter (reqwest), one shared client |
-| `ac_testutil` | M1 | Fakes and builders for tests |
 | `ac_desktop` | M1 | Tauri app: thin commands, event forwarding |
 | `ac_storage` | M2 | File format, migrations, backups |
 | `ac_secrets` | M3 | age encryption, recipients, key store |

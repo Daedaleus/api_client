@@ -4,6 +4,10 @@
 //! crate can build on it and everything here is easy to test.
 //!
 //! Modules:
-//! - [`protocol`]: values from the HTTP protocol (methods, …) as types.
+//! - [`protocol`]: values from the HTTP protocol (methods, status codes,
+//!   header names) as types.
+//! - [`exchange`]: one HTTP exchange – the request as sent and the response
+//!   as received.
 
+pub mod exchange;
 pub mod protocol;

@@ -1,0 +1,26 @@
+[package]
+name = "ac_app"
+description = "Application layer: use cases, commands, events, view models and ports."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[features]
+# Test doubles (`ac_app::testing`) for other crates' tests.
+testing = []
+
+[dependencies]
+ac_domain.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["rt", "sync"] }
+url.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt", "time"] }
+
+[lints]
+workspace = true
