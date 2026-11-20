@@ -19,7 +19,18 @@ impl ItemId {
     pub fn new() -> Self {
         Self(Uuid::now_v7())
     }
+
+    /// An id derived from `key` (UUID version 5): the same key always gives
+    /// the same id. For items whose file has no id yet, so they keep one
+    /// identity across loads until it is written on the next save.
+    #[must_use]
+    pub fn derived(key: &str) -> Self {
+        Self(Uuid::new_v5(&DERIVED_NAMESPACE, key.as_bytes()))
+    }
 }
+
+/// Namespace of [`ItemId::derived`] (a fixed, random UUID).
+const DERIVED_NAMESPACE: Uuid = Uuid::from_u128(0x6f0c_2d4e_8b1a_4c7e_9f53_2a6d_1e8b_7c40);
 
 impl Default for ItemId {
     fn default() -> Self {
@@ -57,6 +68,22 @@ pub struct Collection {
     pub name: String,
     /// Top-level folders and requests in display order.
     pub items: Vec<Item>,
+}
+
+impl Collection {
+    /// The folder or request with `id` anywhere in the tree.
+    #[must_use]
+    pub fn find(&self, id: ItemId) -> Option<&Item> {
+        find_in(&self.items, id)
+    }
+}
+
+fn find_in(items: &[Item], id: ItemId) -> Option<&Item> {
+    items.iter().find_map(|item| match item {
+        _ if item.id() == id => Some(item),
+        Item::Folder(folder) => find_in(&folder.items, id),
+        Item::Request(_) => None,
+    })
 }
 
 /// A folder of a collection.

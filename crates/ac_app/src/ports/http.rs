@@ -1,5 +1,4 @@
-//! Interfaces to the outside world. Adapter crates implement them; tests use
-//! the doubles in `testing`.
+//! Sending HTTP requests.
 
 use std::future::Future;
 use std::sync::Arc;

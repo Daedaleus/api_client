@@ -56,6 +56,19 @@ pub(crate) fn parse(
     Ok(Parsed { doc, version })
 }
 
+/// Writes via a temporary file in the same folder and a rename, so a crash
+/// leaves either the old or the new file, never half of it.
+pub(crate) fn write_atomically(path: &Path, text: &str) -> Result<(), StorageError> {
+    let mut temporary = path.as_os_str().to_owned();
+    temporary.push(".tmp");
+    let temporary = std::path::PathBuf::from(temporary);
+    std::fs::write(&temporary, text).map_err(|error| StorageError::io(&temporary, error))?;
+    std::fs::rename(&temporary, path).map_err(|error| {
+        let _ = std::fs::remove_file(&temporary);
+        StorageError::io(path, error)
+    })
+}
+
 /// Optional string value.
 pub(crate) fn opt_str(
     table: &dyn TableLike,
@@ -86,16 +99,22 @@ pub(crate) fn opt_bool(
     }
 }
 
-/// The `id`; a new one if the file has none (written on the next save).
-pub(crate) fn id(table: &dyn TableLike, path: &Path) -> Result<ItemId, StorageError> {
+/// The `id`. Without one, an id derived from `item` (the request file or
+/// folder directory): stable across loads, written on the next save.
+pub(crate) fn id(table: &dyn TableLike, path: &Path, item: &Path) -> Result<ItemId, StorageError> {
     match opt_str(table, "id", path)? {
-        None => Ok(ItemId::new()),
+        None => Ok(derived_id(item)),
         Some(text) => text
             .parse()
             .map_err(|error: ac_domain::collection::InvalidItemId| {
                 StorageError::invalid(path, "id", error.to_string())
             }),
     }
+}
+
+/// Stable id for an item on disk that has none of its own.
+pub(crate) fn derived_id(item: &Path) -> ItemId {
+    ItemId::derived(&item.to_string_lossy())
 }
 
 /// The `order` list of a collection or folder file.

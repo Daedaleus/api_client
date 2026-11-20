@@ -1,4 +1,4 @@
-//! Test doubles for the ports (feature `testing`).
+//! Test double for sending requests.
 
 use std::collections::VecDeque;
 use std::sync::Mutex;
@@ -7,6 +7,7 @@ use std::time::Duration;
 use ac_domain::exchange::{Header, ResolvedRequest, Response};
 use ac_domain::protocol::StatusCode;
 
+use super::lock;
 use crate::ports::{HttpSender, TransportError};
 
 /// An [`HttpSender`] that answers with queued replies and records what was
@@ -63,11 +64,4 @@ pub fn response(status: u16, content_type: &str, body: &str) -> Response {
         body: body.as_bytes().to_vec(),
         elapsed: Duration::from_millis(7),
     }
-}
-
-fn lock<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
-    // A panicking test poisons the lock; the data is still fine for asserts.
-    mutex
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
 }

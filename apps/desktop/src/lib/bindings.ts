@@ -9,7 +9,9 @@ import * as __TAURI_EVENT from "@tauri-apps/api/event";
 /** Commands */
 export const commands = {
 	/**  Carries out a command from the UI. */
-	execute: (command: Command, options?: InvokeOptions) => __TAURI_INVOKE<CommandAck>("execute", { command }, options),
+	execute: (command: Command_Deserialize, options?: InvokeOptions) => __TAURI_INVOKE<CommandAck_Serialize>("execute", { command }, options),
+	/**  Answers a query from the UI. */
+	query: (query: Query, options?: InvokeOptions) => __TAURI_INVOKE<QueryResult_Serialize>("query", { query }, options),
 };
 
 /** Events */
@@ -48,6 +50,19 @@ runId: RunId;
 /**  What happened. */
 outcome: RunOutcomeView_Serialize };
 
+/**  The body of a [`RequestDraft`]. */
+export type BodyDraft = 
+/**  No body. */
+{ kind: "none" } | 
+/**  JSON text. */
+{ kind: "json"; 
+/**  The text. */
+content: string } | 
+/**  Plain text. */
+{ kind: "text"; 
+/**  The text. */
+content: string };
+
 /**  What the UI shows of a body. */
 export type BodyView = {
 	/**  Text to show (empty for binary bodies). */
@@ -60,21 +75,187 @@ export type BodyView = {
 	binary: boolean,
 };
 
+/**  An open collection. */
+export type CollectionView = {
+	/**  Collection id. */
+	id: string,
+	/**  Display name. */
+	name: string,
+	/**  Collection folder. */
+	root: string,
+	/**  Top-level folders and requests in display order. */
+	items: TreeItemView[],
+	/**  Files that could not be loaded. */
+	problems: UserText[],
+};
+
 /**  Something the user wants the application to do. */
-export type Command = 
+export type Command = Command_Serialize | Command_Deserialize;
+
+/**  Immediate answer to a [`Command`]. */
+export type CommandAck = CommandAck_Serialize | CommandAck_Deserialize;
+
+/**  Immediate answer to a [`Command`]. */
+export type CommandAck_Deserialize = 
+/**  The request is on its way. */
+{ type: "runStarted"; 
+/**  Id of this run. */
+runId: RunId } | 
+/**  A collection was opened or changed; here is its current tree. */
+{ type: "collectionChanged"; 
+/**  The collection as it is now on disk. */
+collection: CollectionView; 
+/**  The item a create command made, if any. */
+createdId?: string | null } | 
+/**  A collection was closed. */
+{ type: "collectionClosed"; 
+/**  The collection. */
+collectionId: string };
+
+/**  Immediate answer to a [`Command`]. */
+export type CommandAck_Serialize = 
+/**  The request is on its way. */
+{ type: "runStarted"; 
+/**  Id of this run. */
+runId: RunId } | 
+/**  A collection was opened or changed; here is its current tree. */
+{ type: "collectionChanged"; 
+/**  The collection as it is now on disk. */
+collection: CollectionView; 
+/**  The item a create command made, if any. */
+createdId: string | null } | 
+/**  A collection was closed. */
+{ type: "collectionClosed"; 
+/**  The collection. */
+collectionId: string };
+
+/**  Something the user wants the application to do. */
+export type Command_Deserialize = 
 /**  Send a request; the result arrives as [`crate::AppEvent::RunFinished`]. */
 { type: "sendRequest"; 
 /**  Method as entered, e.g. `GET`. */
 method: string; 
 /**  URL as entered; `http://` is assumed when no scheme is given. */
-url: string };
+url: string } | 
+/**  Open the collection in a folder. */
+{ type: "openCollection"; 
+/**  The collection folder. */
+path: string } | 
+/**  Create a new collection in a folder and open it. */
+{ type: "createCollection"; 
+/**  The folder (created if needed). */
+path: string; 
+/**  Display name. */
+name: string } | 
+/**  Close an open collection (nothing is written). */
+{ type: "closeCollection"; 
+/**  The collection. */
+collectionId: string } | 
+/**  Save a request edited in the editor. */
+{ type: "saveRequest"; 
+/**  The collection it belongs to. */
+collectionId: string; 
+/**  The edited request (identified by its id). */
+request: RequestDraft_Deserialize } | 
+/**  Create a new, empty request. */
+{ type: "createRequest"; 
+/**  The collection. */
+collectionId: string; 
+/**  The collection itself or a folder in it. */
+parentId: string; 
+/**  Display name. */
+name: string } | 
+/**  Create a new folder. */
+{ type: "createFolder"; 
+/**  The collection. */
+collectionId: string; 
+/**  The collection itself or a folder in it. */
+parentId: string; 
+/**  Display name. */
+name: string } | 
+/**  Rename a folder or request (its file keeps its name). */
+{ type: "renameItem"; 
+/**  The collection. */
+collectionId: string; 
+/**  The folder or request. */
+itemId: string; 
+/**  New display name. */
+name: string } | 
+/**  Move a folder or request to the trash. */
+{ type: "deleteItem"; 
+/**  The collection. */
+collectionId: string; 
+/**  The folder or request. */
+itemId: string };
 
-/**  Immediate answer to a [`Command`]. */
-export type CommandAck = 
-/**  The request is on its way. */
-{ type: "runStarted"; 
-/**  Id of this run. */
-runId: RunId };
+/**  Something the user wants the application to do. */
+export type Command_Serialize = 
+/**  Send a request; the result arrives as [`crate::AppEvent::RunFinished`]. */
+{ type: "sendRequest"; 
+/**  Method as entered, e.g. `GET`. */
+method: string; 
+/**  URL as entered; `http://` is assumed when no scheme is given. */
+url: string } | 
+/**  Open the collection in a folder. */
+{ type: "openCollection"; 
+/**  The collection folder. */
+path: string } | 
+/**  Create a new collection in a folder and open it. */
+{ type: "createCollection"; 
+/**  The folder (created if needed). */
+path: string; 
+/**  Display name. */
+name: string } | 
+/**  Close an open collection (nothing is written). */
+{ type: "closeCollection"; 
+/**  The collection. */
+collectionId: string } | 
+/**  Save a request edited in the editor. */
+{ type: "saveRequest"; 
+/**  The collection it belongs to. */
+collectionId: string; 
+/**  The edited request (identified by its id). */
+request: RequestDraft_Serialize } | 
+/**  Create a new, empty request. */
+{ type: "createRequest"; 
+/**  The collection. */
+collectionId: string; 
+/**  The collection itself or a folder in it. */
+parentId: string; 
+/**  Display name. */
+name: string } | 
+/**  Create a new folder. */
+{ type: "createFolder"; 
+/**  The collection. */
+collectionId: string; 
+/**  The collection itself or a folder in it. */
+parentId: string; 
+/**  Display name. */
+name: string } | 
+/**  Rename a folder or request (its file keeps its name). */
+{ type: "renameItem"; 
+/**  The collection. */
+collectionId: string; 
+/**  The folder or request. */
+itemId: string; 
+/**  New display name. */
+name: string } | 
+/**  Move a folder or request to the trash. */
+{ type: "deleteItem"; 
+/**  The collection. */
+collectionId: string; 
+/**  The folder or request. */
+itemId: string };
+
+/**  A header of a [`RequestDraft`]. */
+export type HeaderDraft = {
+	/**  Name. */
+	name: string,
+	/**  Value. */
+	value: string,
+	/**  Sent with the request. */
+	enabled: boolean,
+};
 
 /**  One header line. */
 export type HeaderView = {
@@ -82,6 +263,83 @@ export type HeaderView = {
 	name: string,
 	/**  Value. */
 	value: string,
+};
+
+/**  Something the UI wants to read. */
+export type Query = 
+/**  The current tree of an open collection, read anew from disk. */
+{ type: "collection"; 
+/**  The collection. */
+collectionId: string } | 
+/**  A saved request for the editor. */
+{ type: "request"; 
+/**  The collection. */
+collectionId: string; 
+/**  The request. */
+requestId: string };
+
+/**  Answer to a [`Query`]. */
+export type QueryResult = QueryResult_Serialize | QueryResult_Deserialize;
+
+/**  Answer to a [`Query`]. */
+export type QueryResult_Deserialize = 
+/**  The collection tree. */
+{ type: "collection"; 
+/**  The collection. */
+collection: CollectionView } | 
+/**  The request. */
+{ type: "request"; 
+/**  The request. */
+request: RequestDraft_Deserialize };
+
+/**  Answer to a [`Query`]. */
+export type QueryResult_Serialize = 
+/**  The collection tree. */
+{ type: "collection"; 
+/**  The collection. */
+collection: CollectionView } | 
+/**  The request. */
+{ type: "request"; 
+/**  The request. */
+request: RequestDraft_Serialize };
+
+/**  A saved request as the editor shows and returns it. */
+export type RequestDraft = RequestDraft_Serialize | RequestDraft_Deserialize;
+
+/**  A saved request as the editor shows and returns it. */
+export type RequestDraft_Deserialize = {
+	/**  Request id. */
+	id: string,
+	/**  Display name. */
+	name: string,
+	/**  Method. */
+	method: string,
+	/**  URL as entered; may contain `{{variables}}`. */
+	url: string,
+	/**  Headers in the order they are sent. */
+	headers: HeaderDraft[],
+	/**  Body. */
+	body: BodyDraft,
+	/**  The file is never written (set by the app, ignored when saving). */
+	readOnly?: boolean,
+};
+
+/**  A saved request as the editor shows and returns it. */
+export type RequestDraft_Serialize = {
+	/**  Request id. */
+	id: string,
+	/**  Display name. */
+	name: string,
+	/**  Method. */
+	method: string,
+	/**  URL as entered; may contain `{{variables}}`. */
+	url: string,
+	/**  Headers in the order they are sent. */
+	headers: HeaderDraft[],
+	/**  Body. */
+	body: BodyDraft,
+	/**  The file is never written (set by the app, ignored when saving). */
+	readOnly: boolean,
 };
 
 /**  A response prepared for display. */
@@ -165,6 +423,29 @@ export type StatusClassView =
 "serverError" | 
 /**  `6xx`–`9xx` */
 "nonstandard";
+
+/**  An entry of the request tree. */
+export type TreeItemView = 
+/**  A folder. */
+{ kind: "folder"; 
+/**  Folder id. */
+id: string; 
+/**  Display name. */
+name: string; 
+/**  Its settings are never written. */
+readOnly: boolean; 
+/**  Contents in display order. */
+items: TreeItemView[] } | 
+/**  A request. */
+{ kind: "request"; 
+/**  Request id. */
+id: string; 
+/**  Display name. */
+name: string; 
+/**  Method, e.g. `GET`, for the label in the tree. */
+method: string; 
+/**  The file is never written. */
+readOnly: boolean };
 
 /**  A display text: translation key plus named arguments for its placeholders. */
 export type UserText = {

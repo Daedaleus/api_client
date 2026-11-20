@@ -30,7 +30,7 @@ pub(crate) fn request_from(doc: &DocumentMut, path: &Path) -> Result<Request, St
     let root = doc.as_table();
     let name = match document::opt_str(root, "name", path)? {
         Some(name) => name,
-        None => file_stem(path),
+        None => crate::names::file_stem(path),
     };
     let empty = Table::new();
     let table: &dyn TableLike = match root.get(REQUEST_TABLE) {
@@ -48,7 +48,7 @@ pub(crate) fn request_from(doc: &DocumentMut, path: &Path) -> Result<Request, St
             })?,
     };
     Ok(Request {
-        id: document::id(root, path)?,
+        id: document::id(root, path, path)?,
         name,
         method,
         url: document::opt_str(table, "url", path)?.unwrap_or_default(),
@@ -127,7 +127,7 @@ pub fn save_request(path: &Path, request: &Request) -> Result<(), StorageError> 
         Err(error) => return Err(StorageError::io(path, error)),
     };
     apply(&mut doc, request, path)?;
-    write_atomically(path, &doc.to_string())
+    document::write_atomically(path, &doc.to_string())
 }
 
 fn new_document() -> DocumentMut {
@@ -192,23 +192,6 @@ fn body_item(body: &Body) -> Option<Item> {
     table.insert("type", toml_edit::value(kind));
     table.insert("content", Item::Value(document::text_value(content)));
     Some(Item::Table(table))
-}
-
-/// Writes via a temporary file in the same folder and a rename.
-pub(crate) fn write_atomically(path: &Path, text: &str) -> Result<(), StorageError> {
-    let mut temporary = path.as_os_str().to_owned();
-    temporary.push(".tmp");
-    let temporary = std::path::PathBuf::from(temporary);
-    std::fs::write(&temporary, text).map_err(|error| StorageError::io(&temporary, error))?;
-    std::fs::rename(&temporary, path).map_err(|error| {
-        let _ = std::fs::remove_file(&temporary);
-        StorageError::io(path, error)
-    })
-}
-
-pub(crate) fn file_stem(path: &Path) -> String {
-    path.file_stem()
-        .map_or_else(String::new, |stem| stem.to_string_lossy().into_owned())
 }
 
 #[cfg(test)]

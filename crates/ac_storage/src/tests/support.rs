@@ -48,7 +48,7 @@ pub fn request<'a>(collection: &'a Collection, name: &str) -> &'a Request {
 }
 
 /// Names of `items`, folders marked with a trailing `/`.
-pub fn names(items: &[Item]) -> Vec<String> {
+pub fn tree_names(items: &[Item]) -> Vec<String> {
     items
         .iter()
         .map(|item| match item {

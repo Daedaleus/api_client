@@ -1,10 +1,10 @@
-//! View models: plain data for the UI, serialized as camelCase JSON.
+//! Responses prepared for display.
 
 use ac_domain::exchange::Response;
 use ac_domain::protocol::{StatusClass, header};
 use serde::Serialize;
 
-use crate::body::{BodyView, preview};
+use super::body::{BodyView, preview};
 use crate::text::UserText;
 
 /// Result of one request run.
@@ -112,5 +112,5 @@ impl ResponseView {
 }
 
 #[cfg(test)]
-#[path = "tests/view.rs"]
+#[path = "../tests/view_response.rs"]
 mod tests;
