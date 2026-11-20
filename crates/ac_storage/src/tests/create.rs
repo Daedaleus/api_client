@@ -1,16 +1,35 @@
+use crate::StorageError;
+use crate::test_support::{read, shop_api, tree_names};
+
 use super::*;
-use crate::test_support::{names, read, shop_api};
 
 #[test]
-fn slugs_are_readable_file_names() {
-    assert_eq!(slug("Get product"), "get-product");
-    assert_eq!(slug("Größe ändern!"), "groesse-aendern");
-    assert_eq!(slug("  --A  B--  "), "a-b");
-    assert_eq!(slug("????"), "request");
-    assert_eq!(slug(""), "request");
-    assert_eq!(slug("CON"), "request-con");
-    assert_eq!(slug(&"x".repeat(100)).len(), 60);
-    assert_eq!(slug(&format!("{} y", "x".repeat(59))), "x".repeat(59));
+fn new_folders_get_settings_and_join_the_order() {
+    let (_temp, root) = shop_api();
+    let (dir, id) = create_folder(&root, "Orders & Payments").unwrap();
+    assert_eq!(dir, root.join("orders-payments"));
+    let settings = read(&dir.join("folder.toml"));
+    assert!(
+        settings.contains("format = \"api-client/folder\""),
+        "{settings}"
+    );
+    assert!(settings.contains(&format!("id = \"{id}\"")), "{settings}");
+    assert!(read(&root.join("collection.toml")).contains("\"orders-payments\"]"));
+
+    let (second, _) = create_folder(&root, "Orders & Payments").unwrap();
+    assert_eq!(second, root.join("orders-payments-2"));
+    let (unnamed, _) = create_folder(&root, "???").unwrap();
+    assert_eq!(unnamed, root.join("folder"));
+
+    let loaded = load_collection(&root).unwrap();
+    assert_eq!(loaded.entries[&id].path, dir);
+}
+
+#[test]
+fn folders_cannot_be_created_in_missing_parents() {
+    let (_temp, root) = shop_api();
+    let error = create_folder(&root.join("nope"), "x").unwrap_err();
+    assert!(matches!(error, StorageError::Io { .. }), "{error}");
 }
 
 #[test]
@@ -31,7 +50,7 @@ fn new_requests_get_unique_files_and_join_the_order() {
 
     let loaded = load_collection(&root).unwrap();
     assert_eq!(
-        names(&loaded.collection.items),
+        tree_names(&loaded.collection.items),
         ["Products/", "Health", "Health", "Health", "auth/"]
     );
 }

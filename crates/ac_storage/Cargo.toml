@@ -8,9 +8,11 @@ repository.workspace = true
 publish.workspace = true
 
 [dependencies]
+ac_app.workspace = true
 ac_domain.workspace = true
 thiserror.workspace = true
 toml_edit.workspace = true
+trash.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

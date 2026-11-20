@@ -55,13 +55,20 @@ Local crates use the neutral prefix `ac_` until the product name is chosen.
 An `App` facade built from `Ports`:
 
 - `execute(Command) -> Result<CommandAck, AppError>` – changes state.
-- `query(Query) -> ViewModel` – reads state.
+- `query(Query) -> Result<QueryResult, AppError>` – reads state.
 - `subscribe() -> Receiver<AppEvent>` – results of long work (sending,
   scripts) arrive as events; commands return a `RunId` immediately.
 
-Ports (traits) live in `ac_app::ports`: `CollectionRepository`,
-`HttpSender`, `SecretVault`, `KeyStore`, `ScriptEngine`, `ScriptAssist`
-(diagnostics and completion), `Clock`.
+**Open collections:** the app keeps only which collections are open (id and
+folder). Every collection command reads the collection anew from the store,
+acts on the files the store reports and answers with the tree as it is
+afterwards – so changes made outside the app (an editor, `git pull`) show up
+without a watcher, and there is no cache to get out of step.
+
+Ports (traits) live in `ac_app::ports`: `HttpSender` and `CollectionStore`
+today; later `SecretVault`, `KeyStore`, `ScriptEngine`, `ScriptAssist`
+(diagnostics and completion), `Clock`. Their test doubles
+(`FakeHttpSender`, `MemoryStore`) live in `ac_app::testing`.
 
 View models are plain serde structs. Display texts travel as
 `UserText { key, args }` and are translated only in the UI, so a language

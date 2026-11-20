@@ -1,0 +1,227 @@
+//! Test double for the collection store: collections kept in memory.
+//!
+//! Paths are made up: an item lives at its parent's path joined with its
+//! id, so a path names an item unambiguously.
+
+use std::collections::{HashMap, HashSet};
+use std::path::{Path, PathBuf};
+use std::sync::Mutex;
+
+use ac_domain::collection::{Collection, Folder, Item, ItemId, Request};
+
+use super::lock;
+use crate::ports::{CollectionStore, Location, OpenedCollection, StoreError, StoreErrorKind};
+
+/// A [`CollectionStore`] in memory.
+#[derive(Debug, Default)]
+pub struct MemoryStore {
+    collections: Mutex<HashMap<PathBuf, Collection>>,
+    read_only: Mutex<HashSet<ItemId>>,
+    problems: Mutex<Vec<StoreError>>,
+    fail_next: Mutex<Option<StoreError>>,
+}
+
+impl MemoryStore {
+    /// An empty store.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Adds a collection at `root`.
+    #[must_use]
+    pub fn with(self, root: impl Into<PathBuf>, collection: Collection) -> Self {
+        lock(&self.collections).insert(root.into(), collection);
+        self
+    }
+
+    /// Marks an item as read-only (e.g. from a newer format version).
+    pub fn mark_read_only(&self, id: ItemId) {
+        lock(&self.read_only).insert(id);
+    }
+
+    /// Reports `problem` with every open.
+    pub fn add_problem(&self, problem: StoreError) {
+        lock(&self.problems).push(problem);
+    }
+
+    /// Makes the next store call fail with `error`.
+    pub fn fail_next(&self, error: StoreError) {
+        *lock(&self.fail_next) = Some(error);
+    }
+
+    /// The current state of the collection at `root`.
+    ///
+    /// # Panics
+    /// If there is none.
+    #[must_use]
+    pub fn collection(&self, root: &Path) -> Collection {
+        lock(&self.collections)[root].clone()
+    }
+
+    fn check_failure(&self) -> Result<(), StoreError> {
+        lock(&self.fail_next).take().map_or(Ok(()), Err)
+    }
+
+    /// Runs `change` on the items of the collection or folder at `dir`.
+    fn with_items<T>(
+        &self,
+        dir: &Path,
+        change: impl FnOnce(&mut Vec<Item>) -> T,
+    ) -> Result<T, StoreError> {
+        self.check_failure()?;
+        let mut collections = lock(&self.collections);
+        for (root, collection) in collections.iter_mut() {
+            if let Some(items) = items_at(&mut collection.items, root, dir) {
+                return Ok(change(items));
+            }
+        }
+        Err(not_found(dir))
+    }
+}
+
+impl CollectionStore for MemoryStore {
+    fn open(&self, root: &Path) -> Result<OpenedCollection, StoreError> {
+        self.check_failure()?;
+        let collection = lock(&self.collections)
+            .get(root)
+            .cloned()
+            .ok_or_else(|| StoreError {
+                kind: StoreErrorKind::NotACollection,
+                path: root.to_owned(),
+                detail: "no collection".into(),
+            })?;
+        let read_only = lock(&self.read_only).clone();
+        let mut locations = HashMap::new();
+        let mut add = |id: ItemId, path: PathBuf| {
+            locations.insert(
+                id,
+                Location {
+                    path,
+                    read_only: read_only.contains(&id),
+                },
+            );
+        };
+        add(collection.id, root.to_owned());
+        collect_locations(&collection.items, root, &mut add);
+        Ok(OpenedCollection {
+            root: root.to_owned(),
+            collection,
+            locations,
+            problems: lock(&self.problems).clone(),
+        })
+    }
+
+    fn create_collection(&self, root: &Path, name: &str) -> Result<OpenedCollection, StoreError> {
+        self.check_failure()?;
+        {
+            let mut collections = lock(&self.collections);
+            if collections.contains_key(root) {
+                return Err(StoreError {
+                    kind: StoreErrorKind::AlreadyExists,
+                    path: root.to_owned(),
+                    detail: "exists".into(),
+                });
+            }
+            collections.insert(
+                root.to_owned(),
+                Collection {
+                    id: ItemId::new(),
+                    name: name.to_owned(),
+                    items: Vec::new(),
+                },
+            );
+        }
+        self.open(root)
+    }
+
+    fn save_request(&self, file: &Path, request: &Request) -> Result<(), StoreError> {
+        let id = id_of(file)?;
+        self.with_items(parent_of(file), |items| {
+            for item in items.iter_mut() {
+                if item.id() == id {
+                    *item = Item::Request(request.clone());
+                }
+            }
+        })
+    }
+
+    fn create_request(&self, dir: &Path, request: &Request) -> Result<(), StoreError> {
+        self.with_items(dir, |items| items.push(Item::Request(request.clone())))
+    }
+
+    fn create_folder(&self, parent: &Path, name: &str) -> Result<ItemId, StoreError> {
+        let id = ItemId::new();
+        self.with_items(parent, |items| {
+            items.push(Item::Folder(Folder {
+                id,
+                name: name.to_owned(),
+                items: Vec::new(),
+            }));
+        })?;
+        Ok(id)
+    }
+
+    fn rename_folder(&self, dir: &Path, id: ItemId, name: &str) -> Result<(), StoreError> {
+        self.with_items(parent_of(dir), |items| {
+            for item in items.iter_mut() {
+                if let Item::Folder(folder) = item
+                    && folder.id == id
+                {
+                    name.clone_into(&mut folder.name);
+                }
+            }
+        })
+    }
+
+    fn remove(&self, path: &Path) -> Result<(), StoreError> {
+        let id = id_of(path)?;
+        self.with_items(parent_of(path), |items| {
+            items.retain(|item| item.id() != id);
+        })
+    }
+}
+
+fn collect_locations(items: &[Item], base: &Path, add: &mut impl FnMut(ItemId, PathBuf)) {
+    for item in items {
+        let path = base.join(item.id().to_string());
+        if let Item::Folder(folder) = item {
+            collect_locations(&folder.items, &path, add);
+        }
+        add(item.id(), path);
+    }
+}
+
+fn items_at<'a>(items: &'a mut Vec<Item>, base: &Path, target: &Path) -> Option<&'a mut Vec<Item>> {
+    if base == target {
+        return Some(items);
+    }
+    for item in items.iter_mut() {
+        if let Item::Folder(folder) = item {
+            let path = base.join(folder.id.to_string());
+            if target.starts_with(&path) {
+                return items_at(&mut folder.items, &path, target);
+            }
+        }
+    }
+    None
+}
+
+fn id_of(path: &Path) -> Result<ItemId, StoreError> {
+    path.file_name()
+        .and_then(|name| name.to_str())
+        .and_then(|name| name.parse().ok())
+        .ok_or_else(|| not_found(path))
+}
+
+fn parent_of(path: &Path) -> &Path {
+    path.parent().unwrap_or(path)
+}
+
+fn not_found(path: &Path) -> StoreError {
+    StoreError {
+        kind: StoreErrorKind::Io,
+        path: path.to_owned(),
+        detail: "not found".into(),
+    }
+}

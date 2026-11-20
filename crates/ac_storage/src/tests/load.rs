@@ -2,7 +2,7 @@ use ac_domain::collection::{Body, HeaderEntry};
 use ac_domain::protocol::HttpMethod;
 
 use super::*;
-use crate::test_support::{names, request, shop_api};
+use crate::test_support::{request, shop_api, tree_names};
 
 fn folder<'a>(items: &'a [Item], name: &str) -> &'a Folder {
     items
@@ -26,13 +26,19 @@ fn tree_follows_order_then_names_and_skips_hidden_reserved_and_other_files() {
         "0193a8f2-7c1e-7b40-9d3a-5f2c8e1b4a70"
     );
     // Listed first ("missing.toml" does not exist), then the rest by name.
-    assert_eq!(names(&collection.items), ["Products/", "Health", "auth/"]);
+    assert_eq!(
+        tree_names(&collection.items),
+        ["Products/", "Health", "auth/"]
+    );
     let products = folder(&collection.items, "Products");
     assert_eq!(
-        names(&products.items),
+        tree_names(&products.items),
         ["List products", "Get product", "From the future"]
     );
-    assert_eq!(names(&folder(&collection.items, "auth").items), ["Login"]);
+    assert_eq!(
+        tree_names(&folder(&collection.items, "auth").items),
+        ["Login"]
+    );
 }
 
 #[test]
@@ -120,6 +126,19 @@ fn only_folders_with_collection_toml_are_collections() {
     .unwrap();
     let error = load_collection(&root).unwrap_err();
     assert!(matches!(error, StorageError::WrongFormat { .. }), "{error}");
+}
+
+#[test]
+fn items_without_id_keep_the_same_id_across_loads() {
+    let (_temp, root) = shop_api();
+    let first = load_collection(&root).unwrap();
+    let second = load_collection(&root).unwrap();
+    let ids = |loaded: &LoadedCollection| {
+        let health = request(&loaded.collection, "Health").id;
+        let auth = folder(&loaded.collection.items, "auth").id;
+        (health, auth)
+    };
+    assert_eq!(ids(&first), ids(&second));
 }
 
 #[test]

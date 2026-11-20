@@ -3,31 +3,45 @@
 //! The format is specified in `docs/format/v1.md`. Principles:
 //! - **Never lose user data.** Files are written atomically (temporary file,
 //!   then rename); damaged files are reported and never written; files from
-//!   a newer format version are read-only.
+//!   a newer format version are read-only; removing goes to a discard step
+//!   chosen by the caller (the system trash in the app), never a hard delete.
 //! - **Hand edits survive.** Saving rewrites only changed values, so
 //!   comments, key order and unknown keys stay.
 //! - **Opening changes nothing.** Older versions are migrated in memory and
-//!   written only on save.
+//!   written only on save; items without an id get a stable derived one.
 //!
 //! Modules:
 //! - [`format`]: format names, versions, file and folder names.
 //! - [`error`]: what can go wrong, per file.
 //! - [`load`]: reading a collection into the domain tree.
 //! - [`request_file`]: reading and writing one request file.
-//! - [`create`]: creating collections and requests (file names, order).
-//! - `document`: helpers for reading and updating TOML values in place.
+//! - [`settings`]: folder settings (name, id).
+//! - [`create`]: creating collections, folders and requests.
+//! - [`remove`]: removing requests and folders.
+//! - [`store`]: [`FileStore`], the `CollectionStore` port of `ac_app`.
+//! - [`names`]: file and folder names from display names.
+//! - `order`: keeping `order` lists in step with their folder.
+//! - `document`: reading and updating TOML values in place, atomic writes.
 
 pub mod create;
 mod document;
 pub mod error;
 pub mod format;
 pub mod load;
+pub mod names;
+mod order;
+pub mod remove;
 pub mod request_file;
+pub mod settings;
+pub mod store;
 #[cfg(test)]
 #[path = "tests/support.rs"]
 mod test_support;
 
-pub use create::{create_collection, create_request};
+pub use create::{create_collection, create_folder, create_request};
 pub use error::{LoadProblem, StorageError};
 pub use load::{Entry, EntryKind, LoadedCollection, load_collection};
+pub use remove::remove_item;
 pub use request_file::{read_request, save_request};
+pub use settings::save_folder_settings;
+pub use store::FileStore;

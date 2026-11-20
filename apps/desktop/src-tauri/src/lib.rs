@@ -1,7 +1,7 @@
 //! Desktop app: composition root and thin Tauri adapter.
 //!
-//! Wires the adapters into [`ac_app::App`], exposes one Tauri command
-//! (`execute`) and forwards every [`AppEvent`] to the window as
+//! Wires the adapters into [`ac_app::App`], exposes two Tauri commands
+//! (`execute`, `query`) and forwards every [`AppEvent`] to the window as
 //! [`AppEventMessage`]. No logic lives here – it belongs in `ac_app`.
 //!
 //! The TypeScript side of this interface (`apps/desktop/src/lib/bindings.ts`)
@@ -15,15 +15,16 @@
 
 use std::path::Path;
 
-use ac_app::{App, AppEvent, Command, CommandAck, Ports, UserText};
+use ac_app::{App, AppEvent, Command, CommandAck, Ports, Query, QueryResult, UserText};
 use ac_http::{DEFAULT_TIMEOUT, ReqwestSender};
+use ac_storage::FileStore;
 use serde::Serialize;
 use specta_typescript::Typescript;
 use tauri::{AppHandle, Manager, State};
 use tauri_specta::{Event, collect_commands, collect_events};
 use tokio::sync::broadcast::{Receiver, error::RecvError};
 
-type DesktopApp = App<ReqwestSender>;
+type DesktopApp = App<ReqwestSender, FileStore>;
 
 /// Header of the generated bindings file.
 const BINDINGS_HEADER: &str = "// Generated from the Rust types by tauri-specta - do not edit.\n\
@@ -45,11 +46,19 @@ fn execute(app: State<'_, DesktopApp>, command: Command) -> Result<CommandAck, U
     app.execute(command).map_err(|error| error.user_text())
 }
 
+/// Answers a query from the UI.
+#[tauri::command]
+#[specta::specta]
+#[allow(clippy::needless_pass_by_value)]
+fn query(app: State<'_, DesktopApp>, query: Query) -> Result<QueryResult, UserText> {
+    app.query(query).map_err(|error| error.user_text())
+}
+
 /// Commands and events of the app, the single source for both the Tauri
 /// handlers and the TypeScript bindings.
 fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
     tauri_specta::Builder::<tauri::Wry>::new()
-        .commands(collect_commands![execute])
+        .commands(collect_commands![execute, query])
         .events(collect_events![AppEventMessage])
         // Run ids, milliseconds and byte counts stay far below 2^53.
         .dangerously_cast_bigints_to_number()
@@ -80,6 +89,7 @@ pub fn run() {
             let app = App::new(
                 Ports {
                     http: ReqwestSender::new(DEFAULT_TIMEOUT)?,
+                    store: FileStore::new(),
                 },
                 runtime,
             );

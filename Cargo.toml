@@ -16,6 +16,7 @@ publish = false
 ac_app = { path = "crates/ac_app" }
 ac_domain = { path = "crates/ac_domain" }
 ac_http = { path = "crates/ac_http" }
+ac_storage = { path = "crates/ac_storage" }
 reqwest = "0.13"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -27,10 +28,11 @@ tauri = "2"
 tauri-build = "2"
 tauri-specta = { version = "=2.0.0-rc.29", features = ["derive", "typescript"] }
 thiserror = "2"
+trash = "5"
 toml_edit = "0.25"
 tokio = "1"
 url = "2"
-uuid = { version = "1", features = ["v7"] }
+uuid = { version = "1", features = ["v5", "v7"] }
 wiremock = "0.6"
 tempfile = "3"
 

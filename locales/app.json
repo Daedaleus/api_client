@@ -49,6 +49,42 @@
     "en": "Connection failed: {detail}"
   },
   "error.request": { "de": "Request fehlgeschlagen: {detail}", "en": "Request failed: {detail}" },
+  "error.store_io": {
+    "de": "„{path}“ kann nicht gelesen oder geschrieben werden: {detail}",
+    "en": "Cannot read or write “{path}”: {detail}"
+  },
+  "error.store_damaged": {
+    "de": "„{path}“ ist beschädigt und wird nicht verändert: {detail}",
+    "en": "“{path}” is damaged and is left unchanged: {detail}"
+  },
+  "error.store_read_only": {
+    "de": "„{path}“ stammt aus einer neueren Version und ist nur lesbar.",
+    "en": "“{path}” comes from a newer version and is read-only."
+  },
+  "error.not_a_collection": {
+    "de": "„{path}“ ist keine Collection (collection.toml fehlt).",
+    "en": "“{path}” is not a collection (collection.toml is missing)."
+  },
+  "error.collection_exists": {
+    "de": "In „{path}“ gibt es schon eine Collection.",
+    "en": "“{path}” already contains a collection."
+  },
+  "error.unknown_collection": {
+    "de": "Diese Collection ist nicht mehr geöffnet.",
+    "en": "This collection is no longer open."
+  },
+  "error.unknown_item": {
+    "de": "Dieser Eintrag existiert nicht mehr, vielleicht wurde er außerhalb der App geändert.",
+    "en": "This entry no longer exists; it may have been changed outside the app."
+  },
+  "error.not_a_folder": {
+    "de": "Neue Einträge gehen nur in die Collection oder einen Ordner.",
+    "en": "New entries can only go into the collection or a folder."
+  },
+  "error.name_empty": {
+    "de": "Bitte einen Namen eingeben.",
+    "en": "Please enter a name."
+  },
   "error.unexpected": {
     "de": "Unerwarteter Fehler: {detail}",
     "en": "Unexpected error: {detail}"

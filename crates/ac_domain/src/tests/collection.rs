@@ -12,6 +12,18 @@ fn ids_are_unique_and_round_trip_as_text() {
 }
 
 #[test]
+fn derived_ids_are_stable_per_key() {
+    assert_eq!(
+        ItemId::derived("auth/login.toml"),
+        ItemId::derived("auth/login.toml")
+    );
+    assert_ne!(
+        ItemId::derived("auth/login.toml"),
+        ItemId::derived("auth/logout.toml")
+    );
+}
+
+#[test]
 fn ids_reject_other_text() {
     let error = "not-a-uuid".parse::<ItemId>().unwrap_err();
     assert_eq!(error, InvalidItemId("not-a-uuid".into()));
@@ -26,6 +38,26 @@ fn new_requests_are_empty_gets() {
     assert_eq!(request.url, "");
     assert_eq!(request.headers, vec![]);
     assert_eq!(request.body, Body::None);
+}
+
+#[test]
+fn items_are_found_anywhere_in_the_tree() {
+    let nested = Request::new("Nested");
+    let top = Request::new("Top");
+    let folder = Folder {
+        id: ItemId::new(),
+        name: "Folder".into(),
+        items: vec![Item::Request(nested.clone())],
+    };
+    let collection = Collection {
+        id: ItemId::new(),
+        name: "C".into(),
+        items: vec![Item::Folder(folder.clone()), Item::Request(top.clone())],
+    };
+    assert_eq!(collection.find(nested.id).map(Item::name), Some("Nested"));
+    assert_eq!(collection.find(top.id).map(Item::name), Some("Top"));
+    assert_eq!(collection.find(folder.id).map(Item::name), Some("Folder"));
+    assert_eq!(collection.find(ItemId::new()), None);
 }
 
 #[test]

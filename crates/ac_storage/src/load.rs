@@ -14,7 +14,8 @@ use crate::format::{
     COLLECTION_FILE, COLLECTION_FORMAT, EXTENSION, FOLDER_FILE, FOLDER_FORMAT,
     RESERVED_ROOT_FOLDERS, is_visible,
 };
-use crate::request_file::{file_stem, read_request};
+use crate::names::file_stem;
+use crate::request_file::read_request;
 
 /// A loaded collection with the file behind every item.
 #[derive(Debug)]
@@ -66,7 +67,7 @@ pub fn load_collection(root: &Path) -> Result<LoadedCollection, StorageError> {
     }
     let parsed = document::read(&settings, COLLECTION_FORMAT)?;
     let table = parsed.doc.as_table();
-    let id = document::id(table, &settings)?;
+    let id = document::id(table, &settings, root)?;
     let name = document::opt_str(table, "name", &settings)?.unwrap_or_else(|| file_stem(root));
     let order = document::order(table, &settings)?;
 
@@ -172,13 +173,13 @@ impl Loader {
                     // Show the contents anyway, but never overwrite the
                     // damaged settings.
                     self.problem(error);
-                    (ItemId::new(), file_stem(dir), Vec::new(), true)
+                    (document::derived_id(dir), file_stem(dir), Vec::new(), true)
                 }
             }
         } else {
-            (ItemId::new(), file_stem(dir), Vec::new(), false)
+            (document::derived_id(dir), file_stem(dir), Vec::new(), false)
         };
-        let id = self.unique(id);
+        let id = self.unique(id, dir);
         let items = self.items(dir, &order, false);
         self.entries.insert(
             id,
@@ -198,7 +199,7 @@ impl Loader {
         let table = parsed.doc.as_table();
         let dir = settings.parent().unwrap_or(settings);
         Ok((
-            document::id(table, settings)?,
+            document::id(table, settings, dir)?,
             document::opt_str(table, "name", settings)?.unwrap_or_else(|| file_stem(dir)),
             document::order(table, settings)?,
             parsed.read_only(),
@@ -208,7 +209,7 @@ impl Loader {
     fn request(&mut self, path: &Path) -> Option<Item> {
         match read_request(path) {
             Ok((mut request, read_only)) => {
-                request.id = self.unique(request.id);
+                request.id = self.unique(request.id, path);
                 self.entries.insert(
                     request.id,
                     Entry {
@@ -226,11 +227,12 @@ impl Loader {
         }
     }
 
-    /// A copied file brings the id of its original; it gets a new one
-    /// (written on its next save) so every item stays addressable.
-    fn unique(&self, id: ItemId) -> ItemId {
+    /// A copied file brings the id of its original; it gets one derived from
+    /// its own path (stable across loads, written on its next save) so every
+    /// item stays addressable.
+    fn unique(&self, id: ItemId, item: &Path) -> ItemId {
         if self.entries.contains_key(&id) {
-            ItemId::new()
+            document::derived_id(item)
         } else {
             id
         }

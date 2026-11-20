@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 
 import type { Api } from './api';
 import { RequestController, toUserText } from './request.svelte';
-import type { AppEvent, Command, CommandAck, RunOutcome } from './types';
+import type { AppEvent, Command, CommandAck, QueryResult, RunOutcome } from './types';
 
 const OK: RunOutcome = {
   kind: 'completed',
@@ -25,12 +25,20 @@ class FakeApi implements Api {
   /** Emitted before `execute` resolves, to simulate a very fast response. */
   emitBeforeAck: RunOutcome | null = null;
 
+  /** Answered instead of `runStarted`, to simulate a confused backend. */
+  otherAck: CommandAck | null = null;
+
   async execute(command: Command): Promise<CommandAck> {
     this.commands.push(command);
     if (this.failWith !== null) throw this.failWith;
+    if (this.otherAck) return this.otherAck;
     const runId = this.nextRun++;
     if (this.emitBeforeAck) this.emit(runId, this.emitBeforeAck);
     return { type: 'runStarted', runId };
+  }
+
+  async query(): Promise<QueryResult> {
+    throw new Error('not used by the request controller');
   }
 
   async onEvent(handler: (event: AppEvent) => void) {
@@ -94,6 +102,17 @@ describe('RequestController', () => {
     api.failWith = null;
     await request.send();
     expect(request.error).toBeNull();
+  });
+
+  it('reports an unexpected answer instead of hanging', async () => {
+    const { api, request } = await setup();
+    api.otherAck = { type: 'collectionClosed', collectionId: 'x' };
+    await request.send();
+    expect(request.error).toEqual({
+      key: 'error.unexpected',
+      args: { detail: 'unexpected answer collectionClosed' },
+    });
+    expect(request.sending).toBe(false);
   });
 
   it('unsubscribes via the returned function', async () => {

@@ -133,5 +133,5 @@ fn newline(out: &mut String, depth: usize) {
 }
 
 #[cfg(test)]
-#[path = "tests/body.rs"]
+#[path = "../tests/body.rs"]
 mod tests;

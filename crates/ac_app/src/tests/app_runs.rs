@@ -1,21 +1,35 @@
 use std::time::Duration;
 
+use tokio::runtime::Handle;
+use tokio::sync::broadcast;
 use tokio::time::timeout;
 
 use super::*;
+use crate::app::Ports;
+use crate::command::Command;
 use crate::ports::TransportError;
-use crate::testing::{FakeHttpSender, response};
+use crate::testing::{FakeHttpSender, MemoryStore, response};
 use crate::text::{UserText, keys};
 
-fn app(fake: FakeHttpSender) -> (App<Arc<FakeHttpSender>>, Arc<FakeHttpSender>) {
+type TestApp = App<Arc<FakeHttpSender>, MemoryStore>;
+
+fn app(fake: FakeHttpSender) -> (TestApp, Arc<FakeHttpSender>) {
     let fake = Arc::new(fake);
     let app = App::new(
         Ports {
             http: Arc::clone(&fake),
+            store: MemoryStore::new(),
         },
         Handle::current(),
     );
     (app, fake)
+}
+
+fn run_id(ack: &CommandAck) -> RunId {
+    let CommandAck::RunStarted { run_id } = ack else {
+        panic!("expected a started run, got {ack:?}");
+    };
+    *run_id
 }
 
 fn send(method: &str, url: &str) -> Command {
@@ -38,7 +52,7 @@ async fn sending_reports_the_response_as_event() {
     let mut events = app.subscribe();
 
     let ack = app.execute(send("GET", "example.com/a")).unwrap();
-    let CommandAck::RunStarted { run_id } = ack;
+    let run_id = run_id(&ack);
 
     let AppEvent::RunFinished {
         run_id: finished,
@@ -68,7 +82,7 @@ async fn sending_works_from_a_thread_without_runtime() {
         .join()
         .expect("execute must not panic outside a runtime")
         .unwrap();
-    let CommandAck::RunStarted { run_id } = ack;
+    let run_id = run_id(&ack);
 
     let AppEvent::RunFinished {
         run_id: finished, ..

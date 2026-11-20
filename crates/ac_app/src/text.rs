@@ -53,9 +53,28 @@ pub mod keys {
     /// Any other transport failure. Argument: `detail`.
     pub const REQUEST: &str = "error.request";
 
+    /// A file or folder cannot be read or written. Arguments: `path`, `detail`.
+    pub const STORE_IO: &str = "error.store_io";
+    /// A file is damaged. Arguments: `path`, `detail`.
+    pub const STORE_DAMAGED: &str = "error.store_damaged";
+    /// A file comes from a newer version and is not written. Argument: `path`.
+    pub const STORE_READ_ONLY: &str = "error.store_read_only";
+    /// The folder is no collection. Argument: `path`.
+    pub const NOT_A_COLLECTION: &str = "error.not_a_collection";
+    /// A collection already exists there. Argument: `path`.
+    pub const COLLECTION_EXISTS: &str = "error.collection_exists";
+    /// The collection is not open (any more).
+    pub const UNKNOWN_COLLECTION: &str = "error.unknown_collection";
+    /// The item does not exist (any more), e.g. changed outside the app.
+    pub const UNKNOWN_ITEM: &str = "error.unknown_item";
+    /// New items can only be created in the collection or a folder.
+    pub const NOT_A_FOLDER: &str = "error.not_a_folder";
+    /// Names must not be empty.
+    pub const NAME_EMPTY: &str = "error.name_empty";
+
     /// All keys with the names of their placeholders, checked against the
     /// translation file by a test.
-    pub const ALL: [(&str, &[&str]); 7] = [
+    pub const ALL: [(&str, &[&str]); 16] = [
         (URL_EMPTY, &[]),
         (URL_INVALID, &["reason"]),
         (URL_SCHEME, &["scheme"]),
@@ -63,6 +82,15 @@ pub mod keys {
         (TIMEOUT, &[]),
         (CONNECT, &["detail"]),
         (REQUEST, &["detail"]),
+        (STORE_IO, &["path", "detail"]),
+        (STORE_DAMAGED, &["path", "detail"]),
+        (STORE_READ_ONLY, &["path"]),
+        (NOT_A_COLLECTION, &["path"]),
+        (COLLECTION_EXISTS, &["path"]),
+        (UNKNOWN_COLLECTION, &[]),
+        (UNKNOWN_ITEM, &[]),
+        (NOT_A_FOLDER, &[]),
+        (NAME_EMPTY, &[]),
     ];
 }
 

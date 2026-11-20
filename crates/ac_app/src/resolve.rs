@@ -4,7 +4,7 @@ use ac_domain::exchange::ResolvedRequest;
 use ac_domain::protocol::HttpMethod;
 use url::Url;
 
-use crate::command::AppError;
+use crate::error::AppError;
 
 /// Scheme assumed when the user enters a URL without one, as other API
 /// clients do.

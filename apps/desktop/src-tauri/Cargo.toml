@@ -22,6 +22,7 @@ tauri-build.workspace = true
 [dependencies]
 ac_app = { workspace = true, features = ["specta"] }
 ac_http.workspace = true
+ac_storage.workspace = true
 serde.workspace = true
 specta.workspace = true
 specta-typescript.workspace = true

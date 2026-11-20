@@ -1,0 +1,233 @@
+//! Collections and saved requests, prepared for the tree and the editor.
+//! Ids travel as text (UUIDs); paths as text in the platform's notation.
+
+use ac_domain::collection::{Body, HeaderEntry, Item, Request};
+use serde::{Deserialize, Serialize};
+
+use crate::error::AppError;
+use crate::ports::{Location, OpenedCollection, StoreError};
+use crate::text::UserText;
+
+/// An open collection.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(rename_all = "camelCase")]
+pub struct CollectionView {
+    /// Collection id.
+    pub id: String,
+    /// Display name.
+    pub name: String,
+    /// Collection folder.
+    pub root: String,
+    /// Top-level folders and requests in display order.
+    pub items: Vec<TreeItemView>,
+    /// Files that could not be loaded.
+    pub problems: Vec<UserText>,
+}
+
+/// An entry of the request tree.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub enum TreeItemView {
+    /// A folder.
+    Folder {
+        /// Folder id.
+        id: String,
+        /// Display name.
+        name: String,
+        /// Its settings are never written.
+        read_only: bool,
+        /// Contents in display order.
+        items: Vec<TreeItemView>,
+    },
+    /// A request.
+    Request {
+        /// Request id.
+        id: String,
+        /// Display name.
+        name: String,
+        /// Method, e.g. `GET`, for the label in the tree.
+        method: String,
+        /// The file is never written.
+        read_only: bool,
+    },
+}
+
+impl CollectionView {
+    /// The tree of an opened collection.
+    #[must_use]
+    pub fn from_opened(opened: &OpenedCollection) -> Self {
+        let collection = &opened.collection;
+        Self {
+            id: collection.id.to_string(),
+            name: collection.name.clone(),
+            root: opened.root.display().to_string(),
+            items: tree(&collection.items, opened),
+            problems: opened.problems.iter().map(StoreError::user_text).collect(),
+        }
+    }
+}
+
+fn tree(items: &[Item], opened: &OpenedCollection) -> Vec<TreeItemView> {
+    let read_only = |id| {
+        opened
+            .locations
+            .get(&id)
+            .is_some_and(|location: &Location| location.read_only)
+    };
+    items
+        .iter()
+        .map(|item| match item {
+            Item::Folder(folder) => TreeItemView::Folder {
+                id: folder.id.to_string(),
+                name: folder.name.clone(),
+                read_only: read_only(folder.id),
+                items: tree(&folder.items, opened),
+            },
+            Item::Request(request) => TreeItemView::Request {
+                id: request.id.to_string(),
+                name: request.name.clone(),
+                method: request.method.to_string(),
+                read_only: read_only(request.id),
+            },
+        })
+        .collect()
+}
+
+/// A saved request as the editor shows and returns it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(rename_all = "camelCase")]
+pub struct RequestDraft {
+    /// Request id.
+    pub id: String,
+    /// Display name.
+    pub name: String,
+    /// Method.
+    pub method: String,
+    /// URL as entered; may contain `{{variables}}`.
+    pub url: String,
+    /// Headers in the order they are sent.
+    pub headers: Vec<HeaderDraft>,
+    /// Body.
+    pub body: BodyDraft,
+    /// The file is never written (set by the app, ignored when saving).
+    #[serde(default)]
+    pub read_only: bool,
+}
+
+/// A header of a [`RequestDraft`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+pub struct HeaderDraft {
+    /// Name.
+    pub name: String,
+    /// Value.
+    pub value: String,
+    /// Sent with the request.
+    pub enabled: bool,
+}
+
+/// The body of a [`RequestDraft`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub enum BodyDraft {
+    /// No body.
+    None,
+    /// JSON text.
+    Json {
+        /// The text.
+        content: String,
+    },
+    /// Plain text.
+    Text {
+        /// The text.
+        content: String,
+    },
+}
+
+impl RequestDraft {
+    /// The editor's view of `request`.
+    #[must_use]
+    pub fn from_request(request: &Request, read_only: bool) -> Self {
+        Self {
+            id: request.id.to_string(),
+            name: request.name.clone(),
+            method: request.method.to_string(),
+            url: request.url.clone(),
+            headers: request
+                .headers
+                .iter()
+                .map(|header| HeaderDraft {
+                    name: header.name.clone(),
+                    value: header.value.clone(),
+                    enabled: header.enabled,
+                })
+                .collect(),
+            body: match &request.body {
+                Body::None => BodyDraft::None,
+                Body::Json(content) => BodyDraft::Json {
+                    content: content.clone(),
+                },
+                Body::Text(content) => BodyDraft::Text {
+                    content: content.clone(),
+                },
+            },
+            read_only,
+        }
+    }
+
+    /// The request the editor describes.
+    ///
+    /// # Errors
+    /// If the id, name or method is not valid.
+    pub fn to_request(&self) -> Result<Request, AppError> {
+        Ok(Request {
+            id: self.id.parse().map_err(|_| AppError::UnknownItem)?,
+            name: non_empty(&self.name)?.to_owned(),
+            method: self.method.trim().parse()?,
+            url: self.url.clone(),
+            headers: self
+                .headers
+                .iter()
+                .map(|header| HeaderEntry {
+                    name: header.name.clone(),
+                    value: header.value.clone(),
+                    enabled: header.enabled,
+                })
+                .collect(),
+            body: match &self.body {
+                BodyDraft::None => Body::None,
+                BodyDraft::Json { content } => Body::Json(content.clone()),
+                BodyDraft::Text { content } => Body::Text(content.clone()),
+            },
+        })
+    }
+}
+
+/// `name` without surrounding spaces; empty names are refused.
+///
+/// # Errors
+/// [`AppError::EmptyName`] if nothing but spaces is left.
+pub fn non_empty(name: &str) -> Result<&str, AppError> {
+    let name = name.trim();
+    if name.is_empty() {
+        Err(AppError::EmptyName)
+    } else {
+        Ok(name)
+    }
+}
+
+#[cfg(test)]
+#[path = "../tests/view_collection.rs"]
+mod tests;

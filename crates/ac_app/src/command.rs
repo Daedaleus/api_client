@@ -1,13 +1,13 @@
-//! Commands from the UI, their acknowledgements and errors.
+//! Commands and queries from the UI and their answers.
 //!
-//! JSON shape (shared with the TypeScript UI):
+//! JSON shape (shared with the TypeScript UI, generated into `bindings.ts`):
 //! `{"type": "sendRequest", "method": "GET", "url": "…"}` →
-//! `{"type": "runStarted", "runId": 1}`.
+//! `{"type": "runStarted", "runId": 1}`. Ids are UUIDs as text, paths are
+//! text in the platform's notation.
 
-use ac_domain::protocol::InvalidMethod;
 use serde::{Deserialize, Serialize};
 
-use crate::text::{UserText, keys};
+use crate::view::{CollectionView, RequestDraft};
 
 /// Something the user wants the application to do.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -24,6 +24,64 @@ pub enum Command {
         method: String,
         /// URL as entered; `http://` is assumed when no scheme is given.
         url: String,
+    },
+    /// Open the collection in a folder.
+    OpenCollection {
+        /// The collection folder.
+        path: String,
+    },
+    /// Create a new collection in a folder and open it.
+    CreateCollection {
+        /// The folder (created if needed).
+        path: String,
+        /// Display name.
+        name: String,
+    },
+    /// Close an open collection (nothing is written).
+    CloseCollection {
+        /// The collection.
+        collection_id: String,
+    },
+    /// Save a request edited in the editor.
+    SaveRequest {
+        /// The collection it belongs to.
+        collection_id: String,
+        /// The edited request (identified by its id).
+        request: RequestDraft,
+    },
+    /// Create a new, empty request.
+    CreateRequest {
+        /// The collection.
+        collection_id: String,
+        /// The collection itself or a folder in it.
+        parent_id: String,
+        /// Display name.
+        name: String,
+    },
+    /// Create a new folder.
+    CreateFolder {
+        /// The collection.
+        collection_id: String,
+        /// The collection itself or a folder in it.
+        parent_id: String,
+        /// Display name.
+        name: String,
+    },
+    /// Rename a folder or request (its file keeps its name).
+    RenameItem {
+        /// The collection.
+        collection_id: String,
+        /// The folder or request.
+        item_id: String,
+        /// New display name.
+        name: String,
+    },
+    /// Move a folder or request to the trash.
+    DeleteItem {
+        /// The collection.
+        collection_id: String,
+        /// The folder or request.
+        item_id: String,
     },
 }
 
@@ -47,40 +105,60 @@ pub enum CommandAck {
         /// Id of this run.
         run_id: RunId,
     },
+    /// A collection was opened or changed; here is its current tree.
+    CollectionChanged {
+        /// The collection as it is now on disk.
+        collection: CollectionView,
+        /// The item a create command made, if any.
+        created_id: Option<String>,
+    },
+    /// A collection was closed.
+    CollectionClosed {
+        /// The collection.
+        collection_id: String,
+    },
 }
 
-/// A command that cannot be carried out as given.
-#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
-pub enum AppError {
-    /// The method is not a valid HTTP token.
-    #[error(transparent)]
-    InvalidMethod(#[from] InvalidMethod),
-    /// No URL entered.
-    #[error("URL is empty")]
-    EmptyUrl,
-    /// The URL cannot be parsed.
-    #[error("invalid URL: {0}")]
-    InvalidUrl(String),
-    /// The URL uses a scheme other than http or https.
-    #[error("unsupported URL scheme {0:?}")]
-    UnsupportedScheme(String),
+/// Something the UI wants to read.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(
+    tag = "type",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub enum Query {
+    /// The current tree of an open collection, read anew from disk.
+    Collection {
+        /// The collection.
+        collection_id: String,
+    },
+    /// A saved request for the editor.
+    Request {
+        /// The collection.
+        collection_id: String,
+        /// The request.
+        request_id: String,
+    },
 }
 
-impl AppError {
-    /// The text to show the user.
-    #[must_use]
-    pub fn user_text(&self) -> UserText {
-        match self {
-            Self::InvalidMethod(InvalidMethod(method)) => {
-                UserText::new(keys::METHOD_INVALID).with("method", method.clone())
-            }
-            Self::EmptyUrl => UserText::new(keys::URL_EMPTY),
-            Self::InvalidUrl(reason) => {
-                UserText::new(keys::URL_INVALID).with("reason", reason.clone())
-            }
-            Self::UnsupportedScheme(scheme) => {
-                UserText::new(keys::URL_SCHEME).with("scheme", scheme.clone())
-            }
-        }
-    }
+/// Answer to a [`Query`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(
+    tag = "type",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub enum QueryResult {
+    /// The collection tree.
+    Collection {
+        /// The collection.
+        collection: CollectionView,
+    },
+    /// The request.
+    Request {
+        /// The request.
+        request: RequestDraft,
+    },
 }

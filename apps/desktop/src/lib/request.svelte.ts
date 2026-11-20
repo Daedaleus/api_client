@@ -50,6 +50,9 @@ export class RequestController {
         method: this.method,
         url: this.url,
       });
+      if (ack.type !== 'runStarted') {
+        throw new Error(`unexpected answer ${ack.type}`);
+      }
       const early = this.#early.get(ack.runId);
       this.#early.clear();
       if (early) {
