@@ -1,0 +1,52 @@
+# Spike S1 (issue #9): embedded JavaScript engines for TypeScript scripts.
+# Throwaway code on the spike branch; never part of the main workspace.
+[package]
+name = "script-runtime-spike"
+version = "0.0.0"
+edition = "2024"
+publish = false
+license = "MIT OR Apache-2.0"
+
+# Its own workspace root: not a member of the repository's workspace.
+[workspace]
+
+[features]
+quickjs = ["dep:rquickjs"]
+boa = ["dep:boa_engine", "dep:boa_gc"]
+boa-intl = ["boa", "boa_engine/intl_bundled"]
+strip = ["dep:oxc_allocator", "dep:oxc_parser", "dep:oxc_semantic", "dep:oxc_span", "dep:oxc_transformer", "dep:oxc_codegen"]
+
+[dependencies]
+rquickjs = { version = "0.14", optional = true, features = ["classes", "properties", "futures", "macro"] }
+boa_engine = { version = "0.22", optional = true }
+boa_gc = { version = "0.22", optional = true }
+oxc_allocator = { version = "0.159", optional = true }
+oxc_parser = { version = "0.159", optional = true }
+oxc_semantic = { version = "0.159", optional = true }
+oxc_span = { version = "0.159", optional = true }
+oxc_transformer = { version = "0.159", optional = true }
+oxc_codegen = { version = "0.159", optional = true }
+
+[[bin]]
+name = "baseline"
+path = "src/bin/baseline.rs"
+
+[[bin]]
+name = "quickjs"
+path = "src/bin/quickjs.rs"
+required-features = ["quickjs"]
+
+[[bin]]
+name = "boa"
+path = "src/bin/boa.rs"
+required-features = ["boa"]
+
+[[bin]]
+name = "strip"
+path = "src/bin/strip.rs"
+required-features = ["strip", "quickjs"]
+
+[profile.release]
+strip = true
+lto = "thin"
+codegen-units = 1
