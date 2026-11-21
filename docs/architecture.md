@@ -142,7 +142,8 @@ result is an ADR, spike code is never merged into the crates.
 1. **S1 Script runtime:** an embedded JavaScript engine for TypeScript
    scripts – QuickJS (`rquickjs`) vs. Boa vs. V8 (`deno_core`), with type
    stripping by `oxc` or `swc`: size, start time, timeouts, sandbox,
-   language coverage, distribution.
+   language coverage, distribution. Proposed: QuickJS with oxc –
+   [`docs/adr/s1-script-runtime.md`](adr/s1-script-runtime.md).
 2. **S2 Checker and completion:** the TypeScript language service (in the
    web view, or in the script engine behind a port) vs. own checks from the
    `.d.ts` declarations in Rust (e.g. `oxc` parser and semantic analysis).
