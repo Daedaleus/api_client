@@ -23,6 +23,8 @@
 //  11. switching the certificate check off shows a warning and is saved,
 //  12. a pasted cURL command opens as a new tab and is sent; a request is
 //      copied as a cURL command,
+//  13. a Postman export is imported as a new collection on disk (through the
+//      real IPC command: native file dialogs cannot be driven from here),
 // and the program is still running after each send.
 //
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
@@ -221,7 +223,7 @@ function evaluate(expression) {
       JSON.stringify({
         id,
         method: 'Runtime.evaluate',
-        params: { expression, returnByValue: true },
+        params: { expression, returnByValue: true, awaitPromise: true },
       }),
     );
   });
@@ -697,7 +699,8 @@ check(exitCode === null, 'program still running after sending without certificat
 // --- 12. cURL ---------------------------------------------------------------------
 
 const pasted = `curl '${echoUrl}?curl=1' -H 'X-Client: pasted' --data-raw '{"a":1}' --compressed`;
-await evaluate(`[...document.querySelectorAll('.sidebar__toolbar .button')].at(-1).click()`);
+// Toolbar: Open, New, Paste cURL, Import Postman.
+await evaluate(`document.querySelectorAll('.sidebar__toolbar .button')[2].click()`);
 await waitFor(`!!document.querySelector('.curl-import__text')`, 'cURL import dialog');
 await evaluate(setValue('.curl-import__text', pasted));
 await evaluate(`document.querySelector('.curl-import [type=submit]').click()`);
@@ -729,5 +732,34 @@ check(
   'request copied as a cURL command',
 );
 check(exitCode === null, 'program still running after the cURL round trip');
+
+// --- 13. Postman import -----------------------------------------------------------
+
+const postmanFile = path.join(
+  ROOT,
+  'crates/ac_interchange/src/tests/fixtures/shop.postman_collection.json',
+);
+const importedDir = path.join(collections, 'imported-from-postman');
+const importAck = await evaluate(`window.__TAURI_INTERNALS__.invoke('execute', {
+  command: {
+    type: 'importPostman',
+    file: ${JSON.stringify(postmanFile)},
+    path: ${JSON.stringify(importedDir)},
+  },
+})`);
+check(
+  importAck?.type === 'collectionImported' &&
+    importAck.collection.name === 'Shop API' &&
+    importAck.skipped.length === 3,
+  'Postman export imported, left-out parts reported',
+);
+const importedSettings = readFileSync(path.join(importedDir, 'collection.toml'), 'utf8');
+check(
+  importedSettings.includes('name = "Shop API"') && importedSettings.includes('type = "bearer"'),
+  'imported collection written with its auth',
+);
+const login = readFileSync(path.join(importedDir, 'auth', 'login.toml'), 'utf8');
+check(login.includes('url = "{{baseUrl}}/auth/login"'), 'imported request written to its folder');
+check(exitCode === null, 'program still running after importing');
 
 finish(null);

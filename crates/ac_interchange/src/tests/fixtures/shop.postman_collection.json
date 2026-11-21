@@ -1,0 +1,142 @@
+{
+  "info": {
+    "_postman_id": "8a1c2f3e-1d2b-4c5d-9e8f-0a1b2c3d4e5f",
+    "name": "Shop API",
+    "description": "Shortened example in the shape of a Postman v2.1 export.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "12345678"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.environment.set(\"token\", pm.response.json().token);"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json", "type": "text" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user\": \"{{user}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        }
+      ],
+      "variable": [{ "key": "area", "value": "auth" }]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "List products",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Debug", "value": "1", "disabled": true }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products?page=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [{ "key": "page", "value": "1" }]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Upload image",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "title", "value": "Teapot", "type": "text" },
+                { "key": "image", "type": "file", "src": ["/Users/alice/teapot.png"] },
+                { "key": "note", "value": "x", "type": "text", "disabled": true }
+              ]
+            },
+            "url": "{{baseUrl}}/products/1/image"
+          },
+          "response": []
+        },
+        {
+          "name": "Search",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [{ "key": "q", "value": "tea", "type": "text" }]
+            },
+            "url": { "raw": "{{baseUrl}}/search" }
+          },
+          "response": []
+        },
+        {
+          "name": "GraphQL",
+          "request": {
+            "auth": { "type": "oauth2", "oauth2": [{ "key": "grant_type", "value": "client_credentials" }] },
+            "method": "POST",
+            "header": [],
+            "body": { "mode": "graphql", "graphql": { "query": "{ products { id } }" } },
+            "url": { "raw": "{{baseUrl}}/graphql" }
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "apikey",
+        "apikey": [
+          { "key": "value", "value": "{{apiKey}}", "type": "string" },
+          { "key": "key", "value": "X-API-Key", "type": "string" },
+          { "key": "in", "value": "header", "type": "string" }
+        ]
+      }
+    },
+    {
+      "name": "Health",
+      "request": "{{baseUrl}}/health",
+      "response": []
+    },
+    {
+      "name": "Upload binary",
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "body": { "mode": "file", "file": { "src": "data/payload.bin" } },
+        "url": { "raw": "{{baseUrl}}/upload" }
+      },
+      "response": []
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "event": [
+    { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [""] } }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "https://api.example.com", "type": "string" },
+    { "key": "retries", "value": 3, "type": "number" },
+    { "key": "legacy", "value": "x", "disabled": true }
+  ]
+}

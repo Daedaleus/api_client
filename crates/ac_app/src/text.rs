@@ -77,6 +77,14 @@ pub mod keys {
     pub const FILE_RELATIVE: &str = "error.file_relative";
     /// A pasted text is no usable cURL command. Argument: `detail`.
     pub const CURL_INVALID: &str = "error.curl_invalid";
+    /// A file is no usable Postman collection. Argument: `detail`.
+    pub const POSTMAN_INVALID: &str = "error.postman_invalid";
+    /// An import left out scripts. Argument: `item`.
+    pub const IMPORT_SKIPPED_SCRIPTS: &str = "import.skipped_scripts";
+    /// An import left out an auth type. Arguments: `item`, `kind`.
+    pub const IMPORT_SKIPPED_AUTH: &str = "import.skipped_auth";
+    /// An import left out a body. Arguments: `item`, `mode`.
+    pub const IMPORT_SKIPPED_BODY: &str = "import.skipped_body";
     /// Any other transport failure. Argument: `detail`.
     pub const REQUEST: &str = "error.request";
 
@@ -101,7 +109,7 @@ pub mod keys {
 
     /// All keys with the names of their placeholders, checked against the
     /// translation file by a test.
-    pub const ALL: [(&str, &[&str]); 28] = [
+    pub const ALL: [(&str, &[&str]); 32] = [
         (URL_EMPTY, &[]),
         (URL_INVALID, &["reason"]),
         (URL_SCHEME, &["scheme"]),
@@ -120,6 +128,10 @@ pub mod keys {
         (FILE_UNREADABLE, &["path", "detail"]),
         (FILE_RELATIVE, &["path"]),
         (CURL_INVALID, &["detail"]),
+        (POSTMAN_INVALID, &["detail"]),
+        (IMPORT_SKIPPED_SCRIPTS, &["item"]),
+        (IMPORT_SKIPPED_AUTH, &["item", "kind"]),
+        (IMPORT_SKIPPED_BODY, &["item", "mode"]),
         (REQUEST, &["detail"]),
         (STORE_IO, &["path", "detail"]),
         (STORE_DAMAGED, &["path", "detail"]),

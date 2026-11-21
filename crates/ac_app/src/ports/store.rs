@@ -93,6 +93,23 @@ pub trait CollectionStore: Send + Sync + 'static {
         defaults: &RequestDefaults,
     ) -> Result<(), StoreError>;
 
+    /// Writes `collection` as a new collection into `root` (imports) and
+    /// loads it.
+    ///
+    /// # Errors
+    /// If `root` already holds a collection or cannot be written.
+    fn import_collection(
+        &self,
+        root: &Path,
+        collection: &Collection,
+    ) -> Result<OpenedCollection, StoreError>;
+
+    /// The text of a file the user picked to import.
+    ///
+    /// # Errors
+    /// If it cannot be read or is no UTF-8 text.
+    fn read_text(&self, file: &Path) -> Result<String, StoreError>;
+
     /// The encrypted secrets of the environment in `environment_file`;
     /// `None` if it has none.
     ///
@@ -166,6 +183,16 @@ impl<T: CollectionStore> CollectionStore for Arc<T> {
         defaults: &RequestDefaults,
     ) -> Result<(), StoreError> {
         T::save_folder_defaults(self, dir, id, name, defaults)
+    }
+    fn import_collection(
+        &self,
+        root: &Path,
+        collection: &Collection,
+    ) -> Result<OpenedCollection, StoreError> {
+        T::import_collection(self, root, collection)
+    }
+    fn read_text(&self, file: &Path) -> Result<String, StoreError> {
+        T::read_text(self, file)
     }
     fn read_secrets(&self, environment_file: &Path) -> Result<Option<Vec<u8>>, StoreError> {
         T::read_secrets(self, environment_file)

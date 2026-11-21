@@ -7,6 +7,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::text::UserText;
+
 use crate::view::{
     AuthDraft, CertificateCheckView, CollectionView, EnvironmentDraft, OutgoingRequest,
     RecipientsView, RequestDraft, VariableDraft,
@@ -113,6 +115,14 @@ pub enum Command {
         /// The certificate check (`inherit` on the collection means on).
         certificate_check: CertificateCheckView,
     },
+    /// Import a Postman collection (v2.1, v2.0) as a new collection and open
+    /// it.
+    ImportPostman {
+        /// The exported Postman file.
+        file: String,
+        /// The folder for the new collection (created if needed).
+        path: String,
+    },
     /// Set who the collection's secrets are encrypted for and re-encrypt
     /// the secrets of every environment. Nothing changes if any of them
     /// cannot be decrypted.
@@ -150,6 +160,13 @@ pub enum CommandAck {
         collection: Box<CollectionView>,
         /// The item a create command made, if any.
         created_id: Option<String>,
+    },
+    /// A collection was imported and opened.
+    CollectionImported {
+        /// The new collection.
+        collection: Box<CollectionView>,
+        /// What could not be taken over, to show the user.
+        skipped: Vec<UserText>,
     },
     /// A collection was closed.
     CollectionClosed {

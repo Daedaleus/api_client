@@ -181,7 +181,7 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
     }
 
     /// Adds the collection to the open ones (once).
-    fn remember(&self, opened: &OpenedCollection) {
+    pub(super) fn remember(&self, opened: &OpenedCollection) {
         let mut open = self.open_collections();
         let id = opened.collection.id;
         if !open.iter().any(|(open_id, _)| *open_id == id) {

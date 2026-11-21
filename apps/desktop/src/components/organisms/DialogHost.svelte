@@ -59,9 +59,18 @@
           </label>
         {:else}
           <p class="dialog-host__message">{i18n.text(current.message)}</p>
+          {#if current.kind === 'info'}
+            <ul class="dialog-host__items">
+              {#each current.items as item, index (index)}
+                <li>{i18n.text(item)}</li>
+              {/each}
+            </ul>
+          {/if}
         {/if}
         <div class="dialog-host__actions">
-          <Button onclick={cancel}>{i18n.t('dialog.cancel')}</Button>
+          {#if current.kind !== 'info'}
+            <Button onclick={cancel}>{i18n.t('dialog.cancel')}</Button>
+          {/if}
           <Button type="submit" variant="primary">{i18n.t('dialog.ok')}</Button>
         </div>
       </form>
@@ -118,6 +127,14 @@
   .dialog-host__message {
     margin: 0;
     line-height: 1.5;
+  }
+
+  .dialog-host__items {
+    max-height: 40vh;
+    margin: 0;
+    padding-left: var(--space-l);
+    overflow-y: auto;
+    line-height: 1.6;
   }
 
   .dialog-host__actions {

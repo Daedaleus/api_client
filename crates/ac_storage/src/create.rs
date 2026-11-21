@@ -3,17 +3,17 @@
 
 use std::path::{Path, PathBuf};
 
-use ac_domain::collection::{ItemId, Request};
+use ac_domain::collection::{Collection, Item, ItemId, Request, RequestDefaults};
 use toml_edit::DocumentMut;
 
 use crate::document;
 use crate::error::StorageError;
-use crate::format::{COLLECTION_FILE, COLLECTION_FORMAT, CURRENT_VERSION};
+use crate::format::{COLLECTION_FILE, COLLECTION_FORMAT, CURRENT_VERSION, RESERVED_ROOT_FOLDERS};
 use crate::load::{LoadedCollection, load_collection};
 use crate::names::{file_name, slug, unique_dir, unique_file};
 use crate::order;
 use crate::request_file::save_request;
-use crate::settings::save_folder_settings;
+use crate::settings::{save_collection_defaults, save_folder_defaults, save_folder_settings};
 
 /// Name stem when a request name has no usable characters.
 const REQUEST_FALLBACK: &str = "request";
@@ -61,12 +61,63 @@ pub fn create_request(dir: &Path, request: &Request) -> Result<PathBuf, StorageE
 /// # Errors
 /// If the directory or a settings file cannot be written.
 pub fn create_folder(parent: &Path, name: &str) -> Result<(PathBuf, ItemId), StorageError> {
-    let dir = unique_dir(parent, &slug(name, FOLDER_FALLBACK));
+    let mut stem = slug(name, FOLDER_FALLBACK);
+    // `environments` and `secrets` in the collection root are no request
+    // folders: a folder of that name would vanish from the tree.
+    if parent.join(COLLECTION_FILE).is_file() && RESERVED_ROOT_FOLDERS.contains(&stem.as_str()) {
+        stem.push_str("-folder");
+    }
+    let dir = unique_dir(parent, &stem);
     std::fs::create_dir(&dir).map_err(|error| StorageError::io(&dir, error))?;
     let id = ItemId::new();
     save_folder_settings(&dir, id, name)?;
     order::append(parent, &file_name(&dir))?;
     Ok((dir, id))
+}
+
+/// Writes `collection` as a new collection into `root` (imports): its
+/// settings, then every folder and request in order. Ids of folders and
+/// requests are kept; the collection gets a new one.
+///
+/// # Errors
+/// [`StorageError::AlreadyExists`] if `root` already holds a collection, or
+/// a file cannot be written (what was written so far stays).
+pub fn write_collection(
+    root: &Path,
+    collection: &Collection,
+) -> Result<LoadedCollection, StorageError> {
+    create_collection(root, &collection.name)?;
+    save_collection_defaults(
+        root,
+        &RequestDefaults {
+            variables: collection.variables.clone(),
+            auth: collection.auth.clone(),
+            certificate_check: collection.certificate_check,
+        },
+    )?;
+    write_items(root, &collection.items)?;
+    load_collection(root)
+}
+
+fn write_items(dir: &Path, items: &[Item]) -> Result<(), StorageError> {
+    for item in items {
+        match item {
+            Item::Request(request) => {
+                create_request(dir, request)?;
+            }
+            Item::Folder(folder) => {
+                let (path, id) = create_folder(dir, &folder.name)?;
+                let defaults = RequestDefaults {
+                    variables: folder.variables.clone(),
+                    auth: folder.auth.clone(),
+                    certificate_check: folder.certificate_check,
+                };
+                save_folder_defaults(&path, id, &folder.name, &defaults)?;
+                write_items(&path, &folder.items)?;
+            }
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]

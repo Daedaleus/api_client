@@ -90,6 +90,32 @@ export class Workspace {
     if (name) await this.collections.run({ type: 'createCollection', path, name });
   }
 
+  /**
+   * Imports a Postman export: the user picks the file, then the folder for
+   * the new collection. What could not be taken over is shown afterwards.
+   */
+  async importPostman(): Promise<void> {
+    const file = await this.#api.pickFile();
+    if (!file) return;
+    const path = await this.#api.pickFolder();
+    if (!path) return;
+    this.collections.error = null;
+    try {
+      const ack = await this.#api.execute({ type: 'importPostman', file, path });
+      if (ack.type !== 'collectionImported') throw new Error(`unexpected answer ${ack.type}`);
+      this.collections.apply(ack.collection);
+      if (ack.skipped.length > 0) {
+        await this.dialogs.inform(
+          { key: 'import.done', args: {} },
+          { key: 'import.skipped_intro', args: {} },
+          ack.skipped,
+        );
+      }
+    } catch (error) {
+      this.collections.error = toUserText(error);
+    }
+  }
+
   async closeCollection(collectionId: string): Promise<void> {
     const dirty = this.tabs.tabs.some((tab) => tab.isFor(collectionId) && tab.dirty);
     if (dirty && !(await this.#confirmDiscard())) return;
