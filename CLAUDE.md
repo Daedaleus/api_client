@@ -301,11 +301,11 @@ language only determines how they are implemented idiomatically.
 - **Script runtime (decided):** QuickJS via `rquickjs`, TypeScript stripped
   with `oxc`; a fresh runtime per run with time and memory limits
   ([ADR S1](docs/adr/s1-script-runtime.md)).
-- **Open decisions** *(open)*: final UI framework, project name and the
-  tooling for checker/completion (e.g. the TypeScript language
-  service, which runs in JavaScript, vs. own checks from the `.d.ts` in
-  Rust – keeping in mind that checker and completion belong below the
-  replaceable UI).
+- **Checker and completion (decided):** the TypeScript language service runs
+  in QuickJS inside `ac_scripting` behind the `ScriptAssist` port (below the
+  replaceable UI); oxc gives instant syntax errors until it is ready
+  ([ADR S2](docs/adr/s2-script-assist.md)).
+- **Open decisions** *(open)*: final UI framework and project name.
 - **Name caution:** "Bruno" and "Postman" are third-party names – use them only
   to describe compatibility/import, not as or in the project name or branding.
 - **Repository and branch:** <https://github.com/Daedaleus/api_client>

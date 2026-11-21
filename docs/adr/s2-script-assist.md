@@ -1,6 +1,6 @@
 # ADR S2: Script checker and code completion
 
-Status: proposed (2026-11-21). Issue #10.
+Status: accepted (2026-11-21). Issue #10.
 
 ## Context
 
@@ -54,7 +54,7 @@ three completion cases against a sample `api.d.ts`, for three approaches:
   switch to the Go version (as a separate process or library) would only
   replace the adapter behind the port.
 
-## Decision (proposed)
+## Decision
 
 1. **The TypeScript language service in QuickJS** checks and completes
    scripts, in `ac_scripting` behind the `ScriptAssist` port. The application
