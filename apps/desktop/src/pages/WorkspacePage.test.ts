@@ -109,6 +109,17 @@ describe('WorkspacePage', () => {
     expect(openTabs()).toHaveLength(3);
   });
 
+  it('opens a collection folder with its own button', async () => {
+    const { api } = await setup();
+    api.folder = 'C:\\apis\\billing';
+    api.answers.push(changed(shop()));
+    await userEvent.click(screen.getByRole('button', { name: 'Open collection …' }));
+    await waitFor(() =>
+      expect(api.commands.at(-1)).toEqual({ type: 'openCollection', path: api.folder }),
+    );
+    expect(api.picks.at(-1)?.kind).toBe('folder');
+  });
+
   it('offers the actions of a collection by right click', async () => {
     await setup();
     const sidebar = screen.getByRole('complementary', { name: 'Collections' });

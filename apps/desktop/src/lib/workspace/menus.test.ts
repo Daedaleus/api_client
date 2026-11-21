@@ -14,7 +14,6 @@ function workspace() {
     curl: { openImport: vi.fn() },
     defaults: { open: vi.fn() },
     createCollection: vi.fn(),
-    openCollection: vi.fn(),
     importCollection: vi.fn(),
     newRequest: vi.fn(),
     newFolder: vi.fn(),
@@ -38,14 +37,13 @@ function chooseAll(items: MenuItem[]): string[] {
 describe('sidebar menus', () => {
   beforeEach(() => i18n.setLocale('en'));
 
-  it('"New" creates, opens and imports', () => {
+  it('"New" creates and imports', () => {
     const fake = workspace();
     const items = newMenu(fake as unknown as Workspace);
     expect(entries(items)[0]).toMatchObject({ label: 'New request', shortcut: 'Ctrl+N' });
     expect(chooseAll(items)).toEqual([
       'new-request',
       'new-collection',
-      'open-collection',
       'import',
       'import-postman',
       'import-openapi',
@@ -54,7 +52,6 @@ describe('sidebar menus', () => {
     ]);
     expect(fake.tabs.openScratch).toHaveBeenCalledOnce();
     expect(fake.createCollection).toHaveBeenCalledOnce();
-    expect(fake.openCollection).toHaveBeenCalledOnce();
     expect(fake.importCollection.mock.calls).toEqual([['postman'], ['openapi'], ['bruno']]);
     expect(fake.curl.openImport).toHaveBeenCalledOnce();
   });

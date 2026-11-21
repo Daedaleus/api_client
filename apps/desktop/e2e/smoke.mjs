@@ -28,6 +28,8 @@
 //  13. a Postman export, an OpenAPI description and a Bruno collection are
 //      imported as new collections on disk (through the real IPC command: native file
 //      dialogs cannot be driven from here),
+//  14. large JSON responses (0.9 MB shown formatted, 10 MB shown truncated)
+//      appear in time without blocking the window for long,
 // and the program is still running after each send.
 //
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
@@ -136,9 +138,34 @@ const tokenRequests = [];
 /** Sign-in pages (OAuth 2 authorization code) opened, as query parameters. */
 const signIns = [];
 
+/** A JSON array of about `bytes` bytes (spike S3: large responses). */
+function largeJson(bytes) {
+  const item = (id) =>
+    JSON.stringify({
+      id,
+      name: `Product ${id}`,
+      price: id / 100,
+      tags: ['a', 'b'],
+      stock: { eu: id % 7, us: id % 11 },
+    });
+  const items = [];
+  let size = 2;
+  for (let id = 0; size < bytes; id++) {
+    const next = item(id);
+    items.push(next);
+    size += next.length + 1;
+  }
+  return `[${items.join(',')}]`;
+}
+const largeBodies = { '/large/0.9': largeJson(900_000), '/large/10': largeJson(10_000_000) };
+
 server = http.createServer((request, response) => {
   response.setHeader('Content-Type', 'application/json');
   response.setHeader('X-Test', 'e2e');
+  if (request.url in largeBodies) {
+    response.end(largeBodies[request.url]);
+    return;
+  }
   if (request.url === '/token') {
     let form = '';
     request.on('data', (chunk) => (form += chunk));
@@ -952,5 +979,52 @@ check(
   'Bruno environment written, secrets marked',
 );
 check(exitCode === null, 'program still running after importing');
+
+// --- 14. Large responses -----------------------------------------------------------
+
+// Measured in the window: from the click until the body is in the page and
+// painted, and the longest gap between two frames meanwhile (a frozen
+// window shows as a long gap).
+const measure = (expectedStart, minimum) => `new Promise((resolve) => {
+  const start = performance.now();
+  let last = start;
+  let maxGap = 0;
+  let shown = null;
+  const tick = (now) => {
+    maxGap = Math.max(maxGap, now - last);
+    last = now;
+    if (shown === null) requestAnimationFrame(tick);
+    else resolve({ shownMs: Math.round(shown), maxGapMs: Math.round(maxGap) });
+  };
+  requestAnimationFrame(tick);
+  const done = () => {
+    const text = document.querySelector('.response__body')?.textContent ?? '';
+    return text.startsWith(${JSON.stringify(expectedStart)}) && text.length >= ${minimum};
+  };
+  new MutationObserver((_, observer) => {
+    if (!done()) return;
+    observer.disconnect();
+    requestAnimationFrame(() => (shown = performance.now() - start));
+  }).observe(document.body, { childList: true, subtree: true, characterData: true });
+  document.querySelector('.url-bar button[type=submit]').click();
+})`;
+for (const [size, minimum, formatted] of [
+  ['0.9', 900_000, true],
+  ['10', 1_000_000, false],
+]) {
+  await evaluate(setValue('.url-bar__select', 'GET', 'change'));
+  await evaluate(setValue('.url-bar__input', `${origin}/large/${size}`));
+  const { shownMs, maxGapMs } = await evaluate(measure(formatted ? '[\n' : '[{', minimum));
+  const truncated = await evaluate(
+    `[...document.querySelectorAll('.response__note')].some((note) => note.textContent.includes('MB'))`,
+  );
+  check(
+    shownMs < 5000 && maxGapMs < 2000 && truncated !== formatted,
+    `${size} MB JSON response shown ${formatted ? 'formatted' : 'truncated'} in ${shownMs} ms (longest frame gap ${maxGapMs} ms)`,
+  );
+}
+await evaluate(`document.querySelectorAll('.response__tab')[1].click()`);
+await waitFor(`!!document.querySelector('.response__headers')`, 'headers after a large response');
+check(exitCode === null, 'program still running after large responses');
 
 finish(null);
