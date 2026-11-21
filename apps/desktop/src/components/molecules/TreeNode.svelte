@@ -1,10 +1,12 @@
 <script lang="ts">
   import Icon from '../atoms/Icon.svelte';
-  import IconButton from '../atoms/IconButton.svelte';
   import MethodBadge from '../atoms/MethodBadge.svelte';
   import { i18n } from '../../lib/i18n/i18n.svelte';
   import type { TreeItemView } from '../../lib/types';
   import type { Workspace } from '../../lib/workspace/workspace.svelte';
+  import { treeItemMenu } from '../../lib/workspace/menus';
+  import ContextMenu from './ContextMenu.svelte';
+  import MenuButton from './MenuButton.svelte';
   import TreeNode from './TreeNode.svelte';
 
   interface Props {
@@ -23,63 +25,46 @@
 </script>
 
 <li class="tree-node">
-  <div class="tree-node__row" class:tree-node__row--active={active} style:--depth={depth}>
-    {#if item.kind === 'folder'}
-      <button
-        type="button"
-        class="tree-node__main"
-        aria-expanded={expanded}
-        onclick={() => (expanded = !expanded)}
-      >
-        <span class="tree-node__chevron" class:tree-node__chevron--open={expanded}>
-          <Icon name="chevron" size={12} />
-        </span>
-        <span class="tree-node__name">{item.name}</span>
-      </button>
-    {:else}
-      <button
-        type="button"
-        class="tree-node__main"
-        aria-current={active ? 'page' : undefined}
-        onclick={() => workspace.openRequest(collectionId, item.id)}
-      >
-        <MethodBadge method={item.method} />
-        <span class="tree-node__name">{item.name}</span>
-      </button>
-    {/if}
-    {#if item.readOnly}
-      <span class="tree-node__note">{i18n.t('collection.read_only')}</span>
-    {/if}
-    <span class="tree-node__actions">
+  <ContextMenu
+    label={i18n.t('menu.more', { name: item.name })}
+    items={() => treeItemMenu(workspace, collectionId, item)}
+  >
+    <div class="tree-node__row" class:tree-node__row--active={active} style:--depth={depth}>
       {#if item.kind === 'folder'}
-        <IconButton
-          icon="plus"
-          label={i18n.t('collection.new_request')}
-          onclick={() => workspace.newRequest(collectionId, item.id)}
-        />
-        <IconButton
-          icon="folder-plus"
-          label={i18n.t('collection.new_folder')}
-          onclick={() => workspace.newFolder(collectionId, item.id)}
-        />
-        <IconButton
-          icon="braces"
-          label={i18n.t('collection.folder_variables')}
-          onclick={() => workspace.defaults.open(collectionId, item.id)}
-        />
+        <button
+          type="button"
+          class="tree-node__main"
+          aria-expanded={expanded}
+          onclick={() => (expanded = !expanded)}
+        >
+          <span class="tree-node__chevron" class:tree-node__chevron--open={expanded}>
+            <Icon name="chevron" size={12} />
+          </span>
+          <span class="tree-node__name">{item.name}</span>
+        </button>
+      {:else}
+        <button
+          type="button"
+          class="tree-node__main"
+          aria-current={active ? 'page' : undefined}
+          onclick={() => workspace.openRequest(collectionId, item.id)}
+        >
+          <MethodBadge method={item.method} />
+          <span class="tree-node__name">{item.name}</span>
+        </button>
       {/if}
-      <IconButton
-        icon="edit"
-        label={i18n.t('collection.rename')}
-        onclick={() => workspace.rename(collectionId, item)}
-      />
-      <IconButton
-        icon="trash"
-        label={i18n.t('collection.delete')}
-        onclick={() => workspace.remove(collectionId, item)}
-      />
-    </span>
-  </div>
+      {#if item.readOnly}
+        <span class="tree-node__note">{i18n.t('collection.read_only')}</span>
+      {/if}
+      <span class="tree-node__actions">
+        <MenuButton
+          icon="more"
+          label={i18n.t('menu.more', { name: item.name })}
+          items={treeItemMenu(workspace, collectionId, item)}
+        />
+      </span>
+    </div>
+  </ContextMenu>
   {#if item.kind === 'folder' && expanded && item.items.length > 0}
     <ul class="tree-node__children">
       {#each item.items as child (child.id)}

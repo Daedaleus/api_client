@@ -5,7 +5,7 @@ use std::path::Path;
 
 use ac_interchange::bruno::{self, BrunoFile};
 use ac_interchange::curl::{from_curl, to_curl};
-use ac_interchange::{Imported, Skipped, SkippedKind, import_collection};
+use ac_interchange::{ImportError, Imported, Skipped, SkippedKind, import_collection};
 
 use super::App;
 use crate::command::{CommandAck, QueryResult};
@@ -49,7 +49,10 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault, B: BrowserLogin> App<H, 
                 path: file.path,
                 text: file.text,
             })
-            .collect();
+            .collect::<Vec<_>>();
+        if !files.iter().any(|file| file.path == bruno::MARKER) {
+            return Err(ImportError::NotBruno.into());
+        }
         Ok(bruno::from_files(dir, &files))
     }
 

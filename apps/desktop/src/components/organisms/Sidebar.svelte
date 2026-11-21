@@ -1,7 +1,9 @@
 <script lang="ts">
-  import Button from '../atoms/Button.svelte';
   import IconButton from '../atoms/IconButton.svelte';
+  import ContextMenu from '../molecules/ContextMenu.svelte';
+  import MenuButton from '../molecules/MenuButton.svelte';
   import TreeNode from '../molecules/TreeNode.svelte';
+  import { collectionMenu, newMenu } from '../../lib/workspace/menus';
   import { i18n } from '../../lib/i18n/i18n.svelte';
   import type { Workspace } from '../../lib/workspace/workspace.svelte';
 
@@ -13,10 +15,11 @@
 <aside class="sidebar" aria-label={i18n.t('sidebar.title')}>
   <div class="sidebar__toolbar">
     <span class="sidebar__title">{i18n.t('sidebar.title')}</span>
-    <Button onclick={() => workspace.openCollection()}>{i18n.t('sidebar.open')}</Button>
-    <Button onclick={() => workspace.createCollection()}>{i18n.t('sidebar.create')}</Button>
-    <Button onclick={() => workspace.curl.openImport()}>{i18n.t('curl.import')}</Button>
-    <Button onclick={() => workspace.importCollection()}>{i18n.t('import.collection')}</Button>
+    <MenuButton
+      text={i18n.t('menu.new')}
+      label={i18n.t('menu.new_title')}
+      items={newMenu(workspace)}
+    />
   </div>
 
   {#if workspace.collections.error}
@@ -29,29 +32,24 @@
 
   {#each collections as collection (collection.id)}
     <section class="sidebar__collection" aria-label={collection.name}>
-      <div class="sidebar__collection-header">
-        <span class="sidebar__collection-name" title={collection.root}>{collection.name}</span>
-        <IconButton
-          icon="plus"
-          label={i18n.t('collection.new_request')}
-          onclick={() => workspace.newRequest(collection.id, collection.id)}
-        />
-        <IconButton
-          icon="folder-plus"
-          label={i18n.t('collection.new_folder')}
-          onclick={() => workspace.newFolder(collection.id, collection.id)}
-        />
-        <IconButton
-          icon="braces"
-          label={i18n.t('collection.variables')}
-          onclick={() => workspace.defaults.open(collection.id, collection.id)}
-        />
-        <IconButton
-          icon="close"
-          label={i18n.t('collection.close')}
-          onclick={() => workspace.closeCollection(collection.id)}
-        />
-      </div>
+      <ContextMenu
+        label={i18n.t('menu.more', { name: collection.name })}
+        items={() => collectionMenu(workspace, collection)}
+      >
+        <div class="sidebar__collection-header">
+          <span class="sidebar__collection-name" title={collection.root}>{collection.name}</span>
+          <IconButton
+            icon="plus"
+            label={i18n.t('collection.new_request')}
+            onclick={() => workspace.newRequest(collection.id, collection.id)}
+          />
+          <MenuButton
+            icon="more"
+            label={i18n.t('menu.more', { name: collection.name })}
+            items={collectionMenu(workspace, collection)}
+          />
+        </div>
+      </ContextMenu>
       {#if collection.problems.length > 0}
         <div class="sidebar__problems">
           <span>{i18n.t('sidebar.problems', { count: String(collection.problems.length) })}</span>

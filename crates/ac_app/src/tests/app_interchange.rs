@@ -239,6 +239,23 @@ async fn bruno_collections_are_imported_from_their_folder() {
         })
         .unwrap_err();
     assert_eq!(error.user_text().key, keys::STORE_IO);
+
+    // A folder with requests but without bruno.json is no Bruno collection.
+    fixture
+        .store
+        .add_file(std::path::Path::new("loose").join("health.bru"), "get {\n}");
+    let error = fixture
+        .app
+        .execute(Command::ImportCollection {
+            file: std::path::Path::new("loose")
+                .join("bruno.json")
+                .display()
+                .to_string(),
+            path: "other".into(),
+        })
+        .unwrap_err();
+    assert_eq!(error.user_text().key, keys::IMPORT_INVALID);
+    assert!(error.to_string().contains("bruno.json"), "{error}");
 }
 
 #[tokio::test]

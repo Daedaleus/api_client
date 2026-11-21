@@ -20,9 +20,9 @@ describe('collection import', () => {
 
   it('does nothing when the file or the folder is not chosen', async () => {
     const { api, workspace } = setup();
-    await workspace.importCollection();
+    await workspace.importCollection('postman');
     api.file = 'C:\\exports\\shop.json';
-    await workspace.importCollection();
+    await workspace.importCollection('postman');
     expect(api.commands).toEqual([]);
   });
 
@@ -32,7 +32,7 @@ describe('collection import', () => {
     api.file = 'C:\\exports\\shop.json';
     api.folder = 'C:\\apis\\shop';
     api.answers.push({ type: 'collectionImported', collection: shop(), skipped });
-    const importing = workspace.importCollection();
+    const importing = workspace.importCollection('postman');
     expect(await screen.findByRole('dialog')).toHaveTextContent('Import finished');
     expect(screen.getByText('“Login”: scripts (scripting comes later)')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
@@ -50,16 +50,51 @@ describe('collection import', () => {
     api.file = 'a.json';
     api.folder = 'b';
     api.answers.push({ type: 'collectionImported', collection: shop(), skipped: [] });
-    await workspace.importCollection();
+    await workspace.importCollection('postman');
     expect(workspace.dialogs.current).toBeNull();
 
     api.answers.push({ fail: { key: 'error.import_invalid', args: { detail: 'x' } } });
-    await workspace.importCollection();
+    await workspace.importCollection('postman');
     expect(workspace.collections.error?.key).toBe('error.import_invalid');
 
     api.answers.push({ type: 'runStarted', runId: 1 });
-    await workspace.importCollection();
+    await workspace.importCollection('postman');
     expect(workspace.collections.error?.args.detail).toBe('unexpected answer runStarted');
+  });
+
+  it('offers a file filter per format and names both dialogs', async () => {
+    const { api, workspace } = setup();
+    api.file = 'C:\\exports\\shop.yaml';
+    api.folder = 'C:\\apis\\shop';
+    api.answers.push({ type: 'collectionImported', collection: shop(), skipped: [] });
+    await workspace.importCollection('openapi');
+    expect(api.picks).toEqual([
+      {
+        kind: 'file',
+        options: {
+          title: 'Import an OpenAPI description',
+          filters: [
+            { name: 'OpenAPI (JSON, YAML)', extensions: ['json', 'yaml', 'yml'] },
+            { name: 'All files', extensions: ['*'] },
+          ],
+        },
+      },
+      { kind: 'folder', options: { title: 'Choose the folder for the new collection' } },
+    ]);
+  });
+
+  it('imports a Bruno collection from its folder', async () => {
+    const { api, workspace } = setup();
+    api.folder = 'C:\\apis\\bruno-shop\\';
+    api.answers.push({ type: 'collectionImported', collection: shop(), skipped: [] });
+    await workspace.importCollection('bruno');
+    expect(api.picks[0]).toEqual({
+      kind: 'folder',
+      options: { title: 'Choose the folder of the Bruno collection', filters: [] },
+    });
+    expect(api.commands[0]).toMatchObject({
+      file: 'C:\\apis\\bruno-shop\\bruno.json',
+    });
   });
 
   it('closes the note with Escape too', async () => {

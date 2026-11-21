@@ -41,9 +41,14 @@
 
   function keydown(event: KeyboardEvent) {
     const tab = workspace.tabs.active;
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's' && tab?.saved) {
+    const command = event.ctrlKey || event.metaKey;
+    const key = event.key.toLowerCase();
+    if (command && key === 's' && tab?.saved) {
       event.preventDefault();
       void workspace.save(tab);
+    } else if (command && key === 'n' && !event.shiftKey && !event.altKey) {
+      event.preventDefault();
+      workspace.tabs.openScratch();
     }
   }
 </script>

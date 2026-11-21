@@ -49,6 +49,9 @@ pub enum ImportError {
     /// A format this program does not read.
     #[error("not a Postman collection or OpenAPI 3 description")]
     Unknown,
+    /// A folder without `bruno.json`: no Bruno collection.
+    #[error("no Bruno collection here (bruno.json is missing)")]
+    NotBruno,
     /// Swagger 2.0, the predecessor of `OpenAPI` 3.
     #[error("Swagger 2.0 is not supported; convert it to OpenAPI 3 first")]
     Swagger2,
@@ -70,7 +73,6 @@ pub fn import_collection(text: &str) -> Result<Imported, ImportError> {
     postman::from_value(&document).ok_or(ImportError::Unknown)
 }
 
-/// The document in `text`: JSON, else YAML (which also covers most JSON).
 /// An imported OAuth 2 redirect URL if the app can receive it; empty (any
 /// free port) otherwise, e.g. for the web callbacks of other tools.
 pub(crate) fn loopback_redirect(url: &str) -> String {
@@ -80,6 +82,7 @@ pub(crate) fn loopback_redirect(url: &str) -> String {
     }
 }
 
+/// The document in `text`: JSON, else YAML (which also covers most JSON).
 pub(crate) fn parse(text: &str) -> Result<Value, ImportError> {
     if let Ok(value) = serde_json::from_str(text) {
         return Ok(value);
