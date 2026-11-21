@@ -199,6 +199,7 @@
   "response.time": { "de": "Zeit", "en": "Time" },
   "response.size": { "de": "Größe", "en": "Size" },
   "response.body": { "de": "Body", "en": "Body" },
+  "response.logs": { "de": "Log", "en": "Log" },
   "response.headers": { "de": "Headers", "en": "Headers" },
   "response.body.none": { "de": "Kein Inhalt.", "en": "No content." },
   "response.body.binary": {
@@ -278,6 +279,21 @@
     "en": "Not saved. Create requests in a collection to save them."
   },
   "editor.sections": { "de": "Request-Bereiche", "en": "Request sections" },
+  "editor.scripts": { "de": "Skripte", "en": "Scripts" },
+  "scripts.hint": {
+    "de": "TypeScript oder JavaScript. Verfügbar sind req, res (nach der Response), env und log. Mit env.set gesetzte Variablen gelten für die folgenden Requests der Collection, bis sie geschlossen wird, und werden nie gespeichert.",
+    "en": "TypeScript or JavaScript. Available are req, res (after the response), env and log. Variables set with env.set apply to the following requests of the collection until it is closed, and are never saved."
+  },
+  "scripts.pre_request": { "de": "Vor dem Request", "en": "Before the request" },
+  "scripts.post_response": { "de": "Nach der Response", "en": "After the response" },
+  "scripts.placeholder_pre_request": {
+    "de": "req.setHeader('X-Trace', String(Date.now()));",
+    "en": "req.setHeader('X-Trace', String(Date.now()));"
+  },
+  "scripts.placeholder_post_response": {
+    "de": "env.set('token', res.json().token);",
+    "en": "env.set('token', res.json().token);"
+  },
   "editor.headers": { "de": "Headers", "en": "Headers" },
   "editor.body": { "de": "Body", "en": "Body" },
   "editor.no_headers": { "de": "Keine Header.", "en": "No headers." },
@@ -460,6 +476,14 @@
   "error.oauth_sign_in_timeout": {
     "de": "Die Anmeldung im Browser wurde nicht rechtzeitig abgeschlossen.",
     "en": "Signing in in the browser was not completed in time."
+  },
+  "error.script_pre_request": {
+    "de": "Skript vor dem Request: {detail}",
+    "en": "Pre-request script: {detail}"
+  },
+  "error.script_post_response": {
+    "de": "Skript nach der Response: {detail}",
+    "en": "Post-response script: {detail}"
   },
   "error.oauth_redirect": {
     "de": "Redirect-URL „{url}“ muss eine http-Adresse auf diesem Rechner sein (z. B. http://127.0.0.1:8080/callback).",

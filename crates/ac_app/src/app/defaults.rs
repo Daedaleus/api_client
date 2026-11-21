@@ -7,10 +7,12 @@ use super::App;
 use super::collections::{item_id_from, writable};
 use crate::command::CommandAck;
 use crate::error::AppError;
-use crate::ports::{BrowserLogin, CollectionStore, HttpSender, SecretVault};
+use crate::ports::{BrowserLogin, CollectionStore, HttpSender, ScriptRunner, SecretVault};
 use crate::view::{AuthDraft, CertificateCheckView, VariableDraft};
 
-impl<H: HttpSender, S: CollectionStore, V: SecretVault, B: BrowserLogin> App<H, S, V, B> {
+impl<H: HttpSender, S: CollectionStore, V: SecretVault, B: BrowserLogin, R: ScriptRunner>
+    App<H, S, V, B, R>
+{
     pub(super) fn save_defaults(
         &self,
         collection_id: &str,

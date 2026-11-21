@@ -58,15 +58,22 @@ fn outcome_json_matches_the_ui_contract() {
             "elapsedMs": 12,
             "sizeBytes": 2,
             "headers": [{ "name": "X-Id", "value": "1" }],
-            "body": { "text": "ok", "pretty": false, "truncated": false, "binary": false }
+            "body": { "text": "ok", "pretty": false, "truncated": false, "binary": false },
+            "logs": [],
+            "scriptError": null
         })
     );
 
     let failed = RunOutcomeView::Failed {
         error: UserText::new("error.timeout"),
+        logs: vec!["before".into()],
     };
     assert_eq!(
         serde_json::to_value(&failed).unwrap(),
-        serde_json::json!({ "kind": "failed", "error": { "key": "error.timeout", "args": {} } })
+        serde_json::json!({
+            "kind": "failed",
+            "error": { "key": "error.timeout", "args": {} },
+            "logs": ["before"]
+        })
     );
 }

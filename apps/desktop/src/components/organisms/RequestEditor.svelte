@@ -5,6 +5,7 @@
   import CertificateCheckField from '../molecules/CertificateCheckField.svelte';
   import BodyEditor from '../molecules/BodyEditor.svelte';
   import RowsEditor, { type RowLabels } from '../molecules/RowsEditor.svelte';
+  import ScriptsEditor from '../molecules/ScriptsEditor.svelte';
   import UrlBar from '../molecules/UrlBar.svelte';
   import { i18n } from '../../lib/i18n/i18n.svelte';
   import { hasPlaceholders, preview } from '../../lib/variables';
@@ -74,9 +75,14 @@
     empty: 'editor.no_variables',
   };
 
-  type Section = 'headers' | 'body' | 'auth' | 'variables' | 'settings';
-  const SECTIONS: Section[] = ['headers', 'body', 'auth', 'variables', 'settings'];
+  type Section = 'headers' | 'body' | 'auth' | 'variables' | 'settings' | 'scripts';
+  const SECTIONS: Section[] = ['headers', 'body', 'auth', 'variables', 'settings', 'scripts'];
   let section = $state<Section>('headers');
+  let scriptCount = $derived(
+    [tab.draft.scripts.preRequest, tab.draft.scripts.postResponse].filter(
+      (script) => script.trim() !== '',
+    ).length,
+  );
   let activeVariables = $derived(
     tab.draft.variables.filter((variable) => variable.enabled && variable.name.trim() !== '')
       .length,
@@ -147,6 +153,8 @@
           <span class="request-editor__count">{i18n.t(`auth.badge_${tab.draft.auth.kind}`)}</span>
         {:else if name === 'variables' && activeVariables > 0}
           <span class="request-editor__count">{activeVariables}</span>
+        {:else if name === 'scripts' && scriptCount > 0}
+          <span class="request-editor__count">{scriptCount}</span>
         {/if}
       </button>
     {/each}
@@ -168,6 +176,8 @@
       <AuthEditor bind:auth={tab.draft.auth} />
     {:else if section === 'settings'}
       <CertificateCheckField bind:check={tab.draft.certificateCheck} />
+    {:else if section === 'scripts'}
+      <ScriptsEditor bind:scripts={tab.draft.scripts} />
     {:else}
       <p class="request-editor__note">{i18n.t('editor.variables_hint')}</p>
       <RowsEditor bind:rows={tab.draft.variables} labels={VARIABLE_LABELS} />

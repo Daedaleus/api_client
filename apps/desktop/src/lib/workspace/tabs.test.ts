@@ -75,6 +75,7 @@ describe('TabsState', () => {
         variables: [],
         auth: { kind: 'inherit' },
         certificateCheck: 'inherit',
+        scripts: { preRequest: '', postResponse: '' },
         context: null,
       },
     ]);

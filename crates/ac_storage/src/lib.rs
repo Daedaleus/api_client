@@ -45,6 +45,7 @@ mod order;
 pub mod remove;
 pub mod request_file;
 mod rows;
+mod scripts;
 pub mod secrets_file;
 pub mod settings;
 pub mod store;

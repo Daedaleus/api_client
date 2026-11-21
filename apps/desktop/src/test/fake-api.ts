@@ -26,6 +26,8 @@ export const OK: RunOutcome = {
   sizeBytes: 2,
   headers: [],
   body: { text: 'ok', pretty: false, truncated: false, binary: false },
+  logs: [],
+  scriptError: null,
 };
 
 /** `Shop` with folder `Auth` (request `Login`) and request `Health`. */
@@ -80,6 +82,7 @@ export function draft(
     variables: [],
     auth: { kind: 'inherit' },
     certificateCheck: 'inherit',
+    scripts: { preRequest: '', postResponse: '' },
     readOnly: false,
     ...overrides,
   };

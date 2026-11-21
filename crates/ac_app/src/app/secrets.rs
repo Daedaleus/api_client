@@ -10,7 +10,7 @@ use ac_domain::environment::{Environment, UnresolvedVariable};
 use super::App;
 use crate::error::AppError;
 use crate::ports::{
-    BrowserLogin, CollectionStore, HttpSender, SecretError, SecretValues, SecretVault,
+    BrowserLogin, CollectionStore, HttpSender, ScriptRunner, SecretError, SecretValues, SecretVault,
 };
 
 /// An environment for sending, with the secret values that could be
@@ -21,7 +21,9 @@ pub(super) struct Unlocked {
     pub locked: Option<SecretError>,
 }
 
-impl<H: HttpSender, S: CollectionStore, V: SecretVault, B: BrowserLogin> App<H, S, V, B> {
+impl<H: HttpSender, S: CollectionStore, V: SecretVault, B: BrowserLogin, R: ScriptRunner>
+    App<H, S, V, B, R>
+{
     /// Fills in the secret values of `environment`, whose file is `file`.
     pub(super) fn unlock(
         &self,

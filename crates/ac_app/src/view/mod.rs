@@ -20,6 +20,7 @@ pub mod recipients;
 pub mod request_body;
 pub mod response;
 pub mod run_report;
+pub mod scripts;
 pub mod variable;
 
 pub use auth::{AuthDraft, CertificateCheckView, KeyPlacementView, OAuth2GrantView};
@@ -31,4 +32,5 @@ pub use recipients::RecipientsView;
 pub use request_body::{BodyDraft, FormFieldDraft, MultipartFieldDraft};
 pub use response::{HeaderView, ResponseView, RunOutcomeView, StatusClassView};
 pub use run_report::{RunReport, RunResult, RunResultOutcome};
+pub use scripts::ScriptsDraft;
 pub use variable::{SendContext, VariableDraft};

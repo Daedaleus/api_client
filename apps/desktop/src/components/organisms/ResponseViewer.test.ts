@@ -6,7 +6,10 @@ import { i18n } from '../../lib/i18n/i18n.svelte';
 import type { BodyView, RunOutcome } from '../../lib/types';
 import ResponseViewer from './ResponseViewer.svelte';
 
-function completed(body: Partial<BodyView> = {}, status = 200): RunOutcome {
+function completed(
+  body: Partial<BodyView> = {},
+  status = 200,
+): Extract<RunOutcome, { kind: 'completed' }> {
   return {
     kind: 'completed',
     status,
@@ -16,6 +19,8 @@ function completed(body: Partial<BodyView> = {}, status = 200): RunOutcome {
     sizeBytes: 2048,
     headers: [{ name: 'content-type', value: 'application/json' }],
     body: { text: '{\n  "a": 1\n}', pretty: true, truncated: false, binary: false, ...body },
+    logs: [],
+    scriptError: null,
   };
 }
 
@@ -60,10 +65,48 @@ describe('ResponseViewer', () => {
   it('shows why a request failed, in the chosen language', () => {
     i18n.setLocale('de');
     render(ResponseViewer, {
-      outcome: { kind: 'failed', error: { key: 'error.timeout', args: {} } },
+      outcome: { kind: 'failed', error: { key: 'error.timeout', args: {} }, logs: [] },
       sending: false,
     });
     expect(screen.getByRole('alert')).toHaveTextContent('Request fehlgeschlagen');
     expect(screen.getByRole('alert')).toHaveTextContent('Zeitüberschreitung');
+  });
+
+  it('shows what scripts logged and why the script after the response failed', async () => {
+    render(ResponseViewer, {
+      outcome: {
+        ...completed(),
+        logs: ['pre ran', 'status 200'],
+        scriptError: { key: 'error.script_post_response', args: { detail: 'Error: boom' } },
+      },
+      sending: false,
+    });
+    expect(screen.getByRole('alert')).toHaveTextContent('Post-response script: Error: boom');
+    await userEvent.click(screen.getByRole('tab', { name: /Log/ }));
+    expect(screen.getByText(/pre ran/)).toHaveTextContent('pre ran status 200');
+  });
+
+  it('shows the log of a failed run and no log tab without logs', () => {
+    render(ResponseViewer, {
+      outcome: {
+        kind: 'failed',
+        error: { key: 'error.script_pre_request', args: { detail: 'stopped after 5 s' } },
+        logs: ['started'],
+      },
+      sending: false,
+    });
+    expect(screen.getByRole('alert')).toHaveTextContent('Pre-request script: stopped after 5 s');
+    expect(screen.getByLabelText('Log')).toHaveTextContent('started');
+  });
+
+  it('falls back to the body when the log tab disappears', async () => {
+    const view = render(ResponseViewer, {
+      outcome: { ...completed(), logs: ['x'] },
+      sending: false,
+    });
+    await userEvent.click(screen.getByRole('tab', { name: /Log/ }));
+    await view.rerender({ outcome: completed(), sending: false });
+    expect(screen.queryByRole('tab', { name: /Log/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Body' })).toHaveAttribute('aria-selected', 'true');
   });
 });

@@ -11,11 +11,13 @@ use super::App;
 use crate::command::{CommandAck, QueryResult};
 use crate::error::AppError;
 use crate::oauth::{TOKEN_PLACEHOLDER, authorize};
-use crate::ports::{BrowserLogin, CollectionStore, HttpSender, SecretVault};
+use crate::ports::{BrowserLogin, CollectionStore, HttpSender, ScriptRunner, SecretVault};
 use crate::text::{UserText, keys};
 use crate::view::{CollectionView, OutgoingRequest, RequestDraft};
 
-impl<H: HttpSender, S: CollectionStore, V: SecretVault, B: BrowserLogin> App<H, S, V, B> {
+impl<H: HttpSender, S: CollectionStore, V: SecretVault, B: BrowserLogin, R: ScriptRunner>
+    App<H, S, V, B, R>
+{
     /// Converts another tool's file into a new collection in `path` and
     /// opens it; what has no counterpart is listed for the user. A Bruno
     /// collection is a folder: it is chosen by its `bruno.json`.

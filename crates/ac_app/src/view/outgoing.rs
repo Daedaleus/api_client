@@ -4,7 +4,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::view::{
-    AuthDraft, BodyDraft, CertificateCheckView, HeaderDraft, SendContext, VariableDraft,
+    AuthDraft, BodyDraft, CertificateCheckView, HeaderDraft, ScriptsDraft, SendContext,
+    VariableDraft,
 };
 
 /// A request as entered in the editor, with where its variables come from.
@@ -33,6 +34,9 @@ pub struct OutgoingRequest {
     /// folders and collection.
     #[serde(default)]
     pub certificate_check: CertificateCheckView,
+    /// Scripts before sending and after the response.
+    #[serde(default)]
+    pub scripts: ScriptsDraft,
     /// Where further `{{variables}}` come from: collection, folders and
     /// environment. Without it only the request's own variables count.
     #[serde(default)]
@@ -51,6 +55,7 @@ impl OutgoingRequest {
             variables: Vec::new(),
             auth: AuthDraft::Inherit,
             certificate_check: CertificateCheckView::Inherit,
+            scripts: ScriptsDraft::default(),
             context: None,
         }
     }

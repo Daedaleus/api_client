@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use std::time::Duration;
 
 use tokio::runtime::Handle;
@@ -8,11 +9,14 @@ use super::*;
 use crate::app::Ports;
 use crate::command::Command;
 use crate::ports::TransportError;
-use crate::testing::{FakeBrowserLogin, FakeHttpSender, FakeVault, MemoryStore, response};
+use crate::testing::{
+    FakeBrowserLogin, FakeHttpSender, FakeScriptRunner, FakeVault, MemoryStore, response,
+};
 use crate::text::{UserText, keys};
 use crate::view::BodyDraft;
+use crate::view::RunOutcomeView;
 
-type TestApp = App<Arc<FakeHttpSender>, MemoryStore, FakeVault, FakeBrowserLogin>;
+type TestApp = App<Arc<FakeHttpSender>, MemoryStore, FakeVault, FakeBrowserLogin, FakeScriptRunner>;
 
 fn app(fake: FakeHttpSender) -> (TestApp, Arc<FakeHttpSender>) {
     let fake = Arc::new(fake);
@@ -22,6 +26,7 @@ fn app(fake: FakeHttpSender) -> (TestApp, Arc<FakeHttpSender>) {
             store: MemoryStore::new(),
             vault: FakeVault::default(),
             login: FakeBrowserLogin::new(),
+            scripts: FakeScriptRunner::new(),
         },
         Handle::current(),
     );
@@ -39,6 +44,7 @@ fn send(method: &str, url: &str) -> Command {
     Command::SendRequest {
         request: crate::view::OutgoingRequest {
             certificate_check: crate::view::CertificateCheckView::Inherit,
+            scripts: crate::view::ScriptsDraft::default(),
             method: method.into(),
             url: url.into(),
             headers: Vec::new(),
@@ -56,6 +62,7 @@ async fn headers_and_body_are_sent() {
     app.execute(Command::SendRequest {
         request: crate::view::OutgoingRequest {
             certificate_check: crate::view::CertificateCheckView::Inherit,
+            scripts: crate::view::ScriptsDraft::default(),
             method: "POST".into(),
             url: "example.com/items".into(),
             headers: vec![HeaderDraft {
@@ -141,7 +148,8 @@ async fn transport_errors_are_a_normal_outcome() {
     assert_eq!(
         outcome,
         RunOutcomeView::Failed {
-            error: UserText::new(keys::TIMEOUT)
+            error: UserText::new(keys::TIMEOUT),
+            logs: Vec::new(),
         }
     );
 }
@@ -169,7 +177,7 @@ async fn unanswered_fake_and_transport_texts() {
     let mut events = app.subscribe();
     app.execute(send("GET", "a.example")).unwrap();
     let AppEvent::RunFinished { outcome, .. } = next_event(&mut events).await;
-    let RunOutcomeView::Failed { error } = outcome else {
+    let RunOutcomeView::Failed { error, .. } = outcome else {
         panic!("expected a failure");
     };
     assert_eq!(error.key, keys::REQUEST);
@@ -197,6 +205,7 @@ fn commands_and_events_match_the_ui_contract() {
         run_id: RunId(3),
         outcome: RunOutcomeView::Failed {
             error: UserText::new(keys::TIMEOUT),
+            logs: Vec::new(),
         },
     };
     assert_eq!(

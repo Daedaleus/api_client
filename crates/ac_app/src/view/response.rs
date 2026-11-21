@@ -22,6 +22,8 @@ pub enum RunOutcomeView {
     Failed {
         /// Why.
         error: UserText,
+        /// Lines the pre-request script logged before.
+        logs: Vec<String>,
     },
 }
 
@@ -44,6 +46,10 @@ pub struct ResponseView {
     pub headers: Vec<HeaderView>,
     /// Body preview.
     pub body: BodyView,
+    /// Lines the scripts logged, before and after the request.
+    pub logs: Vec<String>,
+    /// Why the post-response script failed, if it did.
+    pub script_error: Option<UserText>,
 }
 
 /// Class of a status code as the UI sees it (serialized in camelCase).
@@ -107,6 +113,8 @@ impl ResponseView {
                 })
                 .collect(),
             body: preview(response.header(header::CONTENT_TYPE), &response.body),
+            logs: Vec::new(),
+            script_error: None,
         }
     }
 }

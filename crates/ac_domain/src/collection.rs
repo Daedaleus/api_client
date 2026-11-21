@@ -9,6 +9,7 @@ use uuid::Uuid;
 use crate::auth::Auth;
 use crate::environment::Variable;
 use crate::protocol::HttpMethod;
+use crate::script::Scripts;
 use crate::tls::CertificateCheck;
 
 /// Stable identity of a collection, folder or request. Survives renaming and
@@ -223,6 +224,8 @@ pub struct Request {
     pub auth: Auth,
     /// Certificate check, or inherited from the folders and collection.
     pub certificate_check: CertificateCheck,
+    /// Scripts before sending and after the response.
+    pub scripts: Scripts,
 }
 
 impl Request {
@@ -239,6 +242,7 @@ impl Request {
             variables: Vec::new(),
             auth: Auth::Inherit,
             certificate_check: CertificateCheck::Inherit,
+            scripts: Scripts::default(),
         }
     }
 }

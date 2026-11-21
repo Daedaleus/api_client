@@ -246,3 +246,26 @@ async fn signs_in_in_the_browser_for_the_authorization_code() {
             .any(|header| header.name == "authorization" && header.value == "Bearer u")
     );
 }
+
+#[tokio::test]
+async fn a_failing_post_response_script_fails_the_request() {
+    let fixture = Fixture::with_scripts(
+        FakeHttpSender::new().reply(Ok(response(200, "text/plain", ""))),
+        crate::testing::FakeScriptRunner::new().result(Err(crate::ports::ScriptError::Failed(
+            "expected 201".into(),
+        ))),
+    );
+    let mut health = fixture.draft(&fixture.health);
+    health.url = "https://health.example.com".into();
+    health.scripts.post_response = "throw new Error('expected 201')".into();
+    fixture.save(health).unwrap();
+    let report = fixture
+        .app
+        .run(&fixture.collection, &plan(None, Some("Health")))
+        .await
+        .unwrap();
+    assert!(matches!(
+        &report.results[0].outcome,
+        RunResultOutcome::Failed { error } if error.key == keys::SCRIPT_POST_RESPONSE
+    ));
+}

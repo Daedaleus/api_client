@@ -102,6 +102,7 @@ export class TabsState {
       variables: tab.draft.variables,
       auth: tab.draft.auth,
       certificateCheck: tab.draft.certificateCheck,
+      scripts: tab.draft.scripts,
       context,
     };
   }
