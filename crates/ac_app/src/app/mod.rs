@@ -7,6 +7,7 @@
 //! - `environments`: environments of open collections.
 //! - `secrets`: secret variable values (decrypt for sending, encrypt on save).
 //! - `recipients`: who secrets are encrypted for, re-encrypting on change.
+//! - `runner`: running a collection's requests one after another (CLI).
 //! - `interchange`: cURL export and import.
 //! - `defaults`: what the collection and its folders pass on to requests.
 
@@ -15,8 +16,11 @@ mod defaults;
 mod environments;
 mod interchange;
 mod recipients;
+mod runner;
 mod runs;
 mod secrets;
+
+pub use runner::RunPlan;
 
 use std::path::PathBuf;
 use std::sync::atomic::AtomicU64;

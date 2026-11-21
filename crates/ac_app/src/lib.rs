@@ -32,7 +32,7 @@ pub mod testing;
 pub mod text;
 pub mod view;
 
-pub use app::{App, Ports};
+pub use app::{App, Ports, RunPlan};
 pub use command::{Command, CommandAck, Query, QueryResult, RunId};
 pub use error::AppError;
 pub use event::AppEvent;

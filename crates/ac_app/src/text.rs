@@ -101,6 +101,10 @@ pub mod keys {
     pub const NOT_A_COLLECTION: &str = "error.not_a_collection";
     /// A collection already exists there. Argument: `path`.
     pub const COLLECTION_EXISTS: &str = "error.collection_exists";
+    /// No environment of this name. Argument: `name`.
+    pub const UNKNOWN_ENVIRONMENT: &str = "error.unknown_environment";
+    /// Nothing matches what should be run. Argument: `path`.
+    pub const NOTHING_TO_RUN: &str = "error.nothing_to_run";
     /// The collection is not open (any more).
     pub const UNKNOWN_COLLECTION: &str = "error.unknown_collection";
     /// The item does not exist (any more), e.g. changed outside the app.
@@ -112,7 +116,7 @@ pub mod keys {
 
     /// All keys with the names of their placeholders, checked against the
     /// translation file by a test.
-    pub const ALL: [(&str, &[&str]); 33] = [
+    pub const ALL: [(&str, &[&str]); 35] = [
         (URL_EMPTY, &[]),
         (URL_INVALID, &["reason"]),
         (URL_SCHEME, &["scheme"]),
@@ -142,6 +146,8 @@ pub mod keys {
         (STORE_READ_ONLY, &["path"]),
         (NOT_A_COLLECTION, &["path"]),
         (COLLECTION_EXISTS, &["path"]),
+        (UNKNOWN_ENVIRONMENT, &["name"]),
+        (NOTHING_TO_RUN, &["path"]),
         (UNKNOWN_COLLECTION, &[]),
         (UNKNOWN_ITEM, &[]),
         (NOT_A_FOLDER, &[]),

@@ -8,6 +8,7 @@
 //! - [`request_body`]: the body of a saved request.
 //! - [`outgoing`]: a request as the editor sends it.
 //! - [`recipients`]: who secrets are encrypted for.
+//! - [`run_report`]: results of running requests one after another.
 //! - [`variable`]: variable rows and where variables come from when sending.
 
 pub mod auth;
@@ -18,6 +19,7 @@ pub mod outgoing;
 pub mod recipients;
 pub mod request_body;
 pub mod response;
+pub mod run_report;
 pub mod variable;
 
 pub use auth::{AuthDraft, CertificateCheckView, KeyPlacementView};
@@ -28,4 +30,5 @@ pub use outgoing::OutgoingRequest;
 pub use recipients::RecipientsView;
 pub use request_body::{BodyDraft, FormFieldDraft, MultipartFieldDraft};
 pub use response::{HeaderView, ResponseView, RunOutcomeView, StatusClassView};
+pub use run_report::{RunReport, RunResult, RunResultOutcome};
 pub use variable::{SendContext, VariableDraft};

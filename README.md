@@ -25,7 +25,7 @@ on your machine.
 - **Python scripts and tests** before and after a request, with a checker and
   code completion in the editor.
 - **Import** from Postman, Bruno and OpenAPI; **export** to cURL.
-- **Command line runner** for CI.
+- **Command line runner** for CI ([`docs/cli.md`](docs/cli.md)).
 - Interface in **English and German**, light and dark theme.
 
 ## Privacy and security
