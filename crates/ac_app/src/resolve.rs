@@ -29,6 +29,8 @@ pub(crate) struct Entered<'a> {
     pub auth: &'a Auth,
     /// Where relative file paths of the body start (the collection folder).
     pub files_base: Option<&'a Path>,
+    /// Check the server's TLS certificate.
+    pub verify_tls: bool,
 }
 
 /// Validates method, URL and headers as entered and prepares the body.
@@ -66,6 +68,7 @@ pub(crate) fn resolve_request(
         url,
         headers,
         body,
+        verify_tls: entered.verify_tls,
     })
 }
 

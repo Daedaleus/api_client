@@ -17,10 +17,13 @@ pub const USER_AGENT: &str = concat!("api_client/", env!("CARGO_PKG_VERSION"));
 /// Time allowed for a whole request, including reading the body.
 pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
 
-/// [`HttpSender`] backed by a shared reqwest client.
+/// [`HttpSender`] backed by shared reqwest clients: one that checks TLS
+/// certificates (the default) and one that does not, for requests whose
+/// user switched the check off.
 #[derive(Debug, Clone)]
 pub struct ReqwestSender {
     client: reqwest::Client,
+    unchecked: reqwest::Client,
 }
 
 impl ReqwestSender {
@@ -29,11 +32,15 @@ impl ReqwestSender {
     /// # Errors
     /// If the TLS backend cannot be initialised.
     pub fn new(timeout: Duration) -> Result<Self, reqwest::Error> {
-        let client = reqwest::Client::builder()
-            .user_agent(USER_AGENT)
-            .timeout(timeout)
-            .build()?;
-        Ok(Self { client })
+        let builder = || {
+            reqwest::Client::builder()
+                .user_agent(USER_AGENT)
+                .timeout(timeout)
+        };
+        Ok(Self {
+            client: builder().build()?,
+            unchecked: builder().danger_accept_invalid_certs(true).build()?,
+        })
     }
 }
 
@@ -41,7 +48,12 @@ impl HttpSender for ReqwestSender {
     async fn send(&self, request: ResolvedRequest) -> Result<Response, TransportError> {
         let method = reqwest::Method::from_bytes(request.method.as_str().as_bytes())
             .map_err(|error| TransportError::Other(error.to_string()))?;
-        let mut builder = self.client.request(method, request.url);
+        let client = if request.verify_tls {
+            &self.client
+        } else {
+            &self.unchecked
+        };
+        let mut builder = client.request(method, request.url);
         for header in request.headers {
             builder = builder.header(header.name, header.value);
         }

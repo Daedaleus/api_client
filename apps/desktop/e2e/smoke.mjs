@@ -20,6 +20,7 @@
 //      the request inherits it,
 //  10. a multipart upload and a binary body read a file relative to the
 //      collection folder,
+//  11. switching the certificate check off shows a warning and is saved,
 // and the program is still running after each send.
 //
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
@@ -664,5 +665,31 @@ check(
   'binary body sends the file as it is',
 );
 check(exitCode === null, 'program still running after sending files');
+
+// --- 11. Certificate check --------------------------------------------------------
+
+await evaluate(`document.querySelectorAll('.request-editor__section')[4].click()`);
+await waitFor(`!!document.querySelector('.certificate-check-field__select')`, 'settings tab');
+check(
+  !(await evaluate(`!!document.querySelector('.request-editor__insecure')`)),
+  'no warning while certificates are checked',
+);
+await evaluate(setValue('.certificate-check-field__select', 'off', 'change'));
+await waitFor(
+  `!!document.querySelector('.request-editor__insecure')`,
+  'warning about the switched-off check',
+);
+steps.push('switching the certificate check off shows a warning');
+await evaluate(`document.querySelector('.request-editor__header .button').click()`);
+saved = '';
+for (let attempt = 0; attempt < 40 && !saved.includes('verify_tls'); attempt++) {
+  await sleep(250);
+  saved = readFileSync(healthFile, 'utf8');
+}
+check(saved.includes('verify_tls = false'), 'switched-off check saved to health.toml');
+await evaluate(setValue('.url-bar__input', '{{baseUrl}}/echo?unchecked=1'));
+await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);
+await echoWith('unchecked=1', 'echo without certificate check');
+check(exitCode === null, 'program still running after sending without certificate check');
 
 finish(null);

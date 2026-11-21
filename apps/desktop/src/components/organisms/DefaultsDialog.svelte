@@ -1,6 +1,7 @@
 <script lang="ts">
   import Button from '../atoms/Button.svelte';
   import AuthEditor from '../molecules/AuthEditor.svelte';
+  import CertificateCheckField from '../molecules/CertificateCheckField.svelte';
   import RowsEditor, { type RowLabels } from '../molecules/RowsEditor.svelte';
   import { i18n } from '../../lib/i18n/i18n.svelte';
   import type { DefaultsState } from '../../lib/workspace/defaults.svelte';
@@ -16,8 +17,8 @@
     empty: 'env.no_variables',
   };
 
-  type Section = 'variables' | 'auth';
-  const SECTIONS: Section[] = ['variables', 'auth'];
+  type Section = 'variables' | 'auth' | 'settings';
+  const SECTIONS: Section[] = ['variables', 'auth', 'settings'];
   let section = $state<Section>('variables');
 
   function submit(event: SubmitEvent) {
@@ -68,8 +69,13 @@
         <div class="defaults-dialog__rows" role="tabpanel">
           {#if section === 'variables'}
             <RowsEditor bind:rows={editing.variables} labels={LABELS} />
-          {:else}
+          {:else if section === 'auth'}
             <AuthEditor bind:auth={editing.auth} root={editing.isCollection} />
+          {:else}
+            <CertificateCheckField
+              bind:check={editing.certificateCheck}
+              root={editing.isCollection}
+            />
           {/if}
         </div>
         {#if defaults.error}

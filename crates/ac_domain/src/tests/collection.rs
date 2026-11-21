@@ -45,6 +45,7 @@ fn items_are_found_anywhere_in_the_tree() {
     let nested = Request::new("Nested");
     let top = Request::new("Top");
     let folder = Folder {
+        certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: crate::auth::Auth::Inherit,
         variables: Vec::new(),
         id: ItemId::new(),
@@ -52,6 +53,7 @@ fn items_are_found_anywhere_in_the_tree() {
         items: vec![Item::Request(nested.clone())],
     };
     let collection = Collection {
+        certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: crate::auth::Auth::Inherit,
         variables: Vec::new(),
         id: ItemId::new(),
@@ -68,6 +70,7 @@ fn items_are_found_anywhere_in_the_tree() {
 fn items_expose_id_and_name() {
     let request = Request::new("Login");
     let folder = Folder {
+        certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: crate::auth::Auth::Inherit,
         variables: Vec::new(),
         id: ItemId::new(),
@@ -85,6 +88,7 @@ fn items_expose_id_and_name() {
 fn folders_around_an_item_lead_from_outside_in() {
     let login = Request::new("Login");
     let inner = Folder {
+        certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: crate::auth::Auth::Inherit,
         id: ItemId::new(),
         name: "v2".into(),
@@ -92,6 +96,7 @@ fn folders_around_an_item_lead_from_outside_in() {
         variables: Vec::new(),
     };
     let outer = Folder {
+        certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: crate::auth::Auth::Inherit,
         id: ItemId::new(),
         name: "Auth".into(),
@@ -100,6 +105,7 @@ fn folders_around_an_item_lead_from_outside_in() {
     };
     let health = Request::new("Health");
     let collection = Collection {
+        certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: crate::auth::Auth::Inherit,
         id: ItemId::new(),
         name: "Shop".into(),
@@ -123,6 +129,7 @@ fn requests_inherit_auth_from_the_innermost_folder_that_sets_one() {
     };
     let login = Request::new("Login");
     let mut inner = Folder {
+        certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: crate::auth::Auth::Inherit,
         id: ItemId::new(),
         name: "v2".into(),
@@ -130,6 +137,7 @@ fn requests_inherit_auth_from_the_innermost_folder_that_sets_one() {
         variables: Vec::new(),
     };
     let outer = |inner: &Folder| Folder {
+        certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: bearer("outer"),
         id: ItemId::new(),
         name: "Auth".into(),
@@ -137,6 +145,7 @@ fn requests_inherit_auth_from_the_innermost_folder_that_sets_one() {
         variables: Vec::new(),
     };
     let collection = |inner: &Folder| Collection {
+        certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: bearer("collection"),
         id: ItemId::new(),
         name: "Shop".into(),

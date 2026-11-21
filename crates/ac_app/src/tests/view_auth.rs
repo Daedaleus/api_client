@@ -35,3 +35,18 @@ fn every_kind_round_trips_and_matches_the_ui_contract() {
         serde_json::from_value(serde_json::json!({ "kind": "inherit" })).unwrap();
     assert_eq!(draft, AuthDraft::default());
 }
+
+#[test]
+fn certificate_checks_round_trip_and_match_the_ui_contract() {
+    for check in [
+        CertificateCheck::Inherit,
+        CertificateCheck::On,
+        CertificateCheck::Off,
+    ] {
+        assert_eq!(CertificateCheckView::from_check(check).to_check(), check);
+    }
+    assert_eq!(
+        serde_json::to_value(CertificateCheckView::Off).unwrap(),
+        serde_json::json!("off")
+    );
+}

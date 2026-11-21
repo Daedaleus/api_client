@@ -6,6 +6,7 @@ import type { Api } from '../api';
 import { toUserText } from '../errors';
 import type { KeyValueStorage } from '../storage';
 import type {
+  CertificateCheckView,
   CollectionView,
   EnvironmentDraft,
   SendContext,
@@ -166,6 +167,21 @@ export class Workspace {
     }
     layers.push(tab.draft.variables);
     return scopeValues(layers);
+  }
+
+  /**
+   * Whether the server certificate is checked for a tab's request: its own
+   * setting, else the innermost folder or the collection that has one; on
+   * by default (as when sending, ac_domain::tls).
+   */
+  checksCertificates(tab: RequestTab): boolean {
+    const chain: CertificateCheckView[] = [tab.draft.certificateCheck];
+    const collection = this.collectionOf(tab);
+    if (collection && tab.saved) {
+      const folders = foldersAround(collection, tab.saved.requestId).reverse();
+      chain.push(...folders.map((folder) => folder.certificateCheck), collection.certificateCheck);
+    }
+    return (chain.find((check) => check !== 'inherit') ?? 'on') === 'on';
   }
 
   #context(tab: RequestTab): SendContext | null {

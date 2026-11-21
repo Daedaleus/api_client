@@ -5,6 +5,7 @@ use ac_domain::auth::{Auth, effective};
 use ac_domain::collection::ItemId;
 use ac_domain::environment::{Environment, Variable};
 use ac_domain::scope::Scope;
+use ac_domain::tls::{CertificateCheck, checks_certificates};
 
 use super::App;
 use super::collections::{item_id_from, location, writable};
@@ -86,6 +87,16 @@ pub(super) struct Context {
 }
 
 impl Context {
+    /// Whether the certificate is checked: `own`, or inherited from the
+    /// folders around the request and the collection.
+    pub fn checks_certificates(&self, own: CertificateCheck) -> bool {
+        let collection = &self.opened.collection;
+        match self.request {
+            Some(request) => collection.checks_certificates_for(request, own),
+            None => checks_certificates([own, collection.certificate_check]),
+        }
+    }
+
     /// The collection folder: relative file paths start here.
     pub fn root(&self) -> &std::path::Path {
         &self.opened.root

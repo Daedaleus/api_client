@@ -21,6 +21,7 @@ fn with_auth(
     variables: &HashMap<&str, &str>,
 ) -> Result<ResolvedRequest, AppError> {
     let entered = Entered {
+        verify_tls: true,
         method,
         url,
         headers,

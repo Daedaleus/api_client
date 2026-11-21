@@ -22,6 +22,7 @@ fn save(
     variables: Vec<VariableDraft>,
 ) -> Result<CommandAck, AppError> {
     fixture.app.execute(Command::SaveDefaults {
+        certificate_check: crate::view::CertificateCheckView::Inherit,
         collection_id: fixture.collection.clone(),
         item_id: item_id.into(),
         variables,
@@ -41,6 +42,7 @@ async fn sent_url(
     fixture
         .app
         .execute(Command::SendRequest {
+            certificate_check: crate::view::CertificateCheckView::Inherit,
             method: "GET".into(),
             url: url.into(),
             headers: Vec::new(),
@@ -122,6 +124,7 @@ async fn without_context_only_the_own_variables_count() {
     fixture
         .app
         .execute(Command::SendRequest {
+            certificate_check: crate::view::CertificateCheckView::Inherit,
             method: "GET".into(),
             url: "{{host}}/x".into(),
             headers: Vec::new(),
@@ -199,6 +202,7 @@ async fn requests_inherit_auth_from_folders_and_the_collection() {
         fixture
             .app
             .execute(Command::SaveDefaults {
+                certificate_check: crate::view::CertificateCheckView::Inherit,
                 collection_id: fixture.collection.clone(),
                 item_id: item.into(),
                 variables: Vec::new(),
@@ -215,6 +219,7 @@ async fn requests_inherit_auth_from_folders_and_the_collection() {
         fixture
             .app
             .execute(Command::SendRequest {
+                certificate_check: crate::view::CertificateCheckView::Inherit,
                 method: "GET".into(),
                 url: "x.example".into(),
                 headers: Vec::new(),
@@ -255,6 +260,7 @@ async fn file_paths_are_relative_to_the_collection_folder() {
     fixture
         .app
         .execute(Command::SendRequest {
+            certificate_check: crate::view::CertificateCheckView::Inherit,
             method: "PUT".into(),
             url: "x.example".into(),
             headers: Vec::new(),
@@ -277,4 +283,59 @@ async fn file_paths_are_relative_to_the_collection_folder() {
             fixture.root.join("data/payload.bin")
         ))
     );
+}
+
+#[tokio::test]
+async fn the_certificate_check_is_inherited_and_on_by_default() {
+    use crate::view::CertificateCheckView::{Inherit, Off, On};
+    let fixture = Fixture::with_http(replies(4));
+    let send = |request: &str, check| {
+        let mut events = fixture.app.subscribe();
+        fixture
+            .app
+            .execute(Command::SendRequest {
+                method: "GET".into(),
+                url: "https://x.example".into(),
+                headers: Vec::new(),
+                body: BodyDraft::None,
+                variables: Vec::new(),
+                auth: AuthDraft::Inherit,
+                certificate_check: check,
+                context: Some(SendContext {
+                    collection_id: fixture.collection.clone(),
+                    request_id: Some(request.into()),
+                    environment_id: None,
+                }),
+            })
+            .unwrap();
+        async move { events.recv().await.unwrap() }
+    };
+    send(&fixture.login.clone(), Inherit).await;
+    fixture
+        .app
+        .execute(Command::SaveDefaults {
+            collection_id: fixture.collection.clone(),
+            item_id: fixture.auth.clone(),
+            variables: Vec::new(),
+            auth: AuthDraft::Inherit,
+            certificate_check: Off,
+        })
+        .unwrap();
+    let TreeItemView::Folder {
+        certificate_check, ..
+    } = &fixture.tree().items[0]
+    else {
+        panic!("expected the Auth folder");
+    };
+    assert_eq!(*certificate_check, Off);
+    send(&fixture.login.clone(), Inherit).await;
+    send(&fixture.login.clone(), On).await;
+    send(&fixture.health.clone(), Inherit).await;
+    let checks: Vec<bool> = fixture
+        .http
+        .sent()
+        .iter()
+        .map(|request| request.verify_tls)
+        .collect();
+    assert_eq!(checks, [true, false, true, true]);
 }

@@ -42,6 +42,7 @@ impl Fixture {
         login.body = Body::Json("{}".into());
         let health = Request::new("Health");
         let auth = Folder {
+            certificate_check: ac_domain::tls::CertificateCheck::Inherit,
             auth: ac_domain::auth::Auth::Inherit,
             variables: Vec::new(),
             id: ItemId::new(),
@@ -49,6 +50,7 @@ impl Fixture {
             items: vec![Item::Request(login.clone())],
         };
         let collection = Collection {
+            certificate_check: ac_domain::tls::CertificateCheck::Inherit,
             auth: ac_domain::auth::Auth::Inherit,
             variables: Vec::new(),
             id: ItemId::new(),

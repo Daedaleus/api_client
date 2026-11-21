@@ -66,6 +66,7 @@
             onsave={() => workspace.save(tab)}
             variables={workspace.variablesFor(tab)}
             onpickfile={() => workspace.pickFile()}
+            checksCertificates={workspace.checksCertificates(tab)}
           >
             {#snippet environment()}
               {#if collection}

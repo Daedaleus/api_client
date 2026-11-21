@@ -13,6 +13,7 @@
 //! - [`environment`]: environments, variables and `{{name}}` placeholders.
 //! - [`scope`]: which value wins when variables are defined in several
 //!   places (collection, environment, folders, request).
+//! - [`tls`]: whether server certificates are checked (inherited).
 //! - [`exchange`]: one HTTP exchange – the request as sent and the response
 //!   as received.
 
@@ -22,3 +23,4 @@ pub mod environment;
 pub mod exchange;
 pub mod protocol;
 pub mod scope;
+pub mod tls;

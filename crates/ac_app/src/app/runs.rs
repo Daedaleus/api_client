@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use ac_domain::auth::effective;
 use ac_domain::scope::Scope;
+use ac_domain::tls::checks_certificates;
 use std::sync::atomic::Ordering;
 
 use super::App;
@@ -16,7 +17,8 @@ use crate::event::AppEvent;
 use crate::ports::{CollectionStore, HttpSender, SecretVault};
 use crate::resolve::{Entered, resolve_request};
 use crate::view::{
-    AuthDraft, BodyDraft, HeaderDraft, ResponseView, RunOutcomeView, SendContext, VariableDraft,
+    AuthDraft, BodyDraft, CertificateCheckView, HeaderDraft, ResponseView, RunOutcomeView,
+    SendContext, VariableDraft,
 };
 
 /// A request as the editor sends it.
@@ -29,6 +31,8 @@ pub(super) struct Outgoing<'a> {
     pub variables: &'a [VariableDraft],
     /// The request's own authentication.
     pub auth: &'a AuthDraft,
+    /// The request's own certificate check.
+    pub certificate_check: CertificateCheckView,
 }
 
 impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
@@ -57,6 +61,13 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
             body: &body,
             auth: &auth,
             files_base: context.as_ref().map(Context::root),
+            verify_tls: {
+                let own = outgoing.certificate_check.to_check();
+                match &context {
+                    Some(context) => context.checks_certificates(own),
+                    None => checks_certificates([own]),
+                }
+            },
         };
         let request = resolve_request(&entered, &variables).map_err(|error| {
             let unlocked = context

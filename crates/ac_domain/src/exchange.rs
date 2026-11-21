@@ -39,6 +39,8 @@ pub struct ResolvedRequest {
     pub headers: Vec<Header>,
     /// Body, if the request has one.
     pub body: Option<RequestBody>,
+    /// Check the server's TLS certificate (off only when the user says so).
+    pub verify_tls: bool,
 }
 
 impl ResolvedRequest {

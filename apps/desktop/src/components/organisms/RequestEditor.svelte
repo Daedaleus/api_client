@@ -2,6 +2,7 @@
   import type { Snippet } from 'svelte';
   import Button from '../atoms/Button.svelte';
   import AuthEditor from '../molecules/AuthEditor.svelte';
+  import CertificateCheckField from '../molecules/CertificateCheckField.svelte';
   import BodyEditor from '../molecules/BodyEditor.svelte';
   import RowsEditor, { type RowLabels } from '../molecules/RowsEditor.svelte';
   import UrlBar from '../molecules/UrlBar.svelte';
@@ -17,11 +18,21 @@
     variables?: ReadonlyMap<string, string>;
     /** The environment picker, shown next to the name of a saved request. */
     environment?: Snippet;
+    /** Whether the server certificate is checked (all levels considered). */
+    checksCertificates?: boolean;
     /** Lets the user pick a file for the body. */
     onpickfile?: () => Promise<string | null>;
   }
 
-  let { tab, onsend, onsave, variables = new Map(), environment, onpickfile }: Props = $props();
+  let {
+    tab,
+    onsend,
+    onsave,
+    variables = new Map(),
+    environment,
+    onpickfile,
+    checksCertificates = true,
+  }: Props = $props();
 
   // What the URL looks like with its `{{variables}}` filled in.
   let urlPreview = $derived(
@@ -46,8 +57,8 @@
     empty: 'editor.no_variables',
   };
 
-  type Section = 'headers' | 'body' | 'auth' | 'variables';
-  const SECTIONS: Section[] = ['headers', 'body', 'auth', 'variables'];
+  type Section = 'headers' | 'body' | 'auth' | 'variables' | 'settings';
+  const SECTIONS: Section[] = ['headers', 'body', 'auth', 'variables', 'settings'];
   let section = $state<Section>('headers');
   let activeVariables = $derived(
     tab.draft.variables.filter((variable) => variable.enabled && variable.name.trim() !== '')
@@ -87,6 +98,9 @@
     error={tab.error}
     {onsend}
   />
+  {#if !checksCertificates}
+    <p class="request-editor__insecure" role="status">{i18n.t('tls.warning')}</p>
+  {/if}
   {#if urlPreview}
     <p class="request-editor__preview">
       {i18n.t('editor.preview', { url: urlPreview.text })}
@@ -127,6 +141,8 @@
       <BodyEditor bind:body={tab.draft.body} {onpickfile} />
     {:else if section === 'auth'}
       <AuthEditor bind:auth={tab.draft.auth} />
+    {:else if section === 'settings'}
+      <CertificateCheckField bind:check={tab.draft.certificateCheck} />
     {:else}
       <p class="request-editor__note">{i18n.t('editor.variables_hint')}</p>
       <RowsEditor bind:rows={tab.draft.variables} labels={VARIABLE_LABELS} />
@@ -218,6 +234,17 @@
     font-family: var(--font-mono);
     font-size: var(--font-size-s);
     overflow-wrap: anywhere;
+  }
+
+  .request-editor__insecure {
+    margin: 0;
+    padding: var(--space-xs) var(--space-s);
+    border-left: 3px solid var(--color-warning);
+    border-radius: 4px;
+    background: var(--color-raised);
+    color: var(--color-warning);
+    font-size: var(--font-size-s);
+    font-weight: 600;
   }
 
   .request-editor__warning {

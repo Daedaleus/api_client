@@ -37,6 +37,7 @@ export function shop(): CollectionView {
     problems: [],
     variables: [],
     auth: { kind: 'inherit' },
+    certificateCheck: 'inherit',
     environments: [
       {
         id: 'e1',
@@ -56,6 +57,7 @@ export function shop(): CollectionView {
         readOnly: false,
         variables: [],
         auth: { kind: 'inherit' },
+        certificateCheck: 'inherit',
         items: [{ kind: 'request', id: 'r1', name: 'Login', method: 'POST', readOnly: false }],
       },
       { kind: 'request', id: 'r2', name: 'Health', method: 'GET', readOnly: false },
@@ -77,6 +79,7 @@ export function draft(
     body: { kind: 'none' },
     variables: [],
     auth: { kind: 'inherit' },
+    certificateCheck: 'inherit',
     readOnly: false,
     ...overrides,
   };

@@ -99,6 +99,7 @@ describe('variables and auth in the workspace', () => {
       itemId: 'f1',
       variables: [row('host', 'folder'), row('v', '2')],
       auth: { kind: 'bearer', token: '{{token}}' },
+      certificateCheck: 'inherit',
     });
     expect(state.editing).toBeNull();
     expect(workspace.collections.find('c1')?.name).toBe('Shop 2');
@@ -111,5 +112,25 @@ describe('variables and auth in the workspace', () => {
     expect(state.error?.args.detail).toBe('unexpected answer runStarted');
     state.close();
     expect(state.editing).toBeNull();
+  });
+
+  it('works out whether certificates are checked, as when sending', async () => {
+    const collection = layered();
+    const auth = collection.items[0]!;
+    if (auth.kind === 'folder') auth.certificateCheck = 'off';
+    const { workspace } = setup(collection);
+    const scratch = workspace.tabs.active!;
+    expect(workspace.checksCertificates(scratch)).toBe(true);
+    scratch.draft.certificateCheck = 'off';
+    expect(workspace.checksCertificates(scratch)).toBe(false);
+
+    await workspace.openRequest('c1', 'r1');
+    const login = workspace.tabs.active!;
+    expect(workspace.checksCertificates(login)).toBe(false);
+    login.draft.certificateCheck = 'on';
+    expect(workspace.checksCertificates(login)).toBe(true);
+
+    await workspace.openRequest('c1', 'r2');
+    expect(workspace.checksCertificates(workspace.tabs.active!)).toBe(true);
   });
 });

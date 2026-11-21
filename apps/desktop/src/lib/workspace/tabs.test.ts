@@ -74,6 +74,7 @@ describe('TabsState', () => {
         body: { kind: 'none' },
         variables: [],
         auth: { kind: 'inherit' },
+        certificateCheck: 'inherit',
         context: null,
       },
     ]);
