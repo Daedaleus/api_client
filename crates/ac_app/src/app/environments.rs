@@ -86,6 +86,11 @@ pub(super) struct Context {
 }
 
 impl Context {
+    /// The collection folder: relative file paths start here.
+    pub fn root(&self) -> &std::path::Path {
+        &self.opened.root
+    }
+
     /// The authentication that applies: `own`, or inherited from the
     /// folders around the request and the collection.
     pub fn auth(&self, own: &Auth) -> Auth {

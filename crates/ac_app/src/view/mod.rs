@@ -5,6 +5,7 @@
 //! - [`body`]: the body preview of a response.
 //! - [`collection`]: the request tree and saved requests for editing.
 //! - [`environment`]: environments and their variables.
+//! - [`request_body`]: the body of a saved request.
 //! - [`recipients`]: who secrets are encrypted for.
 //! - [`variable`]: variable rows and where variables come from when sending.
 
@@ -13,13 +14,15 @@ pub mod body;
 pub mod collection;
 pub mod environment;
 pub mod recipients;
+pub mod request_body;
 pub mod response;
 pub mod variable;
 
 pub use auth::{AuthDraft, KeyPlacementView};
 pub use body::BodyView;
-pub use collection::{BodyDraft, CollectionView, HeaderDraft, RequestDraft, TreeItemView};
+pub use collection::{CollectionView, HeaderDraft, RequestDraft, TreeItemView};
 pub use environment::EnvironmentDraft;
 pub use recipients::RecipientsView;
+pub use request_body::{BodyDraft, FormFieldDraft, MultipartFieldDraft};
 pub use response::{HeaderView, ResponseView, RunOutcomeView, StatusClassView};
 pub use variable::{SendContext, VariableDraft};

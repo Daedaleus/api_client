@@ -24,6 +24,8 @@ export type {
   AuthDraft,
   BodyDraft,
   BodyView,
+  FormFieldDraft,
+  MultipartFieldDraft,
   SendContext,
   HeaderDraft,
   HeaderView,

@@ -12,4 +12,8 @@ export const tauriApi: Api = {
     const picked = await open({ directory: true, multiple: false });
     return typeof picked === 'string' ? picked : null;
   },
+  pickFile: async () => {
+    const picked = await open({ directory: false, multiple: false });
+    return typeof picked === 'string' ? picked : null;
+  },
 };

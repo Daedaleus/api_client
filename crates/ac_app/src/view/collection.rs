@@ -1,13 +1,13 @@
 //! Collections and saved requests, prepared for the tree and the editor.
 //! Ids travel as text (UUIDs); paths as text in the platform's notation.
 
-use ac_domain::collection::{Body, HeaderEntry, Item, Request};
+use ac_domain::collection::{HeaderEntry, Item, Request};
 use serde::{Deserialize, Serialize};
 
 use crate::error::AppError;
 use crate::ports::{Location, OpenedCollection, StoreError};
 use crate::text::UserText;
-use crate::view::{AuthDraft, EnvironmentDraft, VariableDraft};
+use crate::view::{AuthDraft, BodyDraft, EnvironmentDraft, VariableDraft};
 
 /// An open collection.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -165,30 +165,6 @@ pub struct HeaderDraft {
     pub enabled: bool,
 }
 
-/// The body of a [`RequestDraft`].
-#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
-#[cfg_attr(feature = "specta", derive(specta::Type))]
-#[serde(
-    tag = "kind",
-    rename_all = "camelCase",
-    rename_all_fields = "camelCase"
-)]
-pub enum BodyDraft {
-    /// No body.
-    #[default]
-    None,
-    /// JSON text.
-    Json {
-        /// The text.
-        content: String,
-    },
-    /// Plain text.
-    Text {
-        /// The text.
-        content: String,
-    },
-}
-
 impl HeaderDraft {
     /// The editor's view of a header.
     #[must_use]
@@ -207,32 +183,6 @@ impl HeaderDraft {
             name: self.name.clone(),
             value: self.value.clone(),
             enabled: self.enabled,
-        }
-    }
-}
-
-impl BodyDraft {
-    /// The editor's view of a body.
-    #[must_use]
-    pub fn from_body(body: &Body) -> Self {
-        match body {
-            Body::None => Self::None,
-            Body::Json(content) => Self::Json {
-                content: content.clone(),
-            },
-            Body::Text(content) => Self::Text {
-                content: content.clone(),
-            },
-        }
-    }
-
-    /// The body this draft describes.
-    #[must_use]
-    pub fn to_body(&self) -> Body {
-        match self {
-            Self::None => Body::None,
-            Self::Json { content } => Body::Json(content.clone()),
-            Self::Text { content } => Body::Text(content.clone()),
         }
     }
 }

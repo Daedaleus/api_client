@@ -14,4 +14,6 @@ export interface Api {
   onEvent(handler: (event: AppEvent) => void): Promise<() => void>;
   /** Lets the user pick a folder; resolves to its path, or `null` if cancelled. */
   pickFolder(): Promise<string | null>;
+  /** Lets the user pick a file; resolves to its path, or `null` if cancelled. */
+  pickFile(): Promise<string | null>;
 }

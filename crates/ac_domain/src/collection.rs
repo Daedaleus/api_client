@@ -232,8 +232,7 @@ pub struct HeaderEntry {
     pub enabled: bool,
 }
 
-/// Body of a saved request. Form, multipart and binary bodies follow with
-/// milestone M5.
+/// Body of a saved request. Text values may contain `{{variables}}`.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum Body {
     /// No body.
@@ -243,6 +242,38 @@ pub enum Body {
     Json(String),
     /// Plain text.
     Text(String),
+    /// URL-encoded form fields (`application/x-www-form-urlencoded`).
+    Form(Vec<FormField>),
+    /// Multipart form data: text fields and files.
+    Multipart(Vec<MultipartField>),
+    /// The contents of a file, sent as they are. A relative path is relative
+    /// to the collection folder.
+    Binary(String),
+}
+
+/// A field of a URL-encoded form; disabled fields are kept but not sent.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FormField {
+    /// Name.
+    pub name: String,
+    /// Value.
+    pub value: String,
+    /// Sent with the request.
+    pub enabled: bool,
+}
+
+/// A field of a multipart body: text, or a file.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MultipartField {
+    /// Name.
+    pub name: String,
+    /// The text, or the path of the file (relative = to the collection
+    /// folder).
+    pub value: String,
+    /// Sent with the request.
+    pub enabled: bool,
+    /// `value` is a file path.
+    pub file: bool,
 }
 
 #[cfg(test)]

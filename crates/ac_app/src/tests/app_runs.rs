@@ -67,7 +67,7 @@ async fn headers_and_body_are_sent() {
     tokio::task::yield_now().await;
 
     let sent = fake.sent();
-    assert_eq!(sent[0].body.as_deref(), Some(b"{\"a\":1}".as_slice()));
+    assert_eq!(sent[0].body_bytes(), Some(b"{\"a\":1}".as_slice()));
     assert_eq!(sent[0].headers.len(), 2);
     assert_eq!(sent[0].headers[0].name, "X-Test");
 }

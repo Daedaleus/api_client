@@ -1,5 +1,6 @@
 //! One HTTP exchange: the request as it is sent and the response as received.
 
+use std::path::PathBuf;
 use std::time::Duration;
 
 use url::Url;
@@ -36,8 +37,51 @@ pub struct ResolvedRequest {
     pub url: Url,
     /// Headers in the order they are sent.
     pub headers: Vec<Header>,
-    /// Body bytes, if the request has a body.
-    pub body: Option<Vec<u8>>,
+    /// Body, if the request has one.
+    pub body: Option<RequestBody>,
+}
+
+impl ResolvedRequest {
+    /// The body if it is given as bytes (not files).
+    #[must_use]
+    pub fn body_bytes(&self) -> Option<&[u8]> {
+        match &self.body {
+            Some(RequestBody::Bytes(bytes)) => Some(bytes),
+            _ => None,
+        }
+    }
+}
+
+/// The body of a resolved request. Files are named by path and read only
+/// when the request is sent (by the HTTP adapter), so the application layer
+/// never touches the file system and large files need not be copied around.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RequestBody {
+    /// These bytes.
+    Bytes(Vec<u8>),
+    /// The contents of this file.
+    File(PathBuf),
+    /// Multipart form data; the adapter chooses the boundary and sets the
+    /// `Content-Type` with it.
+    Multipart(Vec<Part>),
+}
+
+/// One part of a multipart body.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Part {
+    /// Field name.
+    pub name: String,
+    /// Its content.
+    pub content: PartContent,
+}
+
+/// The content of a multipart [`Part`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PartContent {
+    /// Text.
+    Text(String),
+    /// The contents of this file (sent with its file name).
+    File(PathBuf),
 }
 
 /// A response as received.

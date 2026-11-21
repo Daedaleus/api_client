@@ -65,6 +65,11 @@ export class Workspace {
     return this.collections.restore();
   }
 
+  /** Lets the user pick a file (for bodies); its path or `null`. */
+  pickFile(): Promise<string | null> {
+    return this.#api.pickFile();
+  }
+
   async openCollection(): Promise<void> {
     const path = await this.#api.pickFolder();
     if (path) await this.collections.run({ type: 'openCollection', path });

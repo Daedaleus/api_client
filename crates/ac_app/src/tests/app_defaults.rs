@@ -247,3 +247,34 @@ async fn requests_inherit_auth_from_folders_and_the_collection() {
     );
     assert_eq!(authorization(2), None);
 }
+
+#[tokio::test]
+async fn file_paths_are_relative_to_the_collection_folder() {
+    let fixture = Fixture::with_http(replies(1));
+    let mut events = fixture.app.subscribe();
+    fixture
+        .app
+        .execute(Command::SendRequest {
+            method: "PUT".into(),
+            url: "x.example".into(),
+            headers: Vec::new(),
+            body: BodyDraft::Binary {
+                file: "data/payload.bin".into(),
+            },
+            variables: Vec::new(),
+            auth: AuthDraft::Inherit,
+            context: Some(SendContext {
+                collection_id: fixture.collection.clone(),
+                request_id: Some(fixture.health.clone()),
+                environment_id: None,
+            }),
+        })
+        .unwrap();
+    events.recv().await.unwrap();
+    assert_eq!(
+        fixture.http.sent()[0].body,
+        Some(ac_domain::exchange::RequestBody::File(
+            fixture.root.join("data/payload.bin")
+        ))
+    );
+}

@@ -1,6 +1,6 @@
 use ac_domain::protocol::HttpMethod;
 use url::Url;
-use wiremock::matchers::{body_string, header, method, path};
+use wiremock::matchers::{body_string, body_string_contains, header, method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use super::*;
@@ -30,7 +30,7 @@ async fn sends_the_body() {
         &server.uri(),
         vec![Header::new("Content-Type", "application/json")],
     );
-    post.body = Some(b"{\"name\":\"Teapot\"}".to_vec());
+    post.body = Some(RequestBody::Bytes(b"{\"name\":\"Teapot\"}".to_vec()));
     let response = sender().send(post).await.unwrap();
     assert_eq!(response.status.as_u16(), 201);
 }
@@ -150,4 +150,69 @@ async fn invalid_header_values_are_reported() {
         .await
         .unwrap_err();
     assert!(matches!(error, TransportError::Other(_)), "{error:?}");
+}
+
+#[tokio::test]
+async fn sends_files_and_multipart_forms() {
+    let dir = tempfile::tempdir().unwrap();
+    let file = dir.path().join("avatar.png");
+    std::fs::write(&file, b"PNGDATA").unwrap();
+
+    let server = MockServer::start().await;
+    Mock::given(method("PUT"))
+        .and(path("/binary"))
+        .and(body_string("PNGDATA"))
+        .respond_with(ResponseTemplate::new(204))
+        .expect(1)
+        .mount(&server)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/form"))
+        .and(body_string_contains("name=\"title\""))
+        .and(body_string_contains("Teapot"))
+        .and(body_string_contains("filename=\"avatar.png\""))
+        .and(body_string_contains("PNGDATA"))
+        .respond_with(ResponseTemplate::new(201))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let mut put = request(HttpMethod::Put, &format!("{}/binary", server.uri()), vec![]);
+    put.body = Some(RequestBody::File(file.clone()));
+    assert_eq!(sender().send(put).await.unwrap().status.as_u16(), 204);
+
+    let mut post = request(HttpMethod::Post, &format!("{}/form", server.uri()), vec![]);
+    post.body = Some(RequestBody::Multipart(vec![
+        Part {
+            name: "title".into(),
+            content: PartContent::Text("Teapot".into()),
+        },
+        Part {
+            name: "avatar".into(),
+            content: PartContent::File(file),
+        },
+    ]));
+    assert_eq!(sender().send(post).await.unwrap().status.as_u16(), 201);
+}
+
+#[tokio::test]
+async fn unreadable_files_fail_the_request() {
+    let dir = tempfile::tempdir().unwrap();
+    let missing = dir.path().join("missing.bin");
+    for body in [
+        RequestBody::File(missing.clone()),
+        RequestBody::Multipart(vec![Part {
+            name: "f".into(),
+            content: PartContent::File(missing.clone()),
+        }]),
+    ] {
+        let mut post = request(HttpMethod::Post, "http://127.0.0.1:9/", vec![]);
+        post.body = Some(body);
+        let error = sender().send(post).await.unwrap_err();
+        assert!(
+            matches!(&error, TransportError::File { path, .. } if path.ends_with("missing.bin")),
+            "{error:?}"
+        );
+        assert_eq!(error.user_text().key, "error.file_unreadable");
+    }
 }

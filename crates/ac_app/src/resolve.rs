@@ -1,17 +1,19 @@
 //! Turns what the user entered into a [`ResolvedRequest`].
 
 use std::collections::HashMap;
+use std::path::Path;
 
 use ac_domain::auth::{Auth, KeyPlacement};
 use ac_domain::collection::{Body, HeaderEntry};
 use ac_domain::environment::{UnresolvedVariable, interpolate};
 use ac_domain::exchange::{Header, ResolvedRequest};
-use ac_domain::protocol::{HttpMethod, auth_scheme, header, is_token, media_type};
+use ac_domain::protocol::{HttpMethod, auth_scheme, header, is_token};
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64;
 use url::Url;
 
 use crate::error::AppError;
+use crate::resolve_body::resolve_body;
 
 /// Scheme assumed when the user enters a URL without one, as other API
 /// clients do.
@@ -25,6 +27,8 @@ pub(crate) struct Entered<'a> {
     pub headers: &'a [HeaderEntry],
     pub body: &'a Body,
     pub auth: &'a Auth,
+    /// Where relative file paths of the body start (the collection folder).
+    pub files_base: Option<&'a Path>,
 }
 
 /// Validates method, URL and headers as entered and prepares the body.
@@ -56,19 +60,7 @@ pub(crate) fn resolve_request(
         .collect::<Result<_, UnresolvedVariable>>()?;
     let mut headers = resolve_headers(&headers)?;
     apply_auth(entered.auth, &mut url, &mut headers, &fill)?;
-    let body = match entered.body {
-        Body::None => None,
-        Body::Json(content) => Some(with_content_type(
-            &mut headers,
-            media_type::JSON,
-            &fill(content)?,
-        )),
-        Body::Text(content) => Some(with_content_type(
-            &mut headers,
-            media_type::TEXT,
-            &fill(content)?,
-        )),
-    };
+    let body = resolve_body(entered.body, &mut headers, entered.files_base, &fill)?;
     Ok(ResolvedRequest {
         method,
         url,
@@ -153,17 +145,6 @@ fn apply_auth(
         headers.push(checked_header(&name, &value)?);
     }
     Ok(())
-}
-
-/// The body bytes; adds `Content-Type: default` if no header sets one.
-fn with_content_type(headers: &mut Vec<Header>, default: &str, content: &str) -> Vec<u8> {
-    let has_type = headers
-        .iter()
-        .any(|header| header.name.eq_ignore_ascii_case(header::CONTENT_TYPE));
-    if !has_type {
-        headers.push(Header::new("Content-Type", default));
-    }
-    content.as_bytes().to_vec()
 }
 
 #[cfg(test)]

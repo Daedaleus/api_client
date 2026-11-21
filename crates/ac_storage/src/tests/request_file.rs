@@ -1,4 +1,4 @@
-use ac_domain::collection::ItemId;
+use ac_domain::collection::{Body, ItemId};
 
 use super::*;
 use crate::test_support::{read, shop_api};
