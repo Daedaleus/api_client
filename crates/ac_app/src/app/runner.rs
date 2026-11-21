@@ -6,7 +6,7 @@ use ac_domain::collection::{Item, Request};
 
 use super::App;
 use crate::error::AppError;
-use crate::ports::{BrowserLogin, CollectionStore, HttpSender, SecretVault};
+use crate::ports::{BrowserLogin, CollectionStore, HttpSender, ScriptRunner, SecretVault};
 use crate::view::{
     OutgoingRequest, RequestDraft, RunReport, RunResult, RunResultOutcome, SendContext,
 };
@@ -21,7 +21,9 @@ pub struct RunPlan {
     pub only: Option<String>,
 }
 
-impl<H: HttpSender, S: CollectionStore, V: SecretVault, B: BrowserLogin> App<H, S, V, B> {
+impl<H: HttpSender, S: CollectionStore, V: SecretVault, B: BrowserLogin, R: ScriptRunner>
+    App<H, S, V, B, R>
+{
     /// Runs the requests of an open collection one after another and
     /// reports what happened. Requests that cannot be sent (an unknown
     /// variable, say) are reported as failed; the run goes on.
@@ -68,22 +70,21 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault, B: BrowserLogin> App<H, 
                 variables: draft.variables,
                 auth: draft.auth,
                 certificate_check: draft.certificate_check,
+                scripts: draft.scripts,
                 context: Some(SendContext {
                     collection_id: collection_id.to_owned(),
                     request_id: Some(request.id.to_string()),
                     environment_id: environment_id.clone(),
                 }),
             };
-            let outcome = match self.prepare(&outgoing) {
-                Err(error) => RunResultOutcome::Failed {
-                    error: error.user_text(),
-                },
-                Ok(prepared) => match self.inner.send(prepared).await {
-                    Ok(response) => RunResultOutcome::Response {
-                        status: response.status.as_u16(),
-                        elapsed_ms: u64::try_from(response.elapsed.as_millis()).unwrap_or(u64::MAX),
-                    },
-                    Err(error) => RunResultOutcome::Failed { error },
+            // A failing post-response script fails the request, as a
+            // failing test would.
+            let execution = self.run_with_scripts(&outgoing, None).await;
+            let outcome = match (execution.response, execution.script_error) {
+                (Err(error), _) | (Ok(_), Some(error)) => RunResultOutcome::Failed { error },
+                (Ok(response), None) => RunResultOutcome::Response {
+                    status: response.status.as_u16(),
+                    elapsed_ms: u64::try_from(response.elapsed.as_millis()).unwrap_or(u64::MAX),
                 },
             };
             results.push(RunResult {

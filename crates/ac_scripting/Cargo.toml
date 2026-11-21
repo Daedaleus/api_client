@@ -1,0 +1,29 @@
+[package]
+name = "ac_scripting"
+description = "Script adapter: runs request scripts in QuickJS, TypeScript stripped with oxc (ADR S1)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+ac_app.workspace = true
+ac_domain.workspace = true
+oxc_allocator.workspace = true
+oxc_codegen.workspace = true
+oxc_parser.workspace = true
+oxc_semantic.workspace = true
+oxc_span.workspace = true
+oxc_transformer.workspace = true
+rquickjs.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+# rt: scripts run on Tokio's blocking pool (a QuickJS runtime is not Send).
+tokio = { workspace = true, features = ["rt"] }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt"] }
+
+[lints]
+workspace = true

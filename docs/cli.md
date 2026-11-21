@@ -39,5 +39,7 @@ machine, not for CI.
 English); JSON and JUnit are the same in every language, apart from error
 messages.
 
-Scripts and tests per request follow with scripting (milestone M4); then a
-request passes when its tests pass.
+**Scripts** run as in the app ([scripting](scripting.md)): variables a
+script sets carry over to the following requests of the run, and a failing
+script after the response fails its request. Tests with `expect` follow;
+then a request passes when its tests pass.

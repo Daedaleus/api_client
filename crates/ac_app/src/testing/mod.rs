@@ -4,14 +4,17 @@
 //! - [`store`]: [`MemoryStore`], collections kept in memory.
 //! - [`secrets`]: [`FakeVault`], readable "encryption" with fake keys.
 //! - [`login`]: [`FakeBrowserLogin`], sign-ins with queued answers.
+//! - [`script`]: [`FakeScriptRunner`], scripts with queued results.
 
 pub mod http;
 pub mod login;
+pub mod script;
 pub mod secrets;
 pub mod store;
 
 pub use http::{FakeHttpSender, response};
 pub use login::{FAKE_PORT, FakeBrowserLogin, LoginAnswer};
+pub use script::FakeScriptRunner;
 pub use secrets::FakeVault;
 pub use store::MemoryStore;
 

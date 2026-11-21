@@ -28,6 +28,7 @@ use std::process::ExitCode;
 
 use ac_app::{App, Command, CommandAck, Ports, RunPlan};
 use ac_http::{DEFAULT_TIMEOUT, LoopbackLogin, ReqwestSender};
+use ac_scripting::QuickJsRunner;
 use ac_secrets::{AgeVault, KeyConfig};
 use ac_storage::FileStore;
 use clap::Parser;
@@ -134,6 +135,7 @@ pub fn run(
             store: FileStore::new(),
             vault: AgeVault::new(keys),
             login: LoopbackLogin::new(),
+            scripts: QuickJsRunner::default(),
         },
         runtime.handle().clone(),
     );

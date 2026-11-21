@@ -14,6 +14,7 @@ path = "src/main.rs"
 [dependencies]
 ac_app.workspace = true
 ac_http.workspace = true
+ac_scripting.workspace = true
 ac_secrets.workspace = true
 ac_storage.workspace = true
 clap.workspace = true

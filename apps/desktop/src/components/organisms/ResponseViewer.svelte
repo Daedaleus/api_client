@@ -10,9 +10,12 @@
 
   let { outcome, sending }: Props = $props();
 
-  type Tab = 'body' | 'headers';
-  const TABS: Tab[] = ['body', 'headers'];
+  type Tab = 'body' | 'headers' | 'logs';
   let tab = $state<Tab>('body');
+  let logs = $derived(outcome?.logs ?? []);
+  /** The log tab only when a script logged something. */
+  let tabs = $derived<Tab[]>(logs.length > 0 ? ['body', 'headers', 'logs'] : ['body', 'headers']);
+  let shown = $derived<Tab>(tabs.includes(tab) ? tab : 'body');
 </script>
 
 <section class="response" aria-label={i18n.t('response.title')} aria-busy={sending}>
@@ -23,6 +26,9 @@
       <strong>{i18n.t('response.failed')}</strong>
       <span>{i18n.text(outcome.error)}</span>
     </div>
+    {#if logs.length > 0}
+      <pre class="response__logs" aria-label={i18n.t('response.logs')}>{logs.join('\n')}</pre>
+    {/if}
   {:else}
     <div class="response__meta">
       <span class="response__status response__status--{outcome.statusClass}">
@@ -37,24 +43,31 @@
       </span>
     </div>
 
+    {#if outcome.scriptError}
+      <p class="response__script-error" role="alert">{i18n.text(outcome.scriptError)}</p>
+    {/if}
+
     <div class="response__tabs" role="tablist">
-      {#each TABS as name (name)}
+      {#each tabs as name (name)}
         <button
           type="button"
           role="tab"
           class="response__tab"
-          class:response__tab--active={tab === name}
-          aria-selected={tab === name}
+          class:response__tab--active={shown === name}
+          aria-selected={shown === name}
           onclick={() => (tab = name)}
         >
           {i18n.t(`response.${name}`)}
           {#if name === 'headers'}<span class="response__count">{outcome.headers.length}</span>{/if}
+          {#if name === 'logs'}<span class="response__count">{logs.length}</span>{/if}
         </button>
       {/each}
     </div>
 
     <div class="response__panel" role="tabpanel">
-      {#if tab === 'body'}
+      {#if shown === 'logs'}
+        <pre class="response__logs">{logs.join('\n')}</pre>
+      {:else if shown === 'body'}
         {#if outcome.body.binary}
           <p class="response__note">
             {i18n.t('response.body.binary', { size: formatBytes(outcome.sizeBytes) })}
@@ -102,6 +115,23 @@
     margin: 0;
     padding: var(--space-l);
     color: var(--color-muted);
+  }
+
+  .response__logs {
+    margin: 0;
+    padding: var(--space-m) var(--space-l);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-s);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .response__script-error {
+    margin: 0;
+    padding: var(--space-s) var(--space-l);
+    background: var(--color-error-bg);
+    color: var(--color-error);
+    font-size: var(--font-size-s);
   }
 
   .response__failure {

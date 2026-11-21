@@ -15,6 +15,7 @@ import type {
   RequestDraft_Serialize,
   ResponseView_Serialize,
   RunOutcomeView_Serialize,
+  ScriptsDraft_Serialize,
   TreeItemView_Serialize,
   UserText,
   VariableDraft_Serialize,
@@ -55,6 +56,7 @@ export type RequestDraft = RequestDraft_Serialize;
 export type RequestDraftInput = RequestDraft_Deserialize;
 export type ResponseView = ResponseView_Serialize;
 export type RunOutcome = RunOutcomeView_Serialize;
+export type ScriptsDraft = ScriptsDraft_Serialize;
 
 /** The collection in a `collectionChanged` acknowledgement. */
 export type ChangedCollection = { collection: CollectionView; createdId: string | null };

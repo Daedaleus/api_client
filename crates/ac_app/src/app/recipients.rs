@@ -9,11 +9,13 @@ use super::collections::location;
 use crate::command::{CommandAck, QueryResult};
 use crate::error::AppError;
 use crate::ports::{
-    BrowserLogin, CollectionStore, HttpSender, SecretError, SecretValues, SecretVault,
+    BrowserLogin, CollectionStore, HttpSender, ScriptRunner, SecretError, SecretValues, SecretVault,
 };
 use crate::view::RecipientsView;
 
-impl<H: HttpSender, S: CollectionStore, V: SecretVault, B: BrowserLogin> App<H, S, V, B> {
+impl<H: HttpSender, S: CollectionStore, V: SecretVault, B: BrowserLogin, R: ScriptRunner>
+    App<H, S, V, B, R>
+{
     pub(super) fn query_recipients(&self, collection_id: &str) -> Result<QueryResult, AppError> {
         let opened = self.current(collection_id)?;
         Ok(QueryResult::Recipients {

@@ -23,4 +23,5 @@ pub mod environment;
 pub mod exchange;
 pub mod protocol;
 pub mod scope;
+pub mod script;
 pub mod tls;

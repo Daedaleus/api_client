@@ -593,6 +593,8 @@ export type OutgoingRequest_Deserialize = {
 	 *  folders and collection.
 	 */
 	certificateCheck?: CertificateCheckView,
+	/**  Scripts before sending and after the response. */
+	scripts?: ScriptsDraft_Deserialize,
 	/**
 	 *  Where further `{{variables}}` come from: collection, folders and
 	 *  environment. Without it only the request's own variables count.
@@ -622,6 +624,8 @@ export type OutgoingRequest_Serialize = {
 	 *  folders and collection.
 	 */
 	certificateCheck: CertificateCheckView,
+	/**  Scripts before sending and after the response. */
+	scripts: ScriptsDraft_Serialize,
 	/**
 	 *  Where further `{{variables}}` come from: collection, folders and
 	 *  environment. Without it only the request's own variables count.
@@ -778,6 +782,8 @@ export type RequestDraft_Deserialize = {
 	auth?: AuthDraft,
 	/**  Certificate check, or inherited. */
 	certificateCheck?: CertificateCheckView,
+	/**  Scripts before sending and after the response. */
+	scripts?: ScriptsDraft_Deserialize,
 	/**  The file is never written (set by the app, ignored when saving). */
 	readOnly?: boolean,
 };
@@ -802,6 +808,8 @@ export type RequestDraft_Serialize = {
 	auth: AuthDraft,
 	/**  Certificate check, or inherited. */
 	certificateCheck: CertificateCheckView,
+	/**  Scripts before sending and after the response. */
+	scripts: ScriptsDraft_Serialize,
 	/**  The file is never written (set by the app, ignored when saving). */
 	readOnly: boolean,
 };
@@ -825,6 +833,10 @@ export type ResponseView_Deserialize = {
 	headers: HeaderView[],
 	/**  Body preview. */
 	body: BodyView,
+	/**  Lines the scripts logged, before and after the request. */
+	logs: string[],
+	/**  Why the post-response script failed, if it did. */
+	scriptError?: UserText | null,
 };
 
 /**  A response prepared for display. */
@@ -843,6 +855,10 @@ export type ResponseView_Serialize = {
 	headers: HeaderView[],
 	/**  Body preview. */
 	body: BodyView,
+	/**  Lines the scripts logged, before and after the request. */
+	logs: string[],
+	/**  Why the post-response script failed, if it did. */
+	scriptError: UserText | null,
 };
 
 /**  Identifies one sending of a request, so the UI can match the result. */
@@ -860,7 +876,9 @@ export type RunOutcomeView_Deserialize =
 /**  No response. */
 { kind: "failed"; 
 /**  Why. */
-error: UserText };
+error: UserText; 
+/**  Lines the pre-request script logged before. */
+logs: string[] };
 
 /**  Result of one request run. */
 export type RunOutcomeView_Serialize = 
@@ -871,7 +889,28 @@ export type RunOutcomeView_Serialize =
 /**  No response. */
 { kind: "failed"; 
 /**  Why. */
-error: UserText };
+error: UserText; 
+/**  Lines the pre-request script logged before. */
+logs: string[] };
+
+/**  Scripts before sending and after the response; empty = none. */
+export type ScriptsDraft = ScriptsDraft_Serialize | ScriptsDraft_Deserialize;
+
+/**  Scripts before sending and after the response; empty = none. */
+export type ScriptsDraft_Deserialize = {
+	/**  Runs before the request is sent. */
+	preRequest?: string,
+	/**  Runs after the response arrived. */
+	postResponse?: string,
+};
+
+/**  Scripts before sending and after the response; empty = none. */
+export type ScriptsDraft_Serialize = {
+	/**  Runs before the request is sent. */
+	preRequest: string,
+	/**  Runs after the response arrived. */
+	postResponse: string,
+};
 
 /**
  *  Where the `{{variables}}` of a request come from when it is sent: its

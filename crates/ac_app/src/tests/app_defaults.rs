@@ -44,6 +44,7 @@ async fn sent_url(
         .execute(Command::SendRequest {
             request: crate::view::OutgoingRequest {
                 certificate_check: crate::view::CertificateCheckView::Inherit,
+                scripts: crate::view::ScriptsDraft::default(),
                 method: "GET".into(),
                 url: url.into(),
                 headers: Vec::new(),
@@ -128,6 +129,7 @@ async fn without_context_only_the_own_variables_count() {
         .execute(Command::SendRequest {
             request: crate::view::OutgoingRequest {
                 certificate_check: crate::view::CertificateCheckView::Inherit,
+                scripts: crate::view::ScriptsDraft::default(),
                 method: "GET".into(),
                 url: "{{host}}/x".into(),
                 headers: Vec::new(),
@@ -225,6 +227,7 @@ async fn requests_inherit_auth_from_folders_and_the_collection() {
             .execute(Command::SendRequest {
                 request: crate::view::OutgoingRequest {
                     certificate_check: crate::view::CertificateCheckView::Inherit,
+                    scripts: crate::view::ScriptsDraft::default(),
                     method: "GET".into(),
                     url: "x.example".into(),
                     headers: Vec::new(),
@@ -268,6 +271,7 @@ async fn file_paths_are_relative_to_the_collection_folder() {
         .execute(Command::SendRequest {
             request: crate::view::OutgoingRequest {
                 certificate_check: crate::view::CertificateCheckView::Inherit,
+                scripts: crate::view::ScriptsDraft::default(),
                 method: "PUT".into(),
                 url: "x.example".into(),
                 headers: Vec::new(),
@@ -310,6 +314,7 @@ async fn the_certificate_check_is_inherited_and_on_by_default() {
                     variables: Vec::new(),
                     auth: AuthDraft::Inherit,
                     certificate_check: check,
+                    scripts: crate::view::ScriptsDraft::default(),
                     context: Some(SendContext {
                         collection_id: fixture.collection.clone(),
                         request_id: Some(request.into()),

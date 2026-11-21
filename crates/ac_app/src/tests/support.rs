@@ -12,13 +12,23 @@ use tokio::runtime::Handle;
 use crate::app::{App, Ports};
 use crate::command::{Command, CommandAck, Query, QueryResult};
 use crate::error::AppError;
-use crate::testing::{FakeBrowserLogin, FakeHttpSender, FakeVault, MemoryStore};
+use crate::testing::{FakeBrowserLogin, FakeHttpSender, FakeScriptRunner, FakeVault, MemoryStore};
 use crate::view::{CollectionView, RequestDraft, TreeItemView};
+
+/// The app with test doubles shared with the fixture.
+pub(crate) type TestApp = App<
+    Arc<FakeHttpSender>,
+    Arc<MemoryStore>,
+    Arc<FakeVault>,
+    Arc<FakeBrowserLogin>,
+    Arc<FakeScriptRunner>,
+>;
 
 /// `Shop` with `Auth/Login` and `Health`, and the environment `Dev`
 /// (`baseUrl`); opened in an app. Must be created inside a Tokio runtime.
 pub(crate) struct Fixture {
-    pub app: App<Arc<FakeHttpSender>, Arc<MemoryStore>, Arc<FakeVault>, Arc<FakeBrowserLogin>>,
+    pub app: TestApp,
+    pub scripts: Arc<FakeScriptRunner>,
     pub http: Arc<FakeHttpSender>,
     pub browser: Arc<FakeBrowserLogin>,
     pub store: Arc<MemoryStore>,
@@ -41,6 +51,18 @@ impl Fixture {
     }
 
     pub fn with_ports(http: FakeHttpSender, browser: FakeBrowserLogin) -> Self {
+        Self::with_all(http, browser, FakeScriptRunner::new())
+    }
+
+    pub fn with_scripts(http: FakeHttpSender, scripts: FakeScriptRunner) -> Self {
+        Self::with_all(http, FakeBrowserLogin::new(), scripts)
+    }
+
+    fn with_all(
+        http: FakeHttpSender,
+        browser: FakeBrowserLogin,
+        scripts: FakeScriptRunner,
+    ) -> Self {
         let mut login = Request::new("Login");
         login.method = HttpMethod::Post;
         login.url = "{{baseUrl}}/login".into();
@@ -78,12 +100,14 @@ impl Fixture {
         let http = Arc::new(http);
         let vault = Arc::new(FakeVault::default());
         let browser = Arc::new(browser);
+        let scripts = Arc::new(scripts);
         let app = App::new(
             Ports {
                 http: Arc::clone(&http),
                 store: Arc::clone(&store),
                 vault: Arc::clone(&vault),
                 login: Arc::clone(&browser),
+                scripts: Arc::clone(&scripts),
             },
             Handle::current(),
         );
@@ -91,6 +115,7 @@ impl Fixture {
             app,
             http,
             browser,
+            scripts,
             store,
             vault,
             root,

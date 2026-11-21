@@ -30,6 +30,9 @@
 //      dialogs cannot be driven from here),
 //  14. large JSON responses (0.9 MB shown formatted, 10 MB shown truncated)
 //      appear in time without blocking the window for long,
+//  15. scripts: the pre-request script sets a header and a variable used in
+//      the URL, the post-response script logs and sets a variable for the
+//      next request, a syntax error stops the request and names its line,
 // and the program is still running after each send.
 //
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
@@ -1026,5 +1029,83 @@ for (const [size, minimum, formatted] of [
 await evaluate(`document.querySelectorAll('.response__tab')[1].click()`);
 await waitFor(`!!document.querySelector('.response__headers')`, 'headers after a large response');
 check(exitCode === null, 'program still running after large responses');
+
+// --- 15. Scripts -------------------------------------------------------------------
+
+/** Sets the value of the `index`-th element matching `selector`. */
+const setNth = (selector, index, value) => `(() => {
+  const element = document.querySelectorAll(${JSON.stringify(selector)})[${index}];
+  element.value = ${JSON.stringify(value)};
+  element.dispatchEvent(new Event('input', { bubbles: true }));
+  return true;
+})()`;
+
+// Step 14 left the headers of the response open.
+await evaluate(
+  `[...document.querySelectorAll('.response__tab')].find((tab) => tab.textContent.includes('Body')).click()`,
+);
+await evaluate(`document.querySelectorAll('.request-editor__section')[5].click()`);
+await waitFor(`document.querySelectorAll('.scripts-editor__input').length === 2`, 'script editors');
+await evaluate(
+  setNth(
+    '.scripts-editor__input',
+    0,
+    "const client: string = 'from-script';\nreq.setHeader('X-Client', client);\nenv.set('fromPre', 'v1');\nlog('pre ran');",
+  ),
+);
+await evaluate(
+  setNth(
+    '.scripts-editor__input',
+    1,
+    "const echoed = res.json<{ xClient: string; method: string }>();\nlog('status ' + res.status + ' ' + echoed.xClient);\nenv.set('echoed', echoed.method);",
+  ),
+);
+await evaluate(setValue('.url-bar__select', 'GET', 'change'));
+await evaluate(setValue('.url-bar__input', `${echoUrl}?script={{fromPre}}`));
+await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);
+const scripted = await echoWith('script=v1', 'echo after the pre-request script');
+check(
+  scripted.includes('"xClient": "from-script"'),
+  'pre-request script set a header and a variable used in the URL',
+);
+await waitFor(
+  `[...document.querySelectorAll('.response__tab')].some((tab) => tab.textContent.includes('Log'))`,
+  'log tab',
+);
+await evaluate(
+  `[...document.querySelectorAll('.response__tab')].find((tab) => tab.textContent.includes('Log')).click()`,
+);
+const logText = await waitFor(
+  `document.querySelector('.response__logs')?.textContent ?? null`,
+  'script log',
+);
+check(
+  logText.includes('pre ran') && logText.includes('status 200 from-script'),
+  `both scripts logged (${JSON.stringify(logText)})`,
+);
+await evaluate(setValue('.url-bar__input', `${echoUrl}?second={{echoed}}`));
+await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);
+await waitFor(
+  `[...document.querySelectorAll('.response__tab')].some((tab) => tab.textContent.includes('Body'))`,
+  'response tabs',
+);
+await evaluate(
+  `[...document.querySelectorAll('.response__tab')].find((tab) => tab.textContent.includes('Body')).click()`,
+);
+await echoWith('second=GET', 'echo with the variable from the post-response script');
+check(true, 'post-response script set a variable for the next request');
+
+// A broken script stops the request and says where.
+await evaluate(setNth('.scripts-editor__input', 0, 'log(1);\nconst = ;'));
+await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);
+const scriptFailure = await waitFor(
+  `document.querySelector('.response__failure')?.textContent ?? null`,
+  'script failure',
+);
+check(
+  scriptFailure.includes('line 2'),
+  `syntax error of the pre-request script reported (${JSON.stringify(scriptFailure)})`,
+);
+check(exitCode === null, 'program still running after scripts');
 
 finish(null);

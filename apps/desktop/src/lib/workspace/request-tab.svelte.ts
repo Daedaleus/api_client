@@ -48,6 +48,7 @@ export class RequestTab {
       variables: [],
       auth: { kind: 'inherit' },
       certificateCheck: 'inherit',
+      scripts: { preRequest: '', postResponse: '' },
       readOnly: false,
     };
   }

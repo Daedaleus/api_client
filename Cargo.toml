@@ -17,6 +17,7 @@ ac_app = { path = "crates/ac_app" }
 ac_domain = { path = "crates/ac_domain" }
 ac_http = { path = "crates/ac_http" }
 ac_interchange = { path = "crates/ac_interchange" }
+ac_scripting = { path = "crates/ac_scripting" }
 ac_secrets = { path = "crates/ac_secrets" }
 ac_storage = { path = "crates/ac_storage" }
 # age: secrets for several recipients (ADR S4); armor for text files in git,
@@ -24,6 +25,15 @@ ac_storage = { path = "crates/ac_storage" }
 age = { version = "0.12", features = ["armor", "ssh"] }
 # base64: the credentials of HTTP Basic authentication.
 base64 = "0.22"
+# oxc: TypeScript to JavaScript for request scripts (ADR S1), one version for all parts.
+oxc_allocator = "0.159"
+oxc_codegen = "0.159"
+oxc_parser = "0.159"
+oxc_semantic = "0.159"
+oxc_span = "0.159"
+oxc_transformer = "0.159"
+# rquickjs: the QuickJS engine (quickjs-ng) that runs request scripts (ADR S1).
+rquickjs = "0.14"
 # getrandom and sha2: the PKCE verifier and challenge of the OAuth 2 sign-in.
 getrandom = "0.3"
 sha2 = "0.10"

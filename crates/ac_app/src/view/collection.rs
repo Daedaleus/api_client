@@ -7,7 +7,9 @@ use serde::{Deserialize, Serialize};
 use crate::error::AppError;
 use crate::ports::{Location, OpenedCollection, StoreError};
 use crate::text::UserText;
-use crate::view::{AuthDraft, BodyDraft, CertificateCheckView, EnvironmentDraft, VariableDraft};
+use crate::view::{
+    AuthDraft, BodyDraft, CertificateCheckView, EnvironmentDraft, ScriptsDraft, VariableDraft,
+};
 
 /// An open collection.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -157,6 +159,9 @@ pub struct RequestDraft {
     /// Certificate check, or inherited.
     #[serde(default)]
     pub certificate_check: CertificateCheckView,
+    /// Scripts before sending and after the response.
+    #[serde(default)]
+    pub scripts: ScriptsDraft,
     /// The file is never written (set by the app, ignored when saving).
     #[serde(default)]
     pub read_only: bool,
@@ -214,6 +219,7 @@ impl RequestDraft {
             variables: VariableDraft::list(&request.variables),
             auth: AuthDraft::from_auth(&request.auth),
             certificate_check: CertificateCheckView::from_check(request.certificate_check),
+            scripts: ScriptsDraft::from_scripts(&request.scripts),
             read_only,
         }
     }
@@ -227,6 +233,7 @@ impl RequestDraft {
             variables: VariableDraft::to_plain_variables(&self.variables),
             auth: self.auth.to_auth(),
             certificate_check: self.certificate_check.to_check(),
+            scripts: self.scripts.to_scripts(),
             id: self.id.parse().map_err(|_| AppError::UnknownItem)?,
             name: non_empty(&self.name)?.to_owned(),
             method: self.method.trim().parse()?,

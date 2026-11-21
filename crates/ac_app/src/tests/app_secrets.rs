@@ -59,6 +59,7 @@ fn send(fixture: &Fixture, url: &str) -> Result<CommandAck, AppError> {
     fixture.app.execute(Command::SendRequest {
         request: crate::view::OutgoingRequest {
             certificate_check: crate::view::CertificateCheckView::Inherit,
+            scripts: crate::view::ScriptsDraft::default(),
             method: "GET".into(),
             url: url.into(),
             headers: Vec::new(),
