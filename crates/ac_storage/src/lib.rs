@@ -21,6 +21,7 @@
 //! - `rows`: name/value/enabled lists (headers, variables).
 //! - `variables`: variable lists in collection, folder, environment and
 //!   request files.
+//! - `body`: the body table of request files.
 //! - `auth`: authentication tables in request, folder and collection files.
 //! - [`create`]: creating collections, folders and requests.
 //! - [`remove`]: removing requests and folders.
@@ -30,6 +31,7 @@
 //! - `document`: reading and updating TOML values in place, atomic writes.
 
 mod auth;
+mod body;
 pub mod create;
 mod document;
 pub mod environment_file;

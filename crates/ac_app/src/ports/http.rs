@@ -37,6 +37,14 @@ pub enum TransportError {
     /// No connection could be established (DNS, refused, TLS …).
     #[error("connection failed: {0}")]
     Connect(String),
+    /// A file of the body cannot be read.
+    #[error("cannot read {path}: {detail}")]
+    File {
+        /// The file.
+        path: String,
+        /// Why (from the operating system).
+        detail: String,
+    },
     /// Any other failure while sending or receiving.
     #[error("request failed: {0}")]
     Other(String),
@@ -49,6 +57,9 @@ impl TransportError {
         match self {
             Self::Timeout => UserText::new(keys::TIMEOUT),
             Self::Connect(detail) => UserText::new(keys::CONNECT).with("detail", detail.clone()),
+            Self::File { path, detail } => UserText::new(keys::FILE_UNREADABLE)
+                .with("path", path.clone())
+                .with("detail", detail.clone()),
             Self::Other(detail) => UserText::new(keys::REQUEST).with("detail", detail.clone()),
         }
     }

@@ -1,6 +1,8 @@
 use ac_domain::collection::ItemId;
 use ac_domain::protocol::HttpMethod;
 
+use ac_domain::collection::Body;
+
 use super::*;
 
 fn request() -> Request {

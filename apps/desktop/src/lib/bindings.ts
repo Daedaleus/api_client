@@ -75,8 +75,11 @@ value: string;
 /**  Where it goes. */
 placement: KeyPlacementView };
 
-/**  The body of a [`RequestDraft`]. */
-export type BodyDraft = 
+/**  The body of a [`super::RequestDraft`]. */
+export type BodyDraft = BodyDraft_Serialize | BodyDraft_Deserialize;
+
+/**  The body of a [`super::RequestDraft`]. */
+export type BodyDraft_Deserialize = 
 /**  No body. */
 { kind: "none" } | 
 /**  JSON text. */
@@ -86,7 +89,44 @@ content: string } |
 /**  Plain text. */
 { kind: "text"; 
 /**  The text. */
-content: string };
+content: string } | 
+/**  URL-encoded form fields. */
+{ kind: "form"; 
+/**  The fields in order. */
+fields: FormFieldDraft[] } | 
+/**  Multipart form data. */
+{ kind: "multipart"; 
+/**  The fields in order. */
+fields: MultipartFieldDraft_Deserialize[] } | 
+/**  The contents of a file. */
+{ kind: "binary"; 
+/**  Path of the file; relative = to the collection folder. */
+file: string };
+
+/**  The body of a [`super::RequestDraft`]. */
+export type BodyDraft_Serialize = 
+/**  No body. */
+{ kind: "none" } | 
+/**  JSON text. */
+{ kind: "json"; 
+/**  The text. */
+content: string } | 
+/**  Plain text. */
+{ kind: "text"; 
+/**  The text. */
+content: string } | 
+/**  URL-encoded form fields. */
+{ kind: "form"; 
+/**  The fields in order. */
+fields: FormFieldDraft[] } | 
+/**  Multipart form data. */
+{ kind: "multipart"; 
+/**  The fields in order. */
+fields: MultipartFieldDraft_Serialize[] } | 
+/**  The contents of a file. */
+{ kind: "binary"; 
+/**  Path of the file; relative = to the collection folder. */
+file: string };
 
 /**  What the UI shows of a body. */
 export type BodyView = {
@@ -194,7 +234,7 @@ url: string;
 /**  Header rows; disabled rows and rows without a name are not sent. */
 headers?: HeaderDraft[]; 
 /**  Body; JSON and text get a `Content-Type` unless a header sets one. */
-body?: BodyDraft; 
+body?: BodyDraft_Deserialize; 
 /**  The request's own variables, as in the editor (strongest). */
 variables?: VariableDraft_Deserialize[]; 
 /**
@@ -304,7 +344,7 @@ url: string;
 /**  Header rows; disabled rows and rows without a name are not sent. */
 headers: HeaderDraft[]; 
 /**  Body; JSON and text get a `Content-Type` unless a header sets one. */
-body: BodyDraft; 
+body: BodyDraft_Serialize; 
 /**  The request's own variables, as in the editor (strongest). */
 variables: VariableDraft_Serialize[]; 
 /**
@@ -430,6 +470,16 @@ export type EnvironmentDraft_Serialize = {
 	readOnly: boolean,
 };
 
+/**  A field of a URL-encoded form. */
+export type FormFieldDraft = {
+	/**  Name. */
+	name: string,
+	/**  Value. */
+	value: string,
+	/**  Sent with the request. */
+	enabled: boolean,
+};
+
 /**  A header of a [`RequestDraft`]. */
 export type HeaderDraft = {
 	/**  Name. */
@@ -454,6 +504,33 @@ export type KeyPlacementView =
 "header" | 
 /**  As a query parameter. */
 "query";
+
+/**  A field of a multipart body: text, or a file. */
+export type MultipartFieldDraft = MultipartFieldDraft_Serialize | MultipartFieldDraft_Deserialize;
+
+/**  A field of a multipart body: text, or a file. */
+export type MultipartFieldDraft_Deserialize = {
+	/**  Name. */
+	name: string,
+	/**  The text, or the path of the file. */
+	value: string,
+	/**  Sent with the request. */
+	enabled: boolean,
+	/**  `value` is a file path. */
+	file?: boolean,
+};
+
+/**  A field of a multipart body: text, or a file. */
+export type MultipartFieldDraft_Serialize = {
+	/**  Name. */
+	name: string,
+	/**  The text, or the path of the file. */
+	value: string,
+	/**  Sent with the request. */
+	enabled: boolean,
+	/**  `value` is a file path. */
+	file: boolean,
+};
 
 /**  Something the UI wants to read. */
 export type Query = 
@@ -532,7 +609,7 @@ export type RequestDraft_Deserialize = {
 	/**  Headers in the order they are sent. */
 	headers: HeaderDraft[],
 	/**  Body. */
-	body: BodyDraft,
+	body: BodyDraft_Deserialize,
 	/**  Variables of this request only. */
 	variables?: VariableDraft_Deserialize[],
 	/**  Authentication, or inherited. */
@@ -554,7 +631,7 @@ export type RequestDraft_Serialize = {
 	/**  Headers in the order they are sent. */
 	headers: HeaderDraft[],
 	/**  Body. */
-	body: BodyDraft,
+	body: BodyDraft_Serialize,
 	/**  Variables of this request only. */
 	variables: VariableDraft_Serialize[],
 	/**  Authentication, or inherited. */

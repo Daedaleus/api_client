@@ -134,6 +134,13 @@ export class FakeApi implements Api {
     return this.folder;
   }
 
+  /** What the file picker returns. */
+  file: string | null = null;
+
+  async pickFile(): Promise<string | null> {
+    return this.file;
+  }
+
   emit(runId: number, outcome: RunOutcome) {
     this.handler?.({ type: 'runFinished', runId, outcome });
   }

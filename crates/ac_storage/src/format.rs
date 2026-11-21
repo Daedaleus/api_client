@@ -39,6 +39,12 @@ pub mod body_type {
     pub const JSON: &str = "json";
     /// Plain text.
     pub const TEXT: &str = "text";
+    /// URL-encoded form fields.
+    pub const FORM: &str = "form";
+    /// Multipart form data.
+    pub const MULTIPART: &str = "multipart";
+    /// The contents of a file.
+    pub const BINARY: &str = "binary";
 }
 
 /// Whether a directory entry is part of the request tree at all: hidden

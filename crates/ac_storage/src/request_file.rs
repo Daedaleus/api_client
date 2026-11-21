@@ -3,15 +3,15 @@
 
 use std::path::Path;
 
-use ac_domain::collection::{Body, HeaderEntry, Request};
+use ac_domain::collection::{HeaderEntry, Request};
 use ac_domain::protocol::HttpMethod;
 use toml_edit::{DocumentMut, Item, Table, TableLike};
 
 use crate::document;
 use crate::error::StorageError;
-use crate::format::{CURRENT_VERSION, REQUEST_FORMAT, body_type};
+use crate::format::{CURRENT_VERSION, REQUEST_FORMAT};
 use crate::rows::{self, Row};
-use crate::{auth, variables};
+use crate::{auth, body, variables};
 
 const REQUEST_TABLE: &str = "request";
 const HEADERS: &str = "headers";
@@ -57,7 +57,7 @@ pub(crate) fn request_from(doc: &DocumentMut, path: &Path) -> Result<Request, St
         method,
         url: document::opt_str(table, "url", path)?.unwrap_or_default(),
         headers: headers_from(table.get(HEADERS), path)?,
-        body: body_from(table.get(BODY), path)?,
+        body: body::read(table.get(BODY), path)?,
     })
 }
 
@@ -82,25 +82,6 @@ fn header_rows(headers: &[HeaderEntry]) -> Vec<Row> {
             secret: false,
         })
         .collect()
-}
-
-fn body_from(item: Option<&Item>, path: &Path) -> Result<Body, StorageError> {
-    let Some(item) = item else {
-        return Ok(Body::None);
-    };
-    let table = item
-        .as_table_like()
-        .ok_or_else(|| StorageError::invalid(path, "request.body", "must be a table"))?;
-    let content = document::opt_str(table, "content", path)?.unwrap_or_default();
-    match document::opt_str(table, "type", path)?.as_deref() {
-        Some(body_type::JSON) => Ok(Body::Json(content)),
-        Some(body_type::TEXT) => Ok(Body::Text(content)),
-        other => Err(StorageError::invalid(
-            path,
-            "request.body.type",
-            format!("must be \"json\" or \"text\", found {other:?}"),
-        )),
-    }
 }
 
 /// Writes `request` to `path`. An existing file keeps its comments, key
@@ -164,23 +145,11 @@ fn apply(doc: &mut DocumentMut, request: &Request, path: &Path) -> Result<(), St
     auth::write(table, &before.auth, &request.auth);
     if before.body != request.body {
         table.remove(BODY);
-        if let Some(item) = body_item(&request.body) {
+        if let Some(item) = body::item(&request.body) {
             table.insert(BODY, item);
         }
     }
     Ok(())
-}
-
-fn body_item(body: &Body) -> Option<Item> {
-    let (kind, content) = match body {
-        Body::None => return None,
-        Body::Json(content) => (body_type::JSON, content),
-        Body::Text(content) => (body_type::TEXT, content),
-    };
-    let mut table = Table::new();
-    table.insert("type", toml_edit::value(kind));
-    table.insert("content", Item::Value(document::text_value(content)));
-    Some(Item::Table(table))
 }
 
 #[cfg(test)]

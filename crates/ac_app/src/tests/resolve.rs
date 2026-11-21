@@ -26,6 +26,7 @@ fn with_auth(
         headers,
         body,
         auth,
+        files_base: None,
     };
     resolve_request(&entered, variables)
 }
@@ -87,10 +88,10 @@ fn bodies_get_a_content_type_unless_one_is_set() {
         &HashMap::new(),
     )
     .unwrap();
-    assert_eq!(json.body.as_deref(), Some(b"{\"a\":1}".as_slice()));
+    assert_eq!(json.body_bytes(), Some(b"{\"a\":1}".as_slice()));
     assert_eq!(
         json.headers,
-        [Header::new("Content-Type", "application/json")]
+        [Header::new(header::CONTENT_TYPE, "application/json")]
     );
 
     let text = resolve(
@@ -103,7 +104,10 @@ fn bodies_get_a_content_type_unless_one_is_set() {
     .unwrap();
     assert_eq!(
         text.headers,
-        [Header::new("Content-Type", "text/plain; charset=utf-8")]
+        [Header::new(
+            header::CONTENT_TYPE,
+            "text/plain; charset=utf-8"
+        )]
     );
 
     let own = [entry("content-type", "application/vnd.api+json", true)];
@@ -132,7 +136,7 @@ fn bodies_get_a_content_type_unless_one_is_set() {
     .unwrap();
     assert_eq!(
         request.headers,
-        [Header::new("Content-Type", "application/json")]
+        [Header::new(header::CONTENT_TYPE, "application/json")]
     );
 }
 
@@ -194,7 +198,7 @@ fn variables_are_resolved_in_url_headers_and_body() {
     .unwrap();
     assert_eq!(request.url.as_str(), "https://api.example.com/items/42");
     assert_eq!(request.headers[0], Header::new("X-Token", "Bearer secret"));
-    assert_eq!(request.body.as_deref(), Some(b"{\"id\": 42}".as_slice()));
+    assert_eq!(request.body_bytes(), Some(b"{\"id\": 42}".as_slice()));
 }
 
 #[test]

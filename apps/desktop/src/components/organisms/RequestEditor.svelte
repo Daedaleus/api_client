@@ -17,9 +17,11 @@
     variables?: ReadonlyMap<string, string>;
     /** The environment picker, shown next to the name of a saved request. */
     environment?: Snippet;
+    /** Lets the user pick a file for the body. */
+    onpickfile?: () => Promise<string | null>;
   }
 
-  let { tab, onsend, onsave, variables = new Map(), environment }: Props = $props();
+  let { tab, onsend, onsave, variables = new Map(), environment, onpickfile }: Props = $props();
 
   // What the URL looks like with its `{{variables}}` filled in.
   let urlPreview = $derived(
@@ -109,7 +111,7 @@
         {#if name === 'headers' && activeHeaders > 0}
           <span class="request-editor__count">{activeHeaders}</span>
         {:else if name === 'body' && tab.draft.body.kind !== 'none'}
-          <span class="request-editor__count">{tab.draft.body.kind.toUpperCase()}</span>
+          <span class="request-editor__count">{i18n.t(`editor.body_${tab.draft.body.kind}`)}</span>
         {:else if name === 'auth' && tab.draft.auth.kind !== 'inherit'}
           <span class="request-editor__count">{i18n.t(`auth.badge_${tab.draft.auth.kind}`)}</span>
         {:else if name === 'variables' && activeVariables > 0}
@@ -122,7 +124,7 @@
     {#if section === 'headers'}
       <RowsEditor bind:rows={tab.draft.headers} labels={HEADER_LABELS} />
     {:else if section === 'body'}
-      <BodyEditor bind:body={tab.draft.body} />
+      <BodyEditor bind:body={tab.draft.body} {onpickfile} />
     {:else if section === 'auth'}
       <AuthEditor bind:auth={tab.draft.auth} />
     {:else}

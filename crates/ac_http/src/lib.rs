@@ -3,11 +3,13 @@
 //! One [`ReqwestSender`] per application; it shares connections between all
 //! requests. Redirects are followed (up to 10), TLS certificates are verified.
 
+use std::path::Path;
 use std::time::{Duration, Instant};
 
 use ac_app::{HttpSender, TransportError};
-use ac_domain::exchange::{Header, ResolvedRequest, Response};
-use ac_domain::protocol::StatusCode;
+use ac_domain::exchange::{Header, Part, PartContent, RequestBody, ResolvedRequest, Response};
+use ac_domain::protocol::{StatusCode, media_type};
+use reqwest::multipart::Form;
 
 /// Sent as `User-Agent` unless a request sets its own.
 pub const USER_AGENT: &str = concat!("api_client/", env!("CARGO_PKG_VERSION"));
@@ -43,9 +45,12 @@ impl HttpSender for ReqwestSender {
         for header in request.headers {
             builder = builder.header(header.name, header.value);
         }
-        if let Some(body) = request.body {
-            builder = builder.body(body);
-        }
+        builder = match request.body {
+            None => builder,
+            Some(RequestBody::Bytes(bytes)) => builder.body(bytes),
+            Some(RequestBody::File(path)) => builder.body(read(&path).await?),
+            Some(RequestBody::Multipart(parts)) => builder.multipart(form(parts).await?),
+        };
 
         let started = Instant::now();
         let response = builder
@@ -74,6 +79,38 @@ impl HttpSender for ReqwestSender {
             elapsed: started.elapsed(),
         })
     }
+}
+
+/// Reads a file to send; failing to read it is a failed request.
+async fn read(path: &Path) -> Result<Vec<u8>, TransportError> {
+    tokio::fs::read(path)
+        .await
+        .map_err(|error| TransportError::File {
+            path: path.display().to_string(),
+            detail: error.to_string(),
+        })
+}
+
+/// Multipart form data; files are sent with their file name.
+async fn form(parts: Vec<Part>) -> Result<Form, TransportError> {
+    let mut form = Form::new();
+    for part in parts {
+        form = match part.content {
+            PartContent::Text(text) => form.text(part.name, text),
+            PartContent::File(path) => {
+                let data = read(&path).await?;
+                let file_name = path
+                    .file_name()
+                    .map_or_default(|name| name.to_string_lossy().into_owned());
+                let file = reqwest::multipart::Part::bytes(data)
+                    .file_name(file_name)
+                    .mime_str(media_type::OCTET_STREAM)
+                    .map_err(|error| TransportError::Other(error.to_string()))?;
+                form.part(part.name, file)
+            }
+        };
+    }
+    Ok(form)
 }
 
 /// Maps a reqwest error to the port's error, with the root cause as detail.

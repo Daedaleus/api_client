@@ -10,9 +10,12 @@ publish.workspace = true
 [dependencies]
 ac_app.workspace = true
 ac_domain.workspace = true
-reqwest.workspace = true
+# multipart: form data with files; tokio fs: reading files to send.
+reqwest = { workspace = true, features = ["multipart"] }
+tokio = { workspace = true, features = ["fs"] }
 
 [dev-dependencies]
+tempfile.workspace = true
 tokio = { workspace = true, features = ["macros", "rt", "net"] }
 url.workspace = true
 wiremock.workspace = true

@@ -209,6 +209,10 @@ pub mod media_type {
     pub const JSON: &str = "application/json";
     /// Text bodies.
     pub const TEXT: &str = "text/plain; charset=utf-8";
+    /// URL-encoded form fields.
+    pub const FORM: &str = "application/x-www-form-urlencoded";
+    /// Arbitrary bytes (binary bodies, files without a known type).
+    pub const OCTET_STREAM: &str = "application/octet-stream";
 }
 
 /// Schemes of the `Authorization` header (RFC 7617, RFC 6750).

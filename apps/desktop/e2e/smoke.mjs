@@ -18,6 +18,8 @@
 //      same name overrides it,
 //   9. bearer auth with the secret as token is sent; set on the collection,
 //      the request inherits it,
+//  10. a multipart upload and a binary body read a file relative to the
+//      collection folder,
 // and the program is still running after each send.
 //
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
@@ -32,7 +34,7 @@
 // Likewise its own key file for secrets, so the user's key is never touched.
 
 import { spawn, spawnSync } from 'node:child_process';
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import http from 'node:http';
 import net from 'node:net';
 import os from 'node:os';
@@ -616,5 +618,51 @@ check(
   'request inherits bearer auth with the decrypted secret',
 );
 check(exitCode === null, 'program still running after sending with auth');
+
+// --- 10. Multipart and binary bodies ---------------------------------------------
+
+const fileContent = 'hello from e2e';
+mkdirSync(path.join(collectionDir, 'files'), { recursive: true });
+writeFileSync(path.join(collectionDir, 'files', 'hello.txt'), fileContent);
+
+await evaluate(`document.querySelectorAll('.request-editor__section')[1].click()`);
+await waitFor(`!!document.querySelector('input[name=body-kind][value=multipart]')`, 'body kinds');
+await evaluate(`document.querySelector('input[name=body-kind][value=multipart]').click()`);
+await waitFor(`!!document.querySelector('.multipart-editor')`, 'multipart editor');
+await evaluate(`document.querySelector('.multipart-editor .button').click()`);
+await waitFor(
+  `document.querySelectorAll('.multipart-editor__input').length === 2`,
+  'multipart field',
+);
+await evaluate(`(() => {
+  const [name, value] = document.querySelectorAll('.multipart-editor__input');
+  name.value = 'upload';
+  name.dispatchEvent(new Event('input', { bubbles: true }));
+  document.querySelectorAll('.multipart-editor input[type=checkbox]')[1].click();
+  value.value = 'files/hello.txt';
+  value.dispatchEvent(new Event('input', { bubbles: true }));
+})()`);
+await evaluate(setValue('.url-bar__input', '{{baseUrl}}/echo?multi=1'));
+await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);
+const uploaded = await echoWith('multi=1', 'echo of the multipart upload');
+check(
+  uploaded.includes('multipart/form-data') &&
+    uploaded.includes('filename=\\"hello.txt\\"') &&
+    uploaded.includes(fileContent),
+  'multipart upload sends the file from the collection folder',
+);
+
+await evaluate(`document.querySelector('input[name=body-kind][value=binary]').click()`);
+await waitFor(`!!document.querySelector('.body-editor__file-input')`, 'binary body field');
+await evaluate(setValue('.body-editor__file-input', 'files/hello.txt'));
+await evaluate(setValue('.url-bar__input', '{{baseUrl}}/echo?bin=1'));
+await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);
+const binary = await echoWith('bin=1', 'echo of the binary body');
+check(
+  binary.includes('"contentType": "application/octet-stream"') &&
+    binary.includes(`"body": "${fileContent}"`),
+  'binary body sends the file as it is',
+);
+check(exitCode === null, 'program still running after sending files');
 
 finish(null);

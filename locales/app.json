@@ -1,4 +1,32 @@
 {
+  "editor.body_form": { "de": "Formular", "en": "Form" },
+  "editor.body_multipart": { "de": "Multipart", "en": "Multipart" },
+  "editor.body_binary": { "de": "Datei", "en": "File" },
+  "editor.body_file": { "de": "Pfad", "en": "Path" },
+  "editor.field_enabled": { "de": "Mitsenden", "en": "Send" },
+  "editor.field_name": { "de": "Feldname", "en": "Field name" },
+  "editor.field_value": { "de": "Wert", "en": "Value" },
+  "editor.field_file": { "de": "Datei", "en": "File" },
+  "editor.add_field": { "de": "Feld hinzufügen", "en": "Add field" },
+  "editor.remove_field": { "de": "Feld entfernen", "en": "Remove field" },
+  "editor.no_fields": { "de": "Keine Felder.", "en": "No fields." },
+  "editor.pick_file": { "de": "Auswählen …", "en": "Choose …" },
+  "editor.file_placeholder": {
+    "de": "Pfad der Datei",
+    "en": "Path of the file"
+  },
+  "editor.file_note": {
+    "de": "Relative Pfade gelten ab dem Collection-Ordner – so funktioniert der Request auch bei anderen im Team.",
+    "en": "Relative paths start at the collection folder – so the request works for others on the team too."
+  },
+  "error.file_unreadable": {
+    "de": "Die Datei „{path}“ lässt sich nicht lesen: {detail}",
+    "en": "The file “{path}” cannot be read: {detail}"
+  },
+  "error.file_relative": {
+    "de": "Der relative Pfad „{path}“ braucht einen gespeicherten Request in einer Collection – oder einen absoluten Pfad.",
+    "en": "The relative path “{path}” needs a saved request in a collection – or use an absolute path."
+  },
   "editor.auth": { "de": "Auth", "en": "Auth" },
   "defaults.title": {
     "de": "„{name}“: Variablen und Auth",

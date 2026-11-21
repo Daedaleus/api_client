@@ -65,6 +65,7 @@
             onsend={() => workspace.send(tab)}
             onsave={() => workspace.save(tab)}
             variables={workspace.variablesFor(tab)}
+            onpickfile={() => workspace.pickFile()}
           >
             {#snippet environment()}
               {#if collection}

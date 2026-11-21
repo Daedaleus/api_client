@@ -8,6 +8,7 @@ use ac_domain::scope::Scope;
 use std::sync::atomic::Ordering;
 
 use super::App;
+use super::environments::Context;
 use super::secrets::explain;
 use crate::command::{CommandAck, RunId};
 use crate::error::AppError;
@@ -55,6 +56,7 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
             headers: &headers,
             body: &body,
             auth: &auth,
+            files_base: context.as_ref().map(Context::root),
         };
         let request = resolve_request(&entered, &variables).map_err(|error| {
             let unlocked = context

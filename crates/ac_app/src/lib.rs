@@ -23,6 +23,7 @@ pub mod error;
 pub mod event;
 pub mod ports;
 mod resolve;
+mod resolve_body;
 #[cfg(test)]
 #[path = "tests/support.rs"]
 mod test_support;

@@ -70,6 +70,11 @@ pub mod keys {
     pub const TIMEOUT: &str = "error.timeout";
     /// No connection. Argument: `detail`.
     pub const CONNECT: &str = "error.connect";
+    /// A file of the body cannot be read. Arguments: `path`, `detail`.
+    pub const FILE_UNREADABLE: &str = "error.file_unreadable";
+    /// A relative file path in a request that belongs to no collection.
+    /// Argument: `path`.
+    pub const FILE_RELATIVE: &str = "error.file_relative";
     /// Any other transport failure. Argument: `detail`.
     pub const REQUEST: &str = "error.request";
 
@@ -94,7 +99,7 @@ pub mod keys {
 
     /// All keys with the names of their placeholders, checked against the
     /// translation file by a test.
-    pub const ALL: [(&str, &[&str]); 25] = [
+    pub const ALL: [(&str, &[&str]); 27] = [
         (URL_EMPTY, &[]),
         (URL_INVALID, &["reason"]),
         (URL_SCHEME, &["scheme"]),
@@ -110,6 +115,8 @@ pub mod keys {
         (SECRET_KEY, &["detail"]),
         (TIMEOUT, &[]),
         (CONNECT, &["detail"]),
+        (FILE_UNREADABLE, &["path", "detail"]),
+        (FILE_RELATIVE, &["path"]),
         (REQUEST, &["detail"]),
         (STORE_IO, &["path", "detail"]),
         (STORE_DAMAGED, &["path", "detail"]),

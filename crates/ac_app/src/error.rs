@@ -47,6 +47,10 @@ pub enum AppError {
     /// Encrypting or decrypting secrets failed.
     #[error(transparent)]
     Secret(#[from] SecretError),
+    /// A relative file path in a request that belongs to no collection
+    /// (relative paths are relative to the collection folder).
+    #[error("relative file path {0:?} without a collection")]
+    RelativeFile(String),
     /// The collection is not open.
     #[error("collection is not open")]
     UnknownCollection,
@@ -98,6 +102,9 @@ impl AppError {
             Self::SecretUnavailable { reason, .. }
             | Self::NotReencrypted { reason, .. }
             | Self::Secret(reason) => reason.user_text(),
+            Self::RelativeFile(path) => {
+                UserText::new(keys::FILE_RELATIVE).with("path", path.clone())
+            }
             Self::UnknownCollection => UserText::new(keys::UNKNOWN_COLLECTION),
             Self::UnknownItem => UserText::new(keys::UNKNOWN_ITEM),
             Self::NotAFolder => UserText::new(keys::NOT_A_FOLDER),
