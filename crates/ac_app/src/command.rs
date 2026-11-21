@@ -115,10 +115,11 @@ pub enum Command {
         /// The certificate check (`inherit` on the collection means on).
         certificate_check: CertificateCheckView,
     },
-    /// Import a Postman collection (v2.1, v2.0) as a new collection and open
-    /// it.
-    ImportPostman {
-        /// The exported Postman file.
+    /// Import another tool's collection as a new collection and open it:
+    /// a Postman collection (v2.1, v2.0) or an `OpenAPI` 3 description (JSON
+    /// or YAML), detected from the file.
+    ImportCollection {
+        /// The file to import.
         file: String,
         /// The folder for the new collection (created if needed).
         path: String,

@@ -91,17 +91,18 @@ export class Workspace {
   }
 
   /**
-   * Imports a Postman export: the user picks the file, then the folder for
-   * the new collection. What could not be taken over is shown afterwards.
+   * Imports another tool's collection (Postman, OpenAPI): the user picks the
+   * file, then the folder for the new collection. What could not be taken
+   * over is shown afterwards.
    */
-  async importPostman(): Promise<void> {
+  async importCollection(): Promise<void> {
     const file = await this.#api.pickFile();
     if (!file) return;
     const path = await this.#api.pickFolder();
     if (!path) return;
     this.collections.error = null;
     try {
-      const ack = await this.#api.execute({ type: 'importPostman', file, path });
+      const ack = await this.#api.execute({ type: 'importCollection', file, path });
       if (ack.type !== 'collectionImported') throw new Error(`unexpected answer ${ack.type}`);
       this.collections.apply(ack.collection);
       if (ack.skipped.length > 0) {

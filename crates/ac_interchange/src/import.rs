@@ -1,0 +1,114 @@
+//! Importing a collection from another tool's file: the format is detected
+//! from the content, so the user picks a file and nothing else.
+
+use ac_domain::collection::Collection;
+use serde_json::Value;
+
+use crate::{openapi, postman};
+
+/// A converted collection.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Imported {
+    /// The collection.
+    pub collection: Collection,
+    /// What could not be taken over, in the order it was met.
+    pub skipped: Vec<Skipped>,
+}
+
+/// Something that was not taken over.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Skipped {
+    /// Name of the collection, folder or request.
+    pub item: String,
+    /// What.
+    pub what: SkippedKind,
+}
+
+/// Kinds of [`Skipped`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SkippedKind {
+    /// Pre-request or test scripts (scripting comes later).
+    Scripts,
+    /// An auth type without counterpart, e.g. `oauth2`.
+    Auth(String),
+    /// A body type without counterpart, e.g. `graphql` or `application/xml`.
+    Body(String),
+}
+
+/// Why a file cannot be imported.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum ImportError {
+    /// Neither JSON nor YAML.
+    #[error("neither JSON nor YAML: {0}")]
+    Parse(String),
+    /// A format this program does not read.
+    #[error("not a Postman collection or OpenAPI 3 description")]
+    Unknown,
+    /// Swagger 2.0, the predecessor of `OpenAPI` 3.
+    #[error("Swagger 2.0 is not supported; convert it to OpenAPI 3 first")]
+    Swagger2,
+}
+
+/// Converts a Postman collection or an `OpenAPI` 3 description (JSON or
+/// YAML), whichever `text` is.
+///
+/// # Errors
+/// [`ImportError`] if the text is none of them.
+pub fn import_collection(text: &str) -> Result<Imported, ImportError> {
+    let document = parse(text)?;
+    if document.get("swagger").is_some() {
+        return Err(ImportError::Swagger2);
+    }
+    if let Some(imported) = openapi::from_value(&document) {
+        return Ok(imported);
+    }
+    postman::from_value(&document).ok_or(ImportError::Unknown)
+}
+
+/// The document in `text`: JSON, else YAML (which also covers most JSON).
+pub(crate) fn parse(text: &str) -> Result<Value, ImportError> {
+    if let Ok(value) = serde_json::from_str(text) {
+        return Ok(value);
+    }
+    let documents = yaml_rust2::YamlLoader::load_from_str(text)
+        .map_err(|error| ImportError::Parse(error.to_string()))?;
+    documents
+        .into_iter()
+        .next()
+        .map(yaml_to_json)
+        .ok_or_else(|| ImportError::Parse("empty document".into()))
+}
+
+fn yaml_to_json(yaml: yaml_rust2::Yaml) -> Value {
+    use yaml_rust2::Yaml;
+    match yaml {
+        Yaml::Real(text) => text
+            .parse::<f64>()
+            .ok()
+            .and_then(serde_json::Number::from_f64)
+            .map_or(Value::String(text), Value::Number),
+        Yaml::Integer(number) => Value::Number(number.into()),
+        Yaml::String(text) => Value::String(text),
+        Yaml::Boolean(flag) => Value::Bool(flag),
+        Yaml::Array(items) => Value::Array(items.into_iter().map(yaml_to_json).collect()),
+        Yaml::Hash(entries) => Value::Object(
+            entries
+                .into_iter()
+                .map(|(key, value)| (yaml_key(key), yaml_to_json(value)))
+                .collect(),
+        ),
+        Yaml::Alias(_) | Yaml::Null | Yaml::BadValue => Value::Null,
+    }
+}
+
+/// Map keys as text (`200:` in YAML is a number, but a status in `OpenAPI`).
+fn yaml_key(key: yaml_rust2::Yaml) -> String {
+    match yaml_to_json(key) {
+        Value::String(text) => text,
+        other => other.to_string(),
+    }
+}
+
+#[cfg(test)]
+#[path = "tests/import.rs"]
+mod tests;

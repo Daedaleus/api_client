@@ -9,10 +9,12 @@ publish.workspace = true
 
 [dependencies]
 ac_domain.workspace = true
-serde_json.workspace = true
+# preserve_order: paths and properties keep the order of the file.
+serde_json = { workspace = true, features = ["preserve_order"] }
 shell-words.workspace = true
 thiserror.workspace = true
 url.workspace = true
+yaml-rust2.workspace = true
 
 [lints]
 workspace = true

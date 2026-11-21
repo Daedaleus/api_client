@@ -5,7 +5,7 @@
 //! auth (Basic, Bearer, API key, none, inherit) and variables of the
 //! collection and of folders. Postman's `{{variable}}` syntax is the same.
 //! What has no counterpart – scripts, other auth types, GraphQL bodies – is
-//! reported in [`Imported::skipped`].
+//! reported in [`Imported::skipped`](crate::import::Imported::skipped).
 //!
 //! Read leniently from JSON values: exports differ between Postman versions,
 //! and a missing optional field should never make an import fail.
@@ -18,62 +18,20 @@ use ac_domain::environment::Variable;
 use ac_domain::tls::CertificateCheck;
 use serde_json::Value;
 
-/// A converted Postman collection.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Imported {
-    /// The collection.
-    pub collection: Collection,
-    /// What could not be taken over, in the order it was met.
-    pub skipped: Vec<Skipped>,
-}
-
-/// Something of a Postman item that was not taken over.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Skipped {
-    /// Name of the collection, folder or request.
-    pub item: String,
-    /// What.
-    pub what: SkippedKind,
-}
-
-/// Kinds of [`Skipped`].
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SkippedKind {
-    /// Pre-request or test scripts (scripting comes later).
-    Scripts,
-    /// An auth type without counterpart, e.g. `oauth2`.
-    Auth(String),
-    /// A body mode without counterpart, e.g. `graphql`.
-    Body(String),
-}
-
-/// Why a text is no Postman collection.
-#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
-pub enum PostmanError {
-    /// Not valid JSON.
-    #[error("not valid JSON: {0}")]
-    Json(String),
-    /// JSON, but no Postman collection (`info` and `item` missing).
-    #[error("not a Postman collection")]
-    NotPostman,
-}
+use crate::import::{Imported, Skipped, SkippedKind};
 
 /// Name of a collection without one.
 const UNNAMED: &str = "Postman";
 
-/// Converts an exported Postman collection.
-///
-/// # Errors
-/// [`PostmanError`] if the text is no Postman collection.
-pub fn from_postman(text: &str) -> Result<Imported, PostmanError> {
-    let root: Value =
-        serde_json::from_str(text).map_err(|error| PostmanError::Json(error.to_string()))?;
+/// Converts an exported Postman collection; `None` if `root` is none
+/// (`info` and `item` missing).
+pub(crate) fn from_value(root: &Value) -> Option<Imported> {
     let (Some(info), Some(items)) = (root.get("info"), root.get("item")) else {
-        return Err(PostmanError::NotPostman);
+        return None;
     };
     let name = text_of(info.get("name")).unwrap_or_else(|| UNNAMED.to_owned());
     let mut skipped = Vec::new();
-    scripts(&root, &name, &mut skipped);
+    scripts(root, &name, &mut skipped);
     let auth = auth(root.get("auth"), &name, &mut skipped);
     let collection = Collection {
         id: ItemId::new(),
@@ -84,7 +42,7 @@ pub fn from_postman(text: &str) -> Result<Imported, PostmanError> {
         certificate_check: CertificateCheck::Inherit,
         name,
     };
-    Ok(Imported {
+    Some(Imported {
         collection,
         skipped,
     })

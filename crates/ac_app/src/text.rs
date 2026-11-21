@@ -77,8 +77,8 @@ pub mod keys {
     pub const FILE_RELATIVE: &str = "error.file_relative";
     /// A pasted text is no usable cURL command. Argument: `detail`.
     pub const CURL_INVALID: &str = "error.curl_invalid";
-    /// A file is no usable Postman collection. Argument: `detail`.
-    pub const POSTMAN_INVALID: &str = "error.postman_invalid";
+    /// A file cannot be imported. Argument: `detail`.
+    pub const IMPORT_INVALID: &str = "error.import_invalid";
     /// An import left out scripts. Argument: `item`.
     pub const IMPORT_SKIPPED_SCRIPTS: &str = "import.skipped_scripts";
     /// An import left out an auth type. Arguments: `item`, `kind`.
@@ -128,7 +128,7 @@ pub mod keys {
         (FILE_UNREADABLE, &["path", "detail"]),
         (FILE_RELATIVE, &["path"]),
         (CURL_INVALID, &["detail"]),
-        (POSTMAN_INVALID, &["detail"]),
+        (IMPORT_INVALID, &["detail"]),
         (IMPORT_SKIPPED_SCRIPTS, &["item"]),
         (IMPORT_SKIPPED_AUTH, &["item", "kind"]),
         (IMPORT_SKIPPED_BODY, &["item", "mode"]),

@@ -38,6 +38,9 @@ tauri-build = "2"
 tauri-plugin-dialog = "2"
 tauri-specta = { version = "=2.0.0-rc.29", features = ["derive", "typescript"] }
 thiserror = "2"
+# yaml-rust2: reading OpenAPI descriptions written in YAML (pure Rust,
+# maintained; serde_yaml is not any more).
+yaml-rust2 = "0.13"
 trash = "5"
 toml_edit = "0.25"
 tokio = "1"

@@ -23,8 +23,9 @@
 //  11. switching the certificate check off shows a warning and is saved,
 //  12. a pasted cURL command opens as a new tab and is sent; a request is
 //      copied as a cURL command,
-//  13. a Postman export is imported as a new collection on disk (through the
-//      real IPC command: native file dialogs cannot be driven from here),
+//  13. a Postman export and an OpenAPI description are imported as new
+//      collections on disk (through the real IPC command: native file
+//      dialogs cannot be driven from here),
 // and the program is still running after each send.
 //
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
@@ -742,7 +743,7 @@ const postmanFile = path.join(
 const importedDir = path.join(collections, 'imported-from-postman');
 const importAck = await evaluate(`window.__TAURI_INTERNALS__.invoke('execute', {
   command: {
-    type: 'importPostman',
+    type: 'importCollection',
     file: ${JSON.stringify(postmanFile)},
     path: ${JSON.stringify(importedDir)},
   },
@@ -760,6 +761,24 @@ check(
 );
 const login = readFileSync(path.join(importedDir, 'auth', 'login.toml'), 'utf8');
 check(login.includes('url = "{{baseUrl}}/auth/login"'), 'imported request written to its folder');
+const openapiFile = path.join(ROOT, 'crates/ac_interchange/src/tests/fixtures/shop.openapi.yaml');
+const fromOpenapi = path.join(collections, 'imported-from-openapi');
+const openapiAck = await evaluate(`window.__TAURI_INTERNALS__.invoke('execute', {
+  command: {
+    type: 'importCollection',
+    file: ${JSON.stringify(openapiFile)},
+    path: ${JSON.stringify(fromOpenapi)},
+  },
+})`);
+check(
+  openapiAck?.type === 'collectionImported' && openapiAck.skipped.length === 2,
+  'OpenAPI description imported, left-out parts reported',
+);
+const openapiSettings = readFileSync(path.join(fromOpenapi, 'collection.toml'), 'utf8');
+check(
+  openapiSettings.includes('value = "https://eu.api.example.com/v1"'),
+  'OpenAPI server written as baseUrl',
+);
 check(exitCode === null, 'program still running after importing');
 
 finish(null);
