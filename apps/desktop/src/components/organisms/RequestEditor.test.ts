@@ -121,6 +121,27 @@ describe('RequestEditor', () => {
     expect(screen.getByText(/connections are then not protected/)).toBeInTheDocument();
   });
 
+  it('copies the request as cURL and shows notices', async () => {
+    const writeText = vi.fn(() => Promise.resolve());
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    const tab = new RequestTab(draft('r1', 'Login'), null);
+    tab.notice = { key: 'curl.ignored', args: { options: '-L' } };
+    const oncopycurl = vi
+      .fn<() => Promise<string | null>>()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValue("curl 'https://x'");
+    render(RequestEditor, { tab, onsend: vi.fn(), onsave: vi.fn(), oncopycurl });
+    expect(screen.getByText('Not taken over: -L')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Copy as cURL' }));
+    expect(writeText).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Copy as cURL' }));
+    expect(writeText).toHaveBeenCalledWith("curl 'https://x'");
+    expect(screen.getByRole('button', { name: 'cURL copied' })).toBeInTheDocument();
+
+    writeText.mockRejectedValueOnce(new Error('denied'));
+    await userEvent.click(screen.getByRole('button', { name: 'cURL copied' }));
+  });
+
   it('edits the request variables', async () => {
     const { tab } = setup();
     await userEvent.click(screen.getByRole('tab', { name: /Variables/ }));

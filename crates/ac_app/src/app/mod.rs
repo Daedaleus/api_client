@@ -7,11 +7,13 @@
 //! - `environments`: environments of open collections.
 //! - `secrets`: secret variable values (decrypt for sending, encrypt on save).
 //! - `recipients`: who secrets are encrypted for, re-encrypting on change.
+//! - `interchange`: cURL export and import.
 //! - `defaults`: what the collection and its folders pass on to requests.
 
 mod collections;
 mod defaults;
 mod environments;
+mod interchange;
 mod recipients;
 mod runs;
 mod secrets;
@@ -28,7 +30,6 @@ use crate::command::{Command, CommandAck, Query, QueryResult};
 use crate::error::AppError;
 use crate::event::AppEvent;
 use crate::ports::{CollectionStore, HttpSender, SecretVault};
-use runs::Outgoing;
 
 /// Events kept for slow subscribers before they start missing some.
 const EVENT_CAPACITY: usize = 64;
@@ -106,27 +107,7 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
     /// [`AppError`] if the command cannot be carried out as given.
     pub fn execute(&self, command: Command) -> Result<CommandAck, AppError> {
         match command {
-            Command::SendRequest {
-                method,
-                url,
-                headers,
-                body,
-                variables,
-                auth,
-                certificate_check,
-                context,
-            } => self.send_request(
-                &Outgoing {
-                    method: &method,
-                    url: &url,
-                    headers: &headers,
-                    body: &body,
-                    variables: &variables,
-                    auth: &auth,
-                    certificate_check,
-                },
-                context.as_ref(),
-            ),
+            Command::SendRequest { request } => self.send_request(&request),
             Command::OpenCollection { path } => self.open_collection(&path),
             Command::CreateCollection { path, name } => self.create_collection(&path, &name),
             Command::CloseCollection { collection_id } => self.close_collection(&collection_id),
@@ -193,6 +174,8 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
                 request_id,
             } => self.query_request(&collection_id, &request_id),
             Query::Recipients { collection_id } => self.query_recipients(&collection_id),
+            Query::Curl { request } => self.query_curl(&request),
+            Query::ParseCurl { text } => interchange::parse_curl(&text),
         }
     }
 

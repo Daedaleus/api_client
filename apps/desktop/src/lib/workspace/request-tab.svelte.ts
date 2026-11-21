@@ -25,6 +25,8 @@ export class RequestTab {
   outcome = $state<RunOutcome | null>(null);
   /** Why the last send or save failed. */
   error = $state<UserText | null>(null);
+  /** Something to point out about the request (e.g. what an import left out). */
+  notice = $state<UserText | null>(null);
   saving = $state(false);
   /** The draft as last saved, to tell whether there are unsaved changes. */
   #savedSnapshot = $state('');

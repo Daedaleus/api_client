@@ -1,4 +1,25 @@
 {
+  "error.curl_invalid": {
+    "de": "Das ist kein verwendbarer cURL-Befehl: {detail}",
+    "en": "This is no usable cURL command: {detail}"
+  },
+  "curl.copy": { "de": "Als cURL kopieren", "en": "Copy as cURL" },
+  "curl.copied": { "de": "cURL kopiert", "en": "cURL copied" },
+  "curl.import": { "de": "cURL einfügen", "en": "Paste cURL" },
+  "curl.import_title": {
+    "de": "cURL-Befehl einfügen",
+    "en": "Paste a cURL command"
+  },
+  "curl.import_hint": {
+    "de": "Zum Beispiel aus der Doku einer API oder aus den Entwicklertools des Browsers („Als cURL kopieren“). Er wird ein neuer, noch nicht gespeicherter Request.",
+    "en": "For example from an API's documentation or from the browser's developer tools (\"Copy as cURL\"). It becomes a new, unsaved request."
+  },
+  "curl.command": { "de": "cURL-Befehl", "en": "cURL command" },
+  "curl.open": { "de": "Öffnen", "en": "Open" },
+  "curl.ignored": {
+    "de": "Nicht übernommen: {options}",
+    "en": "Not taken over: {options}"
+  },
   "editor.settings": { "de": "Einstellungen", "en": "Settings" },
   "defaults.settings": { "de": "Einstellungen", "en": "Settings" },
   "tls.label": { "de": "TLS-Zertifikat prüfen", "en": "Check TLS certificate" },

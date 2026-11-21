@@ -21,6 +21,8 @@
 //  10. a multipart upload and a binary body read a file relative to the
 //      collection folder,
 //  11. switching the certificate check off shows a warning and is saved,
+//  12. a pasted cURL command opens as a new tab and is sent; a request is
+//      copied as a cURL command,
 // and the program is still running after each send.
 //
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
@@ -691,5 +693,41 @@ await evaluate(setValue('.url-bar__input', '{{baseUrl}}/echo?unchecked=1'));
 await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);
 await echoWith('unchecked=1', 'echo without certificate check');
 check(exitCode === null, 'program still running after sending without certificate check');
+
+// --- 12. cURL ---------------------------------------------------------------------
+
+const pasted = `curl '${echoUrl}?curl=1' -H 'X-Client: pasted' --data-raw '{"a":1}' --compressed`;
+await evaluate(`[...document.querySelectorAll('.sidebar__toolbar .button')].at(-1).click()`);
+await waitFor(`!!document.querySelector('.curl-import__text')`, 'cURL import dialog');
+await evaluate(setValue('.curl-import__text', pasted));
+await evaluate(`document.querySelector('.curl-import [type=submit]').click()`);
+await waitFor(`!document.querySelector('.curl-import')`, 'pasted command opened');
+const notice = await evaluate(
+  `[...document.querySelectorAll('.request-editor__note')].map((note) => note.textContent).join(' ')`,
+);
+check(notice.includes('--compressed'), 'ignored cURL options are pointed out');
+await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);
+const fromCurl = await echoWith('curl=1', 'echo of the pasted cURL command');
+check(
+  fromCurl.includes('"method": "POST"') && fromCurl.includes('"xClient": "pasted"'),
+  'pasted cURL command sent with its method and header',
+);
+
+await evaluate(`(() => {
+  window.__copied = null;
+  Object.defineProperty(navigator, 'clipboard', {
+    value: { writeText: async (text) => { window.__copied = text; } },
+    configurable: true,
+  });
+  document.querySelector('.request-editor__tools .button').click();
+})()`);
+const copiedCurl = await waitFor(`window.__copied`, 'copied cURL command');
+check(
+  copiedCurl.startsWith('curl') &&
+    copiedCurl.includes(`'${echoUrl}?curl=1'`) &&
+    copiedCurl.includes("--header 'X-Client: pasted'"),
+  'request copied as a cURL command',
+);
+check(exitCode === null, 'program still running after the cURL round trip');
 
 finish(null);

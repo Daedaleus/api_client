@@ -42,18 +42,20 @@ async fn sent_url(
     fixture
         .app
         .execute(Command::SendRequest {
-            certificate_check: crate::view::CertificateCheckView::Inherit,
-            method: "GET".into(),
-            url: url.into(),
-            headers: Vec::new(),
-            body: BodyDraft::None,
-            variables: own,
-            auth: AuthDraft::Inherit,
-            context: Some(SendContext {
-                collection_id: fixture.collection.clone(),
-                request_id: request_id.map(Into::into),
-                environment_id: environment.then(|| fixture.dev.clone()),
-            }),
+            request: crate::view::OutgoingRequest {
+                certificate_check: crate::view::CertificateCheckView::Inherit,
+                method: "GET".into(),
+                url: url.into(),
+                headers: Vec::new(),
+                body: BodyDraft::None,
+                variables: own,
+                auth: AuthDraft::Inherit,
+                context: Some(SendContext {
+                    collection_id: fixture.collection.clone(),
+                    request_id: request_id.map(Into::into),
+                    environment_id: environment.then(|| fixture.dev.clone()),
+                }),
+            },
         })
         .unwrap();
     tokio::time::timeout(Duration::from_secs(5), events.recv())
@@ -124,14 +126,16 @@ async fn without_context_only_the_own_variables_count() {
     fixture
         .app
         .execute(Command::SendRequest {
-            certificate_check: crate::view::CertificateCheckView::Inherit,
-            method: "GET".into(),
-            url: "{{host}}/x".into(),
-            headers: Vec::new(),
-            body: BodyDraft::None,
-            variables: vec![plain("host", "own.example.com")],
-            auth: AuthDraft::Inherit,
-            context: None,
+            request: crate::view::OutgoingRequest {
+                certificate_check: crate::view::CertificateCheckView::Inherit,
+                method: "GET".into(),
+                url: "{{host}}/x".into(),
+                headers: Vec::new(),
+                body: BodyDraft::None,
+                variables: vec![plain("host", "own.example.com")],
+                auth: AuthDraft::Inherit,
+                context: None,
+            },
         })
         .unwrap();
     events.recv().await.unwrap();
@@ -219,18 +223,20 @@ async fn requests_inherit_auth_from_folders_and_the_collection() {
         fixture
             .app
             .execute(Command::SendRequest {
-                certificate_check: crate::view::CertificateCheckView::Inherit,
-                method: "GET".into(),
-                url: "x.example".into(),
-                headers: Vec::new(),
-                body: BodyDraft::None,
-                variables: Vec::new(),
-                auth,
-                context: Some(SendContext {
-                    collection_id: fixture.collection.clone(),
-                    request_id: Some(request.into()),
-                    environment_id: Some(fixture.dev.clone()),
-                }),
+                request: crate::view::OutgoingRequest {
+                    certificate_check: crate::view::CertificateCheckView::Inherit,
+                    method: "GET".into(),
+                    url: "x.example".into(),
+                    headers: Vec::new(),
+                    body: BodyDraft::None,
+                    variables: Vec::new(),
+                    auth,
+                    context: Some(SendContext {
+                        collection_id: fixture.collection.clone(),
+                        request_id: Some(request.into()),
+                        environment_id: Some(fixture.dev.clone()),
+                    }),
+                },
             })
             .unwrap();
         async move { events.recv().await.unwrap() }
@@ -260,20 +266,22 @@ async fn file_paths_are_relative_to_the_collection_folder() {
     fixture
         .app
         .execute(Command::SendRequest {
-            certificate_check: crate::view::CertificateCheckView::Inherit,
-            method: "PUT".into(),
-            url: "x.example".into(),
-            headers: Vec::new(),
-            body: BodyDraft::Binary {
-                file: "data/payload.bin".into(),
+            request: crate::view::OutgoingRequest {
+                certificate_check: crate::view::CertificateCheckView::Inherit,
+                method: "PUT".into(),
+                url: "x.example".into(),
+                headers: Vec::new(),
+                body: BodyDraft::Binary {
+                    file: "data/payload.bin".into(),
+                },
+                variables: Vec::new(),
+                auth: AuthDraft::Inherit,
+                context: Some(SendContext {
+                    collection_id: fixture.collection.clone(),
+                    request_id: Some(fixture.health.clone()),
+                    environment_id: None,
+                }),
             },
-            variables: Vec::new(),
-            auth: AuthDraft::Inherit,
-            context: Some(SendContext {
-                collection_id: fixture.collection.clone(),
-                request_id: Some(fixture.health.clone()),
-                environment_id: None,
-            }),
         })
         .unwrap();
     events.recv().await.unwrap();
@@ -294,18 +302,20 @@ async fn the_certificate_check_is_inherited_and_on_by_default() {
         fixture
             .app
             .execute(Command::SendRequest {
-                method: "GET".into(),
-                url: "https://x.example".into(),
-                headers: Vec::new(),
-                body: BodyDraft::None,
-                variables: Vec::new(),
-                auth: AuthDraft::Inherit,
-                certificate_check: check,
-                context: Some(SendContext {
-                    collection_id: fixture.collection.clone(),
-                    request_id: Some(request.into()),
-                    environment_id: None,
-                }),
+                request: crate::view::OutgoingRequest {
+                    method: "GET".into(),
+                    url: "https://x.example".into(),
+                    headers: Vec::new(),
+                    body: BodyDraft::None,
+                    variables: Vec::new(),
+                    auth: AuthDraft::Inherit,
+                    certificate_check: check,
+                    context: Some(SendContext {
+                        collection_id: fixture.collection.clone(),
+                        request_id: Some(request.into()),
+                        environment_id: None,
+                    }),
+                },
             })
             .unwrap();
         async move { events.recv().await.unwrap() }

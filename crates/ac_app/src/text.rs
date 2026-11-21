@@ -75,6 +75,8 @@ pub mod keys {
     /// A relative file path in a request that belongs to no collection.
     /// Argument: `path`.
     pub const FILE_RELATIVE: &str = "error.file_relative";
+    /// A pasted text is no usable cURL command. Argument: `detail`.
+    pub const CURL_INVALID: &str = "error.curl_invalid";
     /// Any other transport failure. Argument: `detail`.
     pub const REQUEST: &str = "error.request";
 
@@ -99,7 +101,7 @@ pub mod keys {
 
     /// All keys with the names of their placeholders, checked against the
     /// translation file by a test.
-    pub const ALL: [(&str, &[&str]); 27] = [
+    pub const ALL: [(&str, &[&str]); 28] = [
         (URL_EMPTY, &[]),
         (URL_INVALID, &["reason"]),
         (URL_SCHEME, &["scheme"]),
@@ -117,6 +119,7 @@ pub mod keys {
         (CONNECT, &["detail"]),
         (FILE_UNREADABLE, &["path", "detail"]),
         (FILE_RELATIVE, &["path"]),
+        (CURL_INVALID, &["detail"]),
         (REQUEST, &["detail"]),
         (STORE_IO, &["path", "detail"]),
         (STORE_DAMAGED, &["path", "detail"]),

@@ -4,6 +4,7 @@
   import DialogHost from '../components/organisms/DialogHost.svelte';
   import EnvironmentEditor from '../components/organisms/EnvironmentEditor.svelte';
   import RecipientsDialog from '../components/organisms/RecipientsDialog.svelte';
+  import CurlImportDialog from '../components/organisms/CurlImportDialog.svelte';
   import DefaultsDialog from '../components/organisms/DefaultsDialog.svelte';
   import RequestEditor from '../components/organisms/RequestEditor.svelte';
   import ResponseViewer from '../components/organisms/ResponseViewer.svelte';
@@ -67,6 +68,7 @@
             variables={workspace.variablesFor(tab)}
             onpickfile={() => workspace.pickFile()}
             checksCertificates={workspace.checksCertificates(tab)}
+            oncopycurl={() => workspace.curlFor(tab)}
           >
             {#snippet environment()}
               {#if collection}
@@ -95,6 +97,7 @@
       ondelete={() => workspace.deleteEnvironment()}
     />
   {/if}
+  <CurlImportDialog curl={workspace.curl} />
   {#if workspace.defaults.editing}
     <DefaultsDialog defaults={workspace.defaults} />
   {/if}

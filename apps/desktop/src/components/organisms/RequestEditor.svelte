@@ -20,6 +20,8 @@
     environment?: Snippet;
     /** Whether the server certificate is checked (all levels considered). */
     checksCertificates?: boolean;
+    /** The request as a cURL command (`null` if it cannot be built). */
+    oncopycurl?: (() => Promise<string | null>) | undefined;
     /** Lets the user pick a file for the body. */
     onpickfile?: () => Promise<string | null>;
   }
@@ -32,7 +34,22 @@
     environment,
     onpickfile,
     checksCertificates = true,
+    oncopycurl,
   }: Props = $props();
+
+  let copied = $state(false);
+
+  async function copyCurl() {
+    const command = await oncopycurl?.();
+    if (command === null || command === undefined) return;
+    try {
+      await navigator.clipboard.writeText(command);
+      copied = true;
+      setTimeout(() => (copied = false), 2000);
+    } catch {
+      // No clipboard access: nothing to report beyond the unchanged button.
+    }
+  }
 
   // What the URL looks like with its `{{variables}}` filled in.
   let urlPreview = $derived(
@@ -133,7 +150,15 @@
         {/if}
       </button>
     {/each}
+    {#if oncopycurl}
+      <span class="request-editor__tools">
+        <Button onclick={copyCurl}>{copied ? i18n.t('curl.copied') : i18n.t('curl.copy')}</Button>
+      </span>
+    {/if}
   </div>
+  {#if tab.notice}
+    <p class="request-editor__note">{i18n.text(tab.notice)}</p>
+  {/if}
   <div class="request-editor__panel" role="tabpanel">
     {#if section === 'headers'}
       <RowsEditor bind:rows={tab.draft.headers} labels={HEADER_LABELS} />
@@ -214,6 +239,11 @@
   .request-editor__section--active {
     color: var(--color-text);
     box-shadow: inset 0 -2px 0 var(--color-accent);
+  }
+
+  .request-editor__tools {
+    margin-left: auto;
+    padding-bottom: var(--space-xs);
   }
 
   .request-editor__count {
