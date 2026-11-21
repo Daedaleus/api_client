@@ -169,3 +169,27 @@ fn the_default_store_uses_the_system_trash() {
         move_to_trash as Discard
     ));
 }
+
+#[test]
+fn imports_read_text_files_and_write_new_collections() {
+    let temp = tempfile::tempdir().unwrap();
+    let file = temp.path().join("export.json");
+    std::fs::write(&file, "{\"info\": {}}").unwrap();
+    let store = store();
+    assert_eq!(store.read_text(&file).unwrap(), "{\"info\": {}}");
+    let error = store
+        .read_text(&temp.path().join("missing.json"))
+        .unwrap_err();
+    assert_eq!(error.kind, StoreErrorKind::Io);
+
+    let mut collection = store
+        .create_collection(&temp.path().join("source"), "Source")
+        .unwrap()
+        .collection;
+    collection.items.push(Item::Request(Request::new("Ping")));
+    let root = temp.path().join("imported");
+    let opened = store.import_collection(&root, &collection).unwrap();
+    assert_eq!(opened.collection.items.len(), 1);
+    let error = store.import_collection(&root, &collection).unwrap_err();
+    assert_eq!(error.kind, StoreErrorKind::AlreadyExists);
+}

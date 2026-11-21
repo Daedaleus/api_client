@@ -22,6 +22,8 @@ pub struct MemoryStore {
     secrets: Mutex<HashMap<PathBuf, Vec<u8>>>,
     /// Recipients by collection root.
     recipients: Mutex<HashMap<PathBuf, Vec<String>>>,
+    /// Text files to import, by path.
+    files: Mutex<HashMap<PathBuf, String>>,
     read_only: Mutex<HashSet<ItemId>>,
     problems: Mutex<Vec<StoreError>>,
     fail_next: Mutex<Option<StoreError>>,
@@ -85,6 +87,11 @@ impl MemoryStore {
     /// Sets the recipients of the collection at `root`.
     pub fn set_recipients(&self, root: &Path, recipients: Vec<String>) {
         lock(&self.recipients).insert(root.to_owned(), recipients);
+    }
+
+    /// Offers a text file to import at `path`.
+    pub fn add_file(&self, path: impl Into<PathBuf>, text: impl Into<String>) {
+        lock(&self.files).insert(path.into(), text.into());
     }
 
     /// Marks an item as read-only (e.g. from a newer format version).
@@ -305,6 +312,31 @@ impl CollectionStore for MemoryStore {
             .or_default()
             .push(environment.clone());
         Ok(())
+    }
+
+    fn import_collection(
+        &self,
+        root: &Path,
+        collection: &Collection,
+    ) -> Result<OpenedCollection, StoreError> {
+        self.check_failure()?;
+        if lock(&self.collections).contains_key(root) {
+            return Err(StoreError {
+                kind: StoreErrorKind::AlreadyExists,
+                path: root.to_owned(),
+                detail: "collection exists".into(),
+            });
+        }
+        lock(&self.collections).insert(root.to_owned(), collection.clone());
+        self.open(root)
+    }
+
+    fn read_text(&self, file: &Path) -> Result<String, StoreError> {
+        self.check_failure()?;
+        lock(&self.files)
+            .get(file)
+            .cloned()
+            .ok_or_else(|| not_found(file))
     }
 
     fn read_secrets(&self, environment_file: &Path) -> Result<Option<Vec<u8>>, StoreError> {

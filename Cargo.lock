@@ -68,6 +68,7 @@ name = "ac_interchange"
 version = "0.1.0"
 dependencies = [
  "ac_domain",
+ "serde_json",
  "shell-words",
  "thiserror 2.0.21",
  "url",

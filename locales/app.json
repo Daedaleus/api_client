@@ -1,4 +1,26 @@
 {
+  "error.postman_invalid": {
+    "de": "Das ist keine verwendbare Postman-Collection: {detail}",
+    "en": "This is no usable Postman collection: {detail}"
+  },
+  "import.skipped_scripts": {
+    "de": "„{item}“: Skripte (Scripting folgt später)",
+    "en": "“{item}”: scripts (scripting comes later)"
+  },
+  "import.skipped_auth": {
+    "de": "„{item}“: Auth-Art {kind}",
+    "en": "“{item}”: auth type {kind}"
+  },
+  "import.skipped_body": {
+    "de": "„{item}“: Body-Art {mode}",
+    "en": "“{item}”: body type {mode}"
+  },
+  "import.postman": { "de": "Postman importieren", "en": "Import Postman" },
+  "import.done": { "de": "Import abgeschlossen", "en": "Import finished" },
+  "import.skipped_intro": {
+    "de": "Die Collection ist angelegt. Nicht übernommen wurde:",
+    "en": "The collection was created. Not taken over:"
+  },
   "error.curl_invalid": {
     "de": "Das ist kein verwendbarer cURL-Befehl: {detail}",
     "en": "This is no usable cURL command: {detail}"

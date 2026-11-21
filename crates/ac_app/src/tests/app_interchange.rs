@@ -74,3 +74,75 @@ async fn a_pasted_curl_command_becomes_an_unsaved_request() {
     assert_eq!(error.user_text().key, keys::CURL_INVALID);
     assert_eq!(error.user_text().args["detail"], "not a curl command");
 }
+
+const POSTMAN: &str =
+    include_str!("../../../ac_interchange/src/tests/fixtures/shop.postman_collection.json");
+
+#[tokio::test]
+async fn postman_exports_become_new_open_collections() {
+    use crate::command::{Command, CommandAck};
+
+    let fixture = Fixture::new();
+    fixture.store.add_file("export.json", POSTMAN);
+    let ack = fixture
+        .app
+        .execute(Command::ImportPostman {
+            file: "export.json".into(),
+            path: "imported".into(),
+        })
+        .unwrap();
+    let CommandAck::CollectionImported {
+        collection,
+        skipped,
+    } = ack
+    else {
+        panic!("expected an imported collection");
+    };
+    assert_eq!(collection.name, "Shop API");
+    assert_eq!(collection.items.len(), 4);
+    let keys: Vec<_> = skipped.iter().map(|text| text.key).collect();
+    assert_eq!(
+        keys,
+        [
+            keys::IMPORT_SKIPPED_SCRIPTS,
+            keys::IMPORT_SKIPPED_BODY,
+            keys::IMPORT_SKIPPED_AUTH
+        ]
+    );
+    assert_eq!(skipped[2].args["kind"], "oauth2");
+    assert_eq!(skipped[1].args["item"], "GraphQL");
+    // It is open like any other collection.
+    let tree = fixture
+        .app
+        .query(Query::Collection {
+            collection_id: collection.id.clone(),
+        })
+        .unwrap();
+    assert!(matches!(tree, QueryResult::Collection { .. }));
+
+    let error = fixture
+        .app
+        .execute(Command::ImportPostman {
+            file: "export.json".into(),
+            path: "imported".into(),
+        })
+        .unwrap_err();
+    assert_eq!(error.user_text().key, keys::COLLECTION_EXISTS);
+    fixture.store.add_file("broken.json", "{");
+    let error = fixture
+        .app
+        .execute(Command::ImportPostman {
+            file: "broken.json".into(),
+            path: "other".into(),
+        })
+        .unwrap_err();
+    assert_eq!(error.user_text().key, keys::POSTMAN_INVALID);
+    let error = fixture
+        .app
+        .execute(Command::ImportPostman {
+            file: "missing.json".into(),
+            path: "other".into(),
+        })
+        .unwrap_err();
+    assert_eq!(error.user_text().key, keys::STORE_IO);
+}
