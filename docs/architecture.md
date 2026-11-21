@@ -144,7 +144,8 @@ result is an ADR, spike code is never merged into the crates.
 2. **S2 Checker and completion:** own implementation from `.pyi` stubs plus a
    Python parser vs. a bundled language server.
 3. **S3 Tauri reality check:** Linux WebKitGTK, large responses, bundling –
-   go/no-go for Tauri vs. egui.
+   go/no-go for Tauri vs. egui. Proposed: stay with Tauri; Linux and macOS
+   still to be confirmed at runtime – [`docs/adr/s3-tauri.md`](adr/s3-tauri.md).
 4. **S4 age keys (ADR):** identity location, SSH keys as recipients,
    re-encryption on recipient changes, CI identity – decided:
    [`docs/adr/s4-age-keys.md`](adr/s4-age-keys.md).

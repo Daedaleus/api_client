@@ -6,7 +6,7 @@ import { entry, separator, type MenuItem } from '../menu';
 import type { CollectionView, TreeItemView } from '../types';
 import type { Workspace } from './workspace.svelte';
 
-/** "New": requests, collections and imports. */
+/** "New": requests, collections and imports (opening is a button of its own). */
 export function newMenu(workspace: Workspace): MenuItem[] {
   return [
     entry(
@@ -16,7 +16,6 @@ export function newMenu(workspace: Workspace): MenuItem[] {
       i18n.t('shortcut.new_request'),
     ),
     entry('new-collection', i18n.t('menu.new_collection'), () => workspace.createCollection()),
-    entry('open-collection', i18n.t('menu.open_collection'), () => workspace.openCollection()),
     separator,
     entry('import', i18n.t('menu.import'), [
       entry('import-postman', i18n.t('menu.import_postman'), () =>

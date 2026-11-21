@@ -15,6 +15,11 @@
 <aside class="sidebar" aria-label={i18n.t('sidebar.title')}>
   <div class="sidebar__toolbar">
     <span class="sidebar__title">{i18n.t('sidebar.title')}</span>
+    <IconButton
+      icon="open"
+      label={i18n.t('menu.open_collection')}
+      onclick={() => workspace.openCollection()}
+    />
     <MenuButton
       text={i18n.t('menu.new')}
       label={i18n.t('menu.new_title')}
