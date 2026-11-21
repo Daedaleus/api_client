@@ -22,8 +22,8 @@ on your machine.
 - **Environments and variables** with `{{variable}}` interpolation.
 - **Secrets encrypted with [age](https://age-encryption.org/)** for several
   recipients, so a team (and CI) can share them safely through git.
-- **Python scripts and tests** before and after a request, with a checker and
-  code completion in the editor.
+- **TypeScript scripts and tests** before and after a request, with a checker
+  and code completion in the editor.
 - **Import** from Postman, Bruno and OpenAPI; **export** to cURL.
 - **Command line runner** for CI ([`docs/cli.md`](docs/cli.md)).
 - Interface in **English and German**, light and dark theme.

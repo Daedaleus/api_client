@@ -46,7 +46,7 @@ Local crates use the neutral prefix `ac_` until the product name is chosen.
 | `ac_desktop` | M1 | Tauri app: thin commands, event forwarding |
 | `ac_storage` | M2 | File format, migrations, backups |
 | `ac_secrets` | M3 | age encryption, recipients, key store |
-| `ac_scripting` | M4 | Python runtime, sandbox, checker and completion |
+| `ac_scripting` | M4 | JavaScript engine, TypeScript transpiling, sandbox, checker and completion |
 | `ac_interchange` | M6 | Import (Postman, Bruno, OpenAPI), export (cURL) |
 | `ac_cli` | M6 | Command line runner for CI |
 
@@ -139,10 +139,13 @@ my-api/
 Time-boxed (2–3 days) in `spikes/<topic>` on a `spike/<topic>` branch; the
 result is an ADR, spike code is never merged into the crates.
 
-1. **S1 Python runtime:** RustPython vs. CPython (PyO3): size, start time,
-   timeouts, sandbox, stdlib coverage, distribution.
-2. **S2 Checker and completion:** own implementation from `.pyi` stubs plus a
-   Python parser vs. a bundled language server.
+1. **S1 Script runtime:** an embedded JavaScript engine for TypeScript
+   scripts – QuickJS (`rquickjs`) vs. Boa vs. V8 (`deno_core`), with type
+   stripping by `oxc` or `swc`: size, start time, timeouts, sandbox,
+   language coverage, distribution.
+2. **S2 Checker and completion:** the TypeScript language service (in the
+   web view, or in the script engine behind a port) vs. own checks from the
+   `.d.ts` declarations in Rust (e.g. `oxc` parser and semantic analysis).
 3. **S3 Tauri reality check:** Linux WebKitGTK, large responses, bundling –
    go/no-go for Tauri vs. egui.
 4. **S4 age keys (ADR):** identity location, SSH keys as recipients,
@@ -155,6 +158,6 @@ result is an ADR, spike code is never merged into the crates.
 - **M1** Walking skeleton: send a request from the Tauri UI end to end.
 - **M2** Collections on disk.
 - **M3** Environments, interpolation, secrets with age.
-- **M4** Python scripting with checker and completion.
+- **M4** TypeScript scripting with checker and completion.
 - **M5** Bodies and auth.
 - **M6** Import/export and command line runner.

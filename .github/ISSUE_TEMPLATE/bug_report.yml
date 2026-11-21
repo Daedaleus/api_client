@@ -26,7 +26,7 @@ body:
         - Collections and files
         - Environments and variables
         - Secrets (age)
-        - Scripts and tests (Python)
+        - Scripts and tests (TypeScript)
         - Import / export
         - Interface / language
         - Command line

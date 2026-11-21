@@ -263,13 +263,16 @@ language only determines how they are implemented idiomatically.
     diffable, one file per request) – no proprietary database. **Own file
     format** (not bound to Bruno's `.bru`); versioned, documented in the repo,
     compatibility with other tools only via import/export.
-  - **Scripting in Python** (pre-request, post-response, tests). The app
-    offers editor support like Bruno/Postman: a **checker** (syntax and lint
-    errors, unknown API names) and **code completion** for the script API
-    (`req`, `res`, `env` …). The script API is described once as typed stubs
-    (`.pyi`), used both by the checker/completion and as documentation.
-    Scripts run sandboxed: no file or network access beyond the provided API
-    unless the user allows it.
+  - **Scripting in TypeScript** (pre-request, post-response, tests; plain
+    JavaScript works too). TypeScript because it is what web and API
+    developers know (Postman and Bruno script in JavaScript, Playwright in
+    TypeScript). The app offers editor support like Bruno/Postman: a
+    **checker** (syntax and type errors, unknown API names) and **code
+    completion** for the script API (`req`, `res`, `env` …). The script API
+    is described once as type declarations (`.d.ts`), used both by the
+    checker/completion and as documentation. Scripts run sandboxed in an
+    embedded JavaScript engine: no file or network access beyond the
+    provided API unless the user allows it.
   - Requests: methods, URL with path/query params, headers, bodies (JSON,
     text, form, multipart, binary), auth (Basic, Bearer, API key, OAuth 2).
   - Environments and variables with `{{variable}}` interpolation; secrets
@@ -280,8 +283,9 @@ language only determines how they are implemented idiomatically.
 - **Architecture (draft):** domain crate (collection, request, environment,
   variable resolution – no I/O), storage crate (file format, migration),
   secrets crate (age encryption, recipients), HTTP crate (sending, behind a
-  trait), scripting crate (Python runtime, sandbox, checker/completion behind
-  traits), import/export crate, app crate (UI), CLI crate.
+  trait), scripting crate (JavaScript engine, TypeScript transpiling,
+  sandbox, checker/completion behind traits), import/export crate, app crate
+  (UI), CLI crate.
 - **Replaceable UI:** the user interface must be swappable. Everything below
   the UI (domain, storage, secrets, HTTP, scripting incl. checker/completion)
   lives in UI-agnostic crates; an application crate exposes use cases
@@ -294,12 +298,14 @@ language only determines how they are implemented idiomatically.
   Not final until a prototype has been evaluated.
 - **License:** MIT OR Apache-2.0 (dual). Dependencies must be compatible
   (checked by `cargo-deny`, `deny.toml`).
-- **Open decisions** *(open)*: final UI framework, project name, Python runtime
-  (embedded pure-Rust interpreter such as RustPython vs. CPython via PyO3 –
-  trade-off: no system Python needed and easier sandboxing vs. full
-  compatibility and libraries) and the tooling for checker/completion (e.g.
-  Ruff for linting, a Python language server or own completion from the
-  stubs).
+- **Open decisions** *(open)*: final UI framework, project name, the
+  embedded JavaScript engine (e.g. QuickJS via `rquickjs`, Boa in pure Rust,
+  V8 via `deno_core` – trade-off: size, start time and sandboxing vs.
+  language coverage) with TypeScript type stripping (e.g. `oxc` or `swc`),
+  and the tooling for checker/completion (e.g. the TypeScript language
+  service, which runs in JavaScript, vs. own checks from the `.d.ts` in
+  Rust – keeping in mind that checker and completion belong below the
+  replaceable UI).
 - **Name caution:** "Bruno" and "Postman" are third-party names – use them only
   to describe compatibility/import, not as or in the project name or branding.
 - **Repository and branch:** <https://github.com/Daedaleus/api_client>
