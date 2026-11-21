@@ -1,5 +1,17 @@
 import type { AppEvent, Command, CommandAck, Query, QueryResult } from './types';
 
+/** Files a file dialog offers: a name and extensions (`*` for all). */
+export interface FileFilter {
+  name: string;
+  extensions: string[];
+}
+
+/** Title and filters of a file or folder dialog (texts already translated). */
+export interface PickOptions {
+  title?: string;
+  filters?: FileFilter[];
+}
+
 /**
  * Everything the UI needs from the backend and the host. The Tauri
  * implementation lives in `tauri.ts`; tests use a fake. Components never call
@@ -13,7 +25,7 @@ export interface Api {
   /** Calls `handler` for every application event; resolves to an unsubscribe function. */
   onEvent(handler: (event: AppEvent) => void): Promise<() => void>;
   /** Lets the user pick a folder; resolves to its path, or `null` if cancelled. */
-  pickFolder(): Promise<string | null>;
+  pickFolder(options?: PickOptions): Promise<string | null>;
   /** Lets the user pick a file; resolves to its path, or `null` if cancelled. */
-  pickFile(): Promise<string | null>;
+  pickFile(options?: PickOptions): Promise<string | null>;
 }

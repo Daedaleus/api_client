@@ -23,8 +23,8 @@
 //  10. a multipart upload and a binary body read a file relative to the
 //      collection folder,
 //  11. switching the certificate check off shows a warning and is saved,
-//  12. a pasted cURL command opens as a new tab and is sent; a request is
-//      copied as a cURL command,
+//  12. a pasted cURL command (chosen in the "New" menu's import submenu)
+//      opens as a new tab and is sent; a request is copied as a cURL command,
 //  13. a Postman export, an OpenAPI description and a Bruno collection are
 //      imported as new collections on disk (through the real IPC command: native file
 //      dialogs cannot be driven from here),
@@ -357,9 +357,29 @@ const savedStatus = await waitFor(text('.response__status'), 'response of the sa
 check(savedStatus.startsWith('200'), `saved request sent: ${savedStatus}`);
 check(exitCode === null, 'program still running after saving and sending');
 
+check(
+  await evaluate(
+    `(() => { const bar = document.querySelector('.sidebar'); return bar.scrollWidth <= bar.clientWidth; })()`,
+  ),
+  'sidebar fits its width (no sideways scrolling)',
+);
+
 // --- 4. Headers and body ------------------------------------------------------
 
 /** Sets a form control's value the way typing would. */
+/**
+ * Opens the menu of the button at `trigger` and chooses the entries with
+ * these ids one after another (submenus first).
+ */
+async function chooseFromMenu(trigger, ...ids) {
+  await evaluate(`document.querySelector(${JSON.stringify(trigger)}).click()`);
+  for (const id of ids) {
+    const selector = `.menu [data-item="${id}"]`;
+    await waitFor(`!!document.querySelector(${JSON.stringify(selector)})`, `menu entry ${id}`);
+    await evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);
+  }
+}
+
 const setValue = (selector, value, event = 'input') => `(() => {
   const element = document.querySelector(${JSON.stringify(selector)});
   element.value = ${JSON.stringify(value)};
@@ -572,7 +592,7 @@ const echoWith = (part, what) =>
   );
 
 // Collection variable `path`, through the dialog of the collection header.
-await evaluate(`document.querySelectorAll('.sidebar__collection-header .icon-button')[2].click()`);
+await chooseFromMenu('.sidebar__collection-header .menu-button', 'settings');
 await waitFor(`!!document.querySelector('.defaults-dialog')`, 'collection variables dialog');
 await evaluate(`document.querySelector('.defaults-dialog .rows-editor .button').click()`);
 await waitFor(
@@ -634,7 +654,7 @@ check(exitCode === null, 'program still running after sending with layered varia
 // --- 9. Authentication ----------------------------------------------------------
 
 // Bearer auth on the collection, the token being the secret of step 6.
-await evaluate(`document.querySelectorAll('.sidebar__collection-header .icon-button')[2].click()`);
+await chooseFromMenu('.sidebar__collection-header .menu-button', 'settings');
 await waitFor(`!!document.querySelector('.defaults-dialog')`, 'collection settings dialog');
 await evaluate(`document.querySelectorAll('.defaults-dialog__section')[1].click()`);
 await waitFor(`!!document.querySelector('.defaults-dialog .auth-editor__select')`, 'auth section');
@@ -661,7 +681,7 @@ check(
 check(exitCode === null, 'program still running after sending with auth');
 
 // OAuth 2 client credentials on the collection: the token is fetched once.
-await evaluate(`document.querySelectorAll('.sidebar__collection-header .icon-button')[2].click()`);
+await chooseFromMenu('.sidebar__collection-header .menu-button', 'settings');
 await waitFor(`!!document.querySelector('.defaults-dialog')`, 'collection settings dialog');
 await evaluate(`document.querySelectorAll('.defaults-dialog__section')[1].click()`);
 await waitFor(`!!document.querySelector('.defaults-dialog .auth-editor__select')`, 'auth section');
@@ -704,7 +724,7 @@ check(
 check(exitCode === null, 'program still running after sending with OAuth 2');
 
 // The authorization code: the browser signs in once, with PKCE.
-await evaluate(`document.querySelectorAll('.sidebar__collection-header .icon-button')[2].click()`);
+await chooseFromMenu('.sidebar__collection-header .menu-button', 'settings');
 await waitFor(`!!document.querySelector('.defaults-dialog')`, 'collection settings dialog');
 await evaluate(`document.querySelectorAll('.defaults-dialog__section')[1].click()`);
 await waitFor(
@@ -833,7 +853,7 @@ check(exitCode === null, 'program still running after sending without certificat
 
 const pasted = `curl '${echoUrl}?curl=1' -H 'X-Client: pasted' --data-raw '{"a":1}' --compressed`;
 // Toolbar: Open, New, Paste cURL, Import Postman.
-await evaluate(`document.querySelectorAll('.sidebar__toolbar .button')[2].click()`);
+await chooseFromMenu('.sidebar__toolbar .menu-button', 'import', 'import-curl');
 await waitFor(`!!document.querySelector('.curl-import__text')`, 'cURL import dialog');
 await evaluate(setValue('.curl-import__text', pasted));
 await evaluate(`document.querySelector('.curl-import [type=submit]').click()`);

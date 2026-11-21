@@ -13,7 +13,6 @@
     "de": "Diese Datei lässt sich nicht importieren: {detail}",
     "en": "This file cannot be imported: {detail}"
   },
-  "import.collection": { "de": "Importieren", "en": "Import" },
   "import.skipped_scripts": {
     "de": "„{item}“: Skripte (Scripting folgt später)",
     "en": "“{item}”: scripts (scripting comes later)"
@@ -37,7 +36,6 @@
   },
   "curl.copy": { "de": "Als cURL kopieren", "en": "Copy as cURL" },
   "curl.copied": { "de": "cURL kopiert", "en": "cURL copied" },
-  "curl.import": { "de": "cURL einfügen", "en": "Paste cURL" },
   "curl.import_title": {
     "de": "cURL-Befehl einfügen",
     "en": "Paste a cURL command"
@@ -213,8 +211,39 @@
   },
   "response.failed": { "de": "Request fehlgeschlagen", "en": "Request failed" },
   "sidebar.title": { "de": "Collections", "en": "Collections" },
-  "sidebar.open": { "de": "Öffnen", "en": "Open" },
-  "sidebar.create": { "de": "Neu", "en": "New" },
+  "menu.new": { "de": "Neu", "en": "New" },
+  "menu.new_title": {
+    "de": "Neuer Request, neue Collection, öffnen oder importieren",
+    "en": "New request, new collection, open or import"
+  },
+  "menu.new_collection": { "de": "Neue Collection …", "en": "New collection …" },
+  "menu.open_collection": { "de": "Collection öffnen …", "en": "Open collection …" },
+  "menu.import": { "de": "Importieren", "en": "Import" },
+  "menu.import_postman": { "de": "Postman-Collection …", "en": "Postman collection …" },
+  "menu.import_openapi": { "de": "OpenAPI-Beschreibung …", "en": "OpenAPI description …" },
+  "menu.import_bruno": { "de": "Bruno-Collection (Ordner) …", "en": "Bruno collection (folder) …" },
+  "menu.import_curl": { "de": "cURL-Befehl einfügen …", "en": "Paste cURL command …" },
+  "menu.more": { "de": "Aktionen für „{name}“", "en": "Actions for “{name}”" },
+  "shortcut.new_request": { "de": "Strg+N", "en": "Ctrl+N" },
+  "import.title_postman": {
+    "de": "Postman-Collection importieren",
+    "en": "Import a Postman collection"
+  },
+  "import.title_openapi": {
+    "de": "OpenAPI-Beschreibung importieren",
+    "en": "Import an OpenAPI description"
+  },
+  "import.title_bruno": {
+    "de": "Ordner der Bruno-Collection wählen",
+    "en": "Choose the folder of the Bruno collection"
+  },
+  "import.title_target": {
+    "de": "Ordner für die neue Collection wählen",
+    "en": "Choose the folder for the new collection"
+  },
+  "import.filter_postman": { "de": "Postman-Collection (JSON)", "en": "Postman collection (JSON)" },
+  "import.filter_openapi": { "de": "OpenAPI (JSON, YAML)", "en": "OpenAPI (JSON, YAML)" },
+  "import.filter_all": { "de": "Alle Dateien", "en": "All files" },
   "sidebar.empty": {
     "de": "Noch keine Collection geöffnet. Einen Ordner öffnen oder eine neue Collection anlegen.",
     "en": "No collection open yet. Open a folder or create a new collection."

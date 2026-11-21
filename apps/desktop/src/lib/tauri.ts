@@ -8,12 +8,17 @@ export const tauriApi: Api = {
   execute: (command) => commands.execute(command),
   query: (query) => commands.query(query),
   onEvent: (handler) => events.appEventMessage.listen((event) => handler(event.payload)),
-  pickFolder: async () => {
-    const picked = await open({ directory: true, multiple: false });
+  pickFolder: async (options = {}) => {
+    const { title } = options;
+    const picked = await open({
+      directory: true,
+      multiple: false,
+      ...(title === undefined ? {} : { title }),
+    });
     return typeof picked === 'string' ? picked : null;
   },
-  pickFile: async () => {
-    const picked = await open({ directory: false, multiple: false });
+  pickFile: async (options = {}) => {
+    const picked = await open({ directory: false, multiple: false, ...options });
     return typeof picked === 'string' ? picked : null;
   },
 };

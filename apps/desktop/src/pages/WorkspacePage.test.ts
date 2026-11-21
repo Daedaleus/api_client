@@ -35,10 +35,13 @@ describe('WorkspacePage', () => {
 
   it('opens a request in a tab, edits and saves it with Ctrl+S', async () => {
     const { api } = await setup();
-    await userEvent.click(screen.getByRole('button', { name: /Health/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'GET Health' }));
     const name = await screen.findByLabelText('Name');
     expect(name).toHaveValue('Request r2');
-    expect(screen.getByRole('button', { name: /Health/ })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('button', { name: 'GET Health' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
 
     const url = screen.getByLabelText('URL');
     await userEvent.clear(url);
@@ -76,7 +79,8 @@ describe('WorkspacePage', () => {
 
   it('confirms before deleting and can be cancelled with Escape', async () => {
     const { api } = await setup();
-    await userEvent.click(screen.getAllByRole('button', { name: 'Delete' })[0]!);
+    await userEvent.click(screen.getByRole('button', { name: 'Actions for “Auth”' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
     const dialog = await screen.findByRole('dialog', { name: 'Delete' });
     expect(dialog).toHaveTextContent('Move folder “Auth” with all its contents to the trash?');
     await userEvent.keyboard('{Escape}');
@@ -91,6 +95,29 @@ describe('WorkspacePage', () => {
     expect(openTabs()).toHaveLength(2);
     await userEvent.click(screen.getAllByRole('button', { name: 'Close tab' })[0]!);
     expect(openTabs()).toHaveLength(1);
+  });
+
+  it('opens new requests from the "New" menu and with Ctrl+N', async () => {
+    await setup();
+    expect(openTabs()).toHaveLength(1);
+    await userEvent.click(screen.getByRole('button', { name: 'New' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: /New request/ }));
+    expect(openTabs()).toHaveLength(2);
+    await fireEvent.keyDown(window, { key: 'n', ctrlKey: true });
+    expect(openTabs()).toHaveLength(3);
+    await fireEvent.keyDown(window, { key: 'n', ctrlKey: true, shiftKey: true });
+    expect(openTabs()).toHaveLength(3);
+  });
+
+  it('offers the actions of a collection by right click', async () => {
+    await setup();
+    const sidebar = screen.getByRole('complementary', { name: 'Collections' });
+    await fireEvent.contextMenu(within(sidebar).getByText('Shop'));
+    const menu = screen.getByRole('menu', { name: 'Actions for “Shop”' });
+    await userEvent.click(
+      within(menu).getByRole('menuitem', { name: 'Collection variables & auth' }),
+    );
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
   });
 
   it('shows load problems and errors of the collection', async () => {

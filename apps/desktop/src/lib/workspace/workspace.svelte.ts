@@ -17,6 +17,13 @@ import { scopeValues } from '../variables';
 import { CollectionsState } from './collections.svelte';
 import { Dialogs } from './dialogs.svelte';
 import { EnvironmentChoice } from './environments.svelte';
+import {
+  type ImportFormat,
+  isFolder,
+  sourceFile,
+  sourceOptions,
+  targetOptions,
+} from './import-source';
 import { RecipientsState } from './recipients.svelte';
 import type { RequestTab } from './request-tab.svelte';
 import { TabsState } from './tabs.svelte';
@@ -91,14 +98,18 @@ export class Workspace {
   }
 
   /**
-   * Imports another tool's collection (Postman, OpenAPI): the user picks the
-   * file, then the folder for the new collection. What could not be taken
-   * over is shown afterwards.
+   * Imports another tool's collection: the user picks the file (for Bruno
+   * the folder), then the folder for the new collection. What could not be
+   * taken over is shown afterwards.
    */
-  async importCollection(): Promise<void> {
-    const file = await this.#api.pickFile();
-    if (!file) return;
-    const path = await this.#api.pickFolder();
+  async importCollection(format: ImportFormat): Promise<void> {
+    const options = sourceOptions(format);
+    const picked = isFolder(format)
+      ? await this.#api.pickFolder(options)
+      : await this.#api.pickFile(options);
+    if (!picked) return;
+    const file = sourceFile(format, picked);
+    const path = await this.#api.pickFolder(targetOptions());
     if (!path) return;
     this.collections.error = null;
     try {
