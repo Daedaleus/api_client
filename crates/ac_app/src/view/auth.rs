@@ -1,7 +1,7 @@
 //! Authentication and the certificate check as the editors show and return
 //! them.
 
-use ac_domain::auth::{Auth, KeyPlacement};
+use ac_domain::auth::{Auth, KeyPlacement, OAuth2};
 use ac_domain::tls::CertificateCheck;
 use serde::{Deserialize, Serialize};
 
@@ -30,6 +30,18 @@ pub enum AuthDraft {
     Bearer {
         /// The token.
         token: String,
+    },
+    /// OAuth 2, client credentials grant.
+    #[serde(rename = "oauth2")]
+    OAuth2 {
+        /// Where tokens come from.
+        token_url: String,
+        /// Client id.
+        client_id: String,
+        /// Client secret.
+        client_secret: String,
+        /// Scopes, separated by spaces.
+        scope: String,
     },
     /// API key.
     ApiKey {
@@ -104,6 +116,12 @@ impl AuthDraft {
             Auth::Bearer { token } => Self::Bearer {
                 token: token.clone(),
             },
+            Auth::OAuth2(oauth) => Self::OAuth2 {
+                token_url: oauth.token_url.clone(),
+                client_id: oauth.client_id.clone(),
+                client_secret: oauth.client_secret.clone(),
+                scope: oauth.scope.clone(),
+            },
             Auth::ApiKey {
                 name,
                 value,
@@ -132,6 +150,17 @@ impl AuthDraft {
             Self::Bearer { token } => Auth::Bearer {
                 token: token.clone(),
             },
+            Self::OAuth2 {
+                token_url,
+                client_id,
+                client_secret,
+                scope,
+            } => Auth::OAuth2(OAuth2 {
+                token_url: token_url.clone(),
+                client_id: client_id.clone(),
+                client_secret: client_secret.clone(),
+                scope: scope.clone(),
+            }),
             Self::ApiKey {
                 name,
                 value,

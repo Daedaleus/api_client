@@ -21,6 +21,7 @@ pub mod app;
 pub mod command;
 pub mod error;
 pub mod event;
+mod oauth;
 pub mod ports;
 mod resolve;
 mod resolve_body;

@@ -36,6 +36,16 @@ fn every_kind_round_trips() {
             value: "k".into(),
             placement: KeyPlacement::Query,
         },
+        Auth::OAuth2(OAuth2 {
+            token_url: "https://auth.example.com/token".into(),
+            client_id: "app".into(),
+            client_secret: "{{secret}}".into(),
+            scope: "read write".into(),
+        }),
+        Auth::OAuth2(OAuth2 {
+            token_url: "t".into(),
+            ..OAuth2::default()
+        }),
     ] {
         assert_eq!(round_trip(&auth), auth);
     }

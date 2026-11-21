@@ -33,9 +33,16 @@ fn credentials_stay_out_of_debug_output() {
             value: "k3y".into(),
             placement: KeyPlacement::Query,
         },
+        Auth::OAuth2(OAuth2 {
+            token_url: "https://auth.example.com/token".into(),
+            client_id: "app".into(),
+            client_secret: "cl1ent".into(),
+            scope: String::new(),
+        }),
     ];
     let debug = format!("{all:?}");
-    for secret in ["hunter2", "s3cr3t", "k3y"] {
+    assert!(debug.contains("auth.example.com"), "{debug}");
+    for secret in ["hunter2", "s3cr3t", "k3y", "cl1ent"] {
         assert!(!debug.contains(secret), "{debug}");
     }
     assert!(debug.contains("alice") && debug.contains("X-API-Key") && debug.contains("Query"));

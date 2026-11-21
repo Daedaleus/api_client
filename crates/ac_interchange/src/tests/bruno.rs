@@ -266,3 +266,27 @@ fn bare_and_odd_files() {
         [skipped("Deep", SkippedKind::Body("sparql".into()))]
     );
 }
+
+#[test]
+fn oauth2_client_credentials_are_imported() {
+    let imported = from_files(
+        Path::new("/bruno"),
+        &[BrunoFile {
+            path: "token.bru".into(),
+            text: "meta {\n  name: Token\n}\nget {\n  url: x\n  auth: oauth2\n}\nauth:oauth2 {\n  grant_type: client_credentials\n  access_token_url: {{auth}}/token\n  client_id: app\n  client_secret: {{secret}}\n  scope: read\n}".into(),
+        }],
+    );
+    let Item::Request(request) = &imported.collection.items[0] else {
+        panic!("expected a request");
+    };
+    assert_eq!(
+        request.auth,
+        Auth::OAuth2(ac_domain::auth::OAuth2 {
+            token_url: "{{auth}}/token".into(),
+            client_id: "app".into(),
+            client_secret: "{{secret}}".into(),
+            scope: "read".into(),
+        })
+    );
+    assert_eq!(imported.skipped.len(), 0);
+}

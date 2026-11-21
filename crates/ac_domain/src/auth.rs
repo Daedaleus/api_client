@@ -25,6 +25,9 @@ pub enum Auth {
         /// The token.
         token: String,
     },
+    /// OAuth 2 with the client credentials grant: an access token is
+    /// fetched from `token_url` and sent as a bearer token.
+    OAuth2(OAuth2),
     /// An API key in a header or a query parameter.
     ApiKey {
         /// Header or parameter name, e.g. `X-API-Key`.
@@ -34,6 +37,30 @@ pub enum Auth {
         /// Where it goes.
         placement: KeyPlacement,
     },
+}
+
+/// OAuth 2 client credentials (RFC 6749, section 4.4).
+#[derive(Clone, PartialEq, Eq, Default)]
+pub struct OAuth2 {
+    /// Where tokens come from.
+    pub token_url: String,
+    /// The client's id.
+    pub client_id: String,
+    /// The client's secret (sent with HTTP Basic to the token URL).
+    pub client_secret: String,
+    /// Requested scopes, separated by spaces; empty for none.
+    pub scope: String,
+}
+
+/// The secret is never shown in debug output.
+impl std::fmt::Debug for OAuth2 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OAuth2")
+            .field("token_url", &self.token_url)
+            .field("client_id", &self.client_id)
+            .field("scope", &self.scope)
+            .finish_non_exhaustive()
+    }
 }
 
 /// Where an API key is sent.
@@ -57,6 +84,7 @@ impl std::fmt::Debug for Auth {
                 .field("username", username)
                 .finish_non_exhaustive(),
             Self::Bearer { .. } => f.debug_struct("Bearer").finish_non_exhaustive(),
+            Self::OAuth2(oauth) => oauth.fmt(f),
             Self::ApiKey {
                 name, placement, ..
             } => f

@@ -251,3 +251,24 @@ fn json_descriptions_3_1_and_odd_ones() {
         Err(ImportError::Unknown)
     );
 }
+
+#[test]
+fn client_credentials_flows_become_oauth2() {
+    let imported = import_collection(
+        r#"{"openapi": "3.0.3", "info": {"title": "T"}, "paths": {},
+            "security": [{"oauth": ["read", "write"]}],
+            "components": {"securitySchemes": {"oauth": {"type": "oauth2", "flows": {
+                "clientCredentials": {"tokenUrl": "https://auth.example.com/token", "scopes": {}}}}}}}"#,
+    )
+    .unwrap();
+    assert_eq!(
+        imported.collection.auth,
+        Auth::OAuth2(ac_domain::auth::OAuth2 {
+            token_url: "https://auth.example.com/token".into(),
+            client_id: "{{clientId}}".into(),
+            client_secret: "{{clientSecret}}".into(),
+            scope: "read write".into(),
+        })
+    );
+    assert_eq!(imported.skipped.len(), 0);
+}

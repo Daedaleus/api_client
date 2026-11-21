@@ -33,6 +33,7 @@ use tokio::sync::broadcast;
 use crate::command::{Command, CommandAck, Query, QueryResult};
 use crate::error::AppError;
 use crate::event::AppEvent;
+use crate::oauth::TokenCache;
 use crate::ports::{CollectionStore, HttpSender, SecretVault};
 
 /// Events kept for slow subscribers before they start missing some.
@@ -65,6 +66,8 @@ struct Inner<H, S, V> {
     runtime: Handle,
     events: broadcast::Sender<AppEvent>,
     next_run: AtomicU64,
+    /// OAuth 2 access tokens, in memory only.
+    tokens: TokenCache,
     /// Open collections (id and folder) in the order they were opened. Their
     /// contents are read anew for every command, so changes made outside the
     /// app are picked up.
@@ -93,6 +96,7 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
                 runtime,
                 events,
                 next_run: AtomicU64::new(1),
+                tokens: TokenCache::default(),
                 open: Mutex::new(Vec::new()),
             }),
         }

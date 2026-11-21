@@ -93,7 +93,7 @@
         {
           "name": "GraphQL",
           "request": {
-            "auth": { "type": "oauth2", "oauth2": [{ "key": "grant_type", "value": "client_credentials" }] },
+            "auth": { "type": "oauth2", "oauth2": [{ "key": "grant_type", "value": "authorization_code" }] },
             "method": "POST",
             "header": [],
             "body": { "mode": "graphql", "graphql": { "query": "{ products { id } }" } },

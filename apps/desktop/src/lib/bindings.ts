@@ -66,6 +66,16 @@ password: string } |
 { kind: "bearer"; 
 /**  The token. */
 token: string } | 
+/**  OAuth 2, client credentials grant. */
+{ kind: "oauth2"; 
+/**  Where tokens come from. */
+tokenUrl: string; 
+/**  Client id. */
+clientId: string; 
+/**  Client secret. */
+clientSecret: string; 
+/**  Scopes, separated by spaces. */
+scope: string } | 
 /**  API key. */
 { kind: "apiKey"; 
 /**  Header or parameter name. */

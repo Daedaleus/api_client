@@ -90,6 +90,8 @@ pub mod keys {
     pub const IMPORT_SKIPPED_BODY: &str = "import.skipped_body";
     /// Any other transport failure. Argument: `detail`.
     pub const REQUEST: &str = "error.request";
+    /// No OAuth 2 access token. Placeholder: `detail`.
+    pub const OAUTH_TOKEN: &str = "error.oauth_token";
 
     /// A file or folder cannot be read or written. Arguments: `path`, `detail`.
     pub const STORE_IO: &str = "error.store_io";
@@ -116,7 +118,7 @@ pub mod keys {
 
     /// All keys with the names of their placeholders, checked against the
     /// translation file by a test.
-    pub const ALL: [(&str, &[&str]); 35] = [
+    pub const ALL: [(&str, &[&str]); 36] = [
         (URL_EMPTY, &[]),
         (URL_INVALID, &["reason"]),
         (URL_SCHEME, &["scheme"]),
@@ -141,6 +143,7 @@ pub mod keys {
         (IMPORT_SKIPPED_BODY, &["item", "mode"]),
         (IMPORT_SKIPPED_HEADERS, &["item"]),
         (REQUEST, &["detail"]),
+        (OAUTH_TOKEN, &["detail"]),
         (STORE_IO, &["path", "detail"]),
         (STORE_DAMAGED, &["path", "detail"]),
         (STORE_READ_ONLY, &["path"]),

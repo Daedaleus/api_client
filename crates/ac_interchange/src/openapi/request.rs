@@ -1,7 +1,7 @@
 //! One operation of a description as a request: name, URL with variables,
 //! headers, body and auth.
 
-use ac_domain::auth::{Auth, KeyPlacement};
+use ac_domain::auth::{Auth, KeyPlacement, OAuth2};
 use ac_domain::collection::{Body, FormField, HeaderEntry, MultipartField, Request};
 use ac_domain::environment::Variable;
 use ac_domain::protocol::HttpMethod;
@@ -221,10 +221,10 @@ pub(super) fn security(
     skipped: &mut Vec<Skipped>,
 ) -> Option<Auth> {
     let requirements = security?.as_array()?;
-    let Some(name) = requirements
+    let Some((name, scopes)) = requirements
         .first()
         .and_then(Value::as_object)
-        .and_then(|requirement| requirement.keys().next())
+        .and_then(|requirement| requirement.iter().next())
     else {
         return Some(Auth::None);
     };
@@ -269,6 +269,29 @@ pub(super) fn security(
                 value: "{{apiKey}}".into(),
                 placement,
             })
+        }
+        ("oauth2", _) => {
+            let token_url = scheme
+                .get("flows")
+                .and_then(|flows| flows.get("clientCredentials"))
+                .and_then(|flow| flow.get("tokenUrl"))
+                .and_then(Value::as_str);
+            let Some(token_url) = token_url else {
+                skipped.push(skipped_auth(item, "oauth2".into()));
+                return None;
+            };
+            let scope: Vec<&str> = scopes
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(Value::as_str)
+                .collect();
+            Some(Auth::OAuth2(OAuth2 {
+                token_url: token_url.to_owned(),
+                client_id: "{{clientId}}".into(),
+                client_secret: "{{clientSecret}}".into(),
+                scope: scope.join(" "),
+            }))
         }
         (other, scheme_name) => {
             let label = if scheme_name.is_empty() {
