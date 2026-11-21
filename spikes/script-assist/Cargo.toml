@@ -1,0 +1,32 @@
+# Spike S2 (issue #10): checker and completion for TypeScript scripts.
+# Throwaway code on the spike branch; never part of the main workspace.
+[package]
+name = "script-assist-spike"
+version = "0.0.0"
+edition = "2024"
+publish = false
+license = "MIT OR Apache-2.0"
+
+[workspace]
+
+[dependencies]
+rquickjs = { version = "0.14", features = ["futures"] }
+oxc_allocator = "0.159"
+oxc_ast = "0.159"
+oxc_ast_visit = "0.159"
+oxc_parser = "0.159"
+oxc_semantic = "0.159"
+oxc_span = "0.159"
+
+[[bin]]
+name = "tsls-quickjs"
+path = "src/bin/tsls_quickjs.rs"
+
+[[bin]]
+name = "oxc-assist"
+path = "src/bin/oxc_assist.rs"
+
+[profile.release]
+strip = true
+lto = "thin"
+codegen-units = 1
