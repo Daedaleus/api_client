@@ -16,7 +16,7 @@
 use std::path::Path;
 
 use ac_app::{App, AppEvent, Command, CommandAck, Ports, Query, QueryResult, UserText};
-use ac_http::{DEFAULT_TIMEOUT, ReqwestSender};
+use ac_http::{DEFAULT_TIMEOUT, LoopbackLogin, ReqwestSender};
 use ac_secrets::{AgeVault, KeyConfig};
 use ac_storage::FileStore;
 use serde::Serialize;
@@ -25,7 +25,7 @@ use tauri::{AppHandle, Manager, State};
 use tauri_specta::{Event, collect_commands, collect_events};
 use tokio::sync::broadcast::{Receiver, error::RecvError};
 
-type DesktopApp = App<ReqwestSender, FileStore, AgeVault>;
+type DesktopApp = App<ReqwestSender, FileStore, AgeVault, LoopbackLogin>;
 
 /// The user's own key for secrets, in the app's config folder (ADR S4).
 const IDENTITY_FILE: &str = "identity.txt";
@@ -98,6 +98,7 @@ pub fn run() {
                     http: ReqwestSender::new(DEFAULT_TIMEOUT)?,
                     store: FileStore::new(),
                     vault: AgeVault::new(KeyConfig::from_environment(identity)),
+                    login: LoopbackLogin::new(),
                 },
                 runtime,
             );

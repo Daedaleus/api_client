@@ -20,7 +20,16 @@
       case 'oauth2':
         return previous.kind === 'oauth2'
           ? previous
-          : { kind, tokenUrl: '', clientId: '', clientSecret: '', scope: '' };
+          : {
+              kind,
+              grant: 'clientCredentials',
+              tokenUrl: '',
+              authUrl: '',
+              redirectUrl: '',
+              clientId: '',
+              clientSecret: '',
+              scope: '',
+            };
     }
   }
 
@@ -110,9 +119,37 @@
     </label>
   {:else if auth.kind === 'oauth2'}
     <label class="auth-editor__field">
+      <span class="auth-editor__label">{i18n.t('auth.grant')}</span>
+      <select class="auth-editor__select" bind:value={auth.grant}>
+        <option value="clientCredentials">{i18n.t('auth.grant_clientCredentials')}</option>
+        <option value="authorizationCode">{i18n.t('auth.grant_authorizationCode')}</option>
+      </select>
+    </label>
+    <label class="auth-editor__field">
       <span class="auth-editor__label">{i18n.t('auth.token_url')}</span>
       <input class="auth-editor__input" type="text" spellcheck="false" bind:value={auth.tokenUrl} />
     </label>
+    {#if auth.grant === 'authorizationCode'}
+      <label class="auth-editor__field">
+        <span class="auth-editor__label">{i18n.t('auth.auth_url')}</span>
+        <input
+          class="auth-editor__input"
+          type="text"
+          spellcheck="false"
+          bind:value={auth.authUrl}
+        />
+      </label>
+      <label class="auth-editor__field">
+        <span class="auth-editor__label">{i18n.t('auth.redirect_url')}</span>
+        <input
+          class="auth-editor__input"
+          type="text"
+          spellcheck="false"
+          placeholder={i18n.t('auth.redirect_placeholder')}
+          bind:value={auth.redirectUrl}
+        />
+      </label>
+    {/if}
     <label class="auth-editor__field">
       <span class="auth-editor__label">{i18n.t('auth.client_id')}</span>
       <input class="auth-editor__input" type="text" spellcheck="false" bind:value={auth.clientId} />
@@ -130,7 +167,9 @@
       <span class="auth-editor__label">{i18n.t('auth.scope')}</span>
       <input class="auth-editor__input" type="text" spellcheck="false" bind:value={auth.scope} />
     </label>
-    <p class="auth-editor__note">{i18n.t('auth.oauth2_note')}</p>
+    <p class="auth-editor__note">
+      {i18n.t(auth.grant === 'authorizationCode' ? 'auth.oauth2_sign_in_note' : 'auth.oauth2_note')}
+    </p>
   {/if}
 
   {#if hasPlainCredential(auth)}

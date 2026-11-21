@@ -229,6 +229,10 @@ pub mod auth_scheme {
 pub mod grant_type {
     /// The client authenticates as itself, without a user.
     pub const CLIENT_CREDENTIALS: &str = "client_credentials";
+    /// The user signed in; the code of the redirect is exchanged.
+    pub const AUTHORIZATION_CODE: &str = "authorization_code";
+    /// A new access token for a refresh token.
+    pub const REFRESH_TOKEN: &str = "refresh_token";
 }
 
 #[cfg(test)]

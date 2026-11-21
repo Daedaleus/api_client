@@ -110,7 +110,7 @@
   "auth.kind_basic": { "de": "Basic", "en": "Basic" },
   "auth.kind_bearer": { "de": "Bearer-Token", "en": "Bearer token" },
   "auth.kind_apiKey": { "de": "API-Key", "en": "API key" },
-  "auth.kind_oauth2": { "de": "OAuth 2 (Client Credentials)", "en": "OAuth 2 (client credentials)" },
+  "auth.kind_oauth2": { "de": "OAuth 2", "en": "OAuth 2" },
   "auth.badge_none": { "de": "aus", "en": "off" },
   "auth.badge_basic": { "de": "Basic", "en": "Basic" },
   "auth.badge_bearer": { "de": "Bearer", "en": "Bearer" },
@@ -128,7 +128,23 @@
   "auth.key_placement": { "de": "Senden als", "en": "Send as" },
   "auth.placement_header": { "de": "Header", "en": "Header" },
   "auth.placement_query": { "de": "Query-Parameter", "en": "Query parameter" },
+  "auth.grant": { "de": "Ablauf", "en": "Grant type" },
+  "auth.grant_clientCredentials": { "de": "Client Credentials", "en": "Client credentials" },
+  "auth.grant_authorizationCode": {
+    "de": "Authorization Code (Anmeldung im Browser)",
+    "en": "Authorization code (sign in in the browser)"
+  },
   "auth.token_url": { "de": "Token-URL", "en": "Token URL" },
+  "auth.auth_url": { "de": "Anmelde-URL", "en": "Authorization URL" },
+  "auth.redirect_url": { "de": "Redirect-URL", "en": "Redirect URL" },
+  "auth.redirect_placeholder": {
+    "de": "leer: http://127.0.0.1 mit freiem Port",
+    "en": "empty: http://127.0.0.1 with a free port"
+  },
+  "auth.oauth2_sign_in_note": {
+    "de": "Beim ersten Senden öffnet sich der Browser zur Anmeldung (mit PKCE). Das Token bleibt bis zum Ablauf im Speicher und wird nie gespeichert.",
+    "en": "On the first send the browser opens for signing in (with PKCE). The token stays in memory until it expires and is never saved."
+  },
   "auth.client_id": { "de": "Client-ID", "en": "Client ID" },
   "auth.client_secret": { "de": "Client-Secret", "en": "Client secret" },
   "auth.scope": { "de": "Scope", "en": "Scope" },
@@ -411,6 +427,14 @@
   "error.oauth_token": {
     "de": "Kein OAuth-Token erhalten: {detail}",
     "en": "No OAuth token received: {detail}"
+  },
+  "error.oauth_sign_in_timeout": {
+    "de": "Die Anmeldung im Browser wurde nicht rechtzeitig abgeschlossen.",
+    "en": "Signing in in the browser was not completed in time."
+  },
+  "error.oauth_redirect": {
+    "de": "Redirect-URL „{url}“ muss eine http-Adresse auf diesem Rechner sein (z. B. http://127.0.0.1:8080/callback).",
+    "en": "Redirect URL “{url}” must be an http address on this computer (e.g. http://127.0.0.1:8080/callback)."
   },
   "error.store_io": {
     "de": "„{path}“ kann nicht gelesen oder geschrieben werden: {detail}",

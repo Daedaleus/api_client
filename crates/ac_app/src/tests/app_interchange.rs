@@ -246,6 +246,9 @@ async fn the_curl_command_holds_a_placeholder_for_an_oauth_token() {
     let fixture = Fixture::new();
     let mut request = OutgoingRequest::get("https://api.example.com");
     request.auth = AuthDraft::OAuth2 {
+        grant: crate::view::OAuth2GrantView::ClientCredentials,
+        auth_url: String::new(),
+        redirect_url: String::new(),
         token_url: "https://auth.example.com/token".into(),
         client_id: "app".into(),
         client_secret: "pw".into(),

@@ -11,11 +11,11 @@ use super::App;
 use crate::command::{CommandAck, QueryResult};
 use crate::error::AppError;
 use crate::oauth::{TOKEN_PLACEHOLDER, authorize};
-use crate::ports::{CollectionStore, HttpSender, SecretVault};
+use crate::ports::{BrowserLogin, CollectionStore, HttpSender, SecretVault};
 use crate::text::{UserText, keys};
 use crate::view::{CollectionView, OutgoingRequest, RequestDraft};
 
-impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
+impl<H: HttpSender, S: CollectionStore, V: SecretVault, B: BrowserLogin> App<H, S, V, B> {
     /// Converts another tool's file into a new collection in `path` and
     /// opens it; what has no counterpart is listed for the user. A Bruno
     /// collection is a folder: it is chosen by its `bruno.json`.
@@ -59,7 +59,7 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
     pub(super) fn query_curl(&self, request: &OutgoingRequest) -> Result<QueryResult, AppError> {
         let prepared = self.prepare(request)?;
         let mut resolved = prepared.request;
-        if prepared.client_credentials.is_some() {
+        if prepared.oauth.is_some() {
             authorize(&mut resolved, TOKEN_PLACEHOLDER);
         }
         Ok(QueryResult::Curl {

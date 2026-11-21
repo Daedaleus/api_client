@@ -18,7 +18,8 @@
 //      same name overrides it,
 //   9. bearer auth with the secret as token is sent; set on the collection,
 //      the request inherits it; with OAuth 2 client credentials the token is
-//      fetched once from the token URL and sent,
+//      fetched once from the token URL and sent; with the authorization code
+//      the (fake) browser signs in once with PKCE and the token is sent,
 //  10. a multipart upload and a binary body read a file relative to the
 //      collection folder,
 //  11. switching the certificate check off shows a warning and is saved,
@@ -130,15 +131,38 @@ async function freePort() {
 
 // --- Local test server -----------------------------------------------------
 
-/** Token requests (OAuth 2) received, with their Authorization header. */
+/** Token requests (OAuth 2) received: Authorization header and form body. */
 const tokenRequests = [];
+/** Sign-in pages (OAuth 2 authorization code) opened, as query parameters. */
+const signIns = [];
 
 server = http.createServer((request, response) => {
   response.setHeader('Content-Type', 'application/json');
   response.setHeader('X-Test', 'e2e');
   if (request.url === '/token') {
-    tokenRequests.push(request.headers.authorization ?? null);
-    response.end('{"access_token":"e2e-token","token_type":"Bearer","expires_in":3600}');
+    let form = '';
+    request.on('data', (chunk) => (form += chunk));
+    request.on('end', () => {
+      const fields = new URLSearchParams(form);
+      tokenRequests.push({ authorization: request.headers.authorization ?? null, fields });
+      const signedIn = fields.get('grant_type') === 'authorization_code';
+      response.end(
+        signedIn
+          ? '{"access_token":"e2e-user-token","token_type":"Bearer"}'
+          : '{"access_token":"e2e-token","token_type":"Bearer","expires_in":3600}',
+      );
+    });
+    return;
+  }
+  if (request.url.startsWith('/authorize?')) {
+    // The sign-in page: "signs in" at once and sends the browser back.
+    const query = new URL(request.url, 'http://localhost').searchParams;
+    signIns.push(query);
+    const back = new URL(query.get('redirect_uri'));
+    back.searchParams.set('code', 'e2e-code');
+    back.searchParams.set('state', query.get('state'));
+    response.writeHead(302, { Location: back.toString() });
+    response.end();
     return;
   }
   if (!request.url.startsWith('/echo')) {
@@ -179,6 +203,8 @@ app = spawn(program, [], {
   env: {
     ...environment,
     API_CLIENT_IDENTITY_FILE: identityFile,
+    // The browser for OAuth 2 sign-ins: a script that follows the redirect.
+    BROWSER: `'${process.execPath}' '${path.join(ROOT, 'apps', 'desktop', 'e2e', 'fake-browser.mjs')}'`,
     WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${debugPort}`,
     WEBVIEW2_USER_DATA_FOLDER: webviewData,
     RUST_BACKTRACE: '1',
@@ -672,10 +698,64 @@ for (const round of [1, 2]) {
   );
 }
 check(
-  tokenRequests.length === 1 && tokenRequests[0]?.startsWith('Basic '),
+  tokenRequests.length === 1 && tokenRequests[0]?.authorization?.startsWith('Basic '),
   `token fetched once with client authentication (${tokenRequests.length})`,
 );
 check(exitCode === null, 'program still running after sending with OAuth 2');
+
+// The authorization code: the browser signs in once, with PKCE.
+await evaluate(`document.querySelectorAll('.sidebar__collection-header .icon-button')[2].click()`);
+await waitFor(`!!document.querySelector('.defaults-dialog')`, 'collection settings dialog');
+await evaluate(`document.querySelectorAll('.defaults-dialog__section')[1].click()`);
+await waitFor(
+  `document.querySelectorAll('.defaults-dialog .auth-editor__select').length === 2`,
+  'OAuth 2 grant',
+);
+await evaluate(`(() => {
+  const grant = document.querySelectorAll('.defaults-dialog .auth-editor__select')[1];
+  grant.value = 'authorizationCode';
+  grant.dispatchEvent(new Event('change', { bubbles: true }));
+  return true;
+})()`);
+await waitFor(
+  `document.querySelectorAll('.defaults-dialog .auth-editor__input').length === 6`,
+  'sign-in fields',
+);
+await evaluate(`(() => {
+  const inputs = document.querySelectorAll('.defaults-dialog .auth-editor__input');
+  // Authorization URL, and no client secret: a public client.
+  for (const [index, value] of [[1, '{{baseUrl}}/authorize'], [4, '']]) {
+    inputs[index].value = value;
+    inputs[index].dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  return true;
+})()`);
+await evaluate(`document.querySelector('.defaults-dialog [type=submit]').click()`);
+await waitFor(`!document.querySelector('.defaults-dialog')`, 'collection sign-in saved');
+const withSignIn = readFileSync(path.join(collectionDir, 'collection.toml'), 'utf8');
+check(
+  withSignIn.includes('grant = "authorization-code"') && !withSignIn.includes('e2e-user-token'),
+  'authorization code saved, never the token',
+);
+for (const round of [1, 2]) {
+  await evaluate(setValue('.url-bar__input', `{{baseUrl}}/echo?pkce=${round}`));
+  await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);
+  const echoed = await echoWith(`pkce=${round}`, `echo after signing in (${round})`);
+  check(
+    echoed.includes('"authorization": "Bearer e2e-user-token"'),
+    `signed-in token sent as bearer (${round})`,
+  );
+}
+const exchange = tokenRequests.at(-1)?.fields;
+check(
+  signIns.length === 1 &&
+    signIns[0].get('code_challenge_method') === 'S256' &&
+    exchange?.get('code') === 'e2e-code' &&
+    exchange?.get('client_id') === 'e2e-client' &&
+    (exchange?.get('code_verifier') ?? '').length === 43,
+  `signed in once with PKCE (${signIns.length} sign-ins)`,
+);
+check(exitCode === null, 'program still running after signing in');
 
 // --- 10. Multipart and binary bodies ---------------------------------------------
 

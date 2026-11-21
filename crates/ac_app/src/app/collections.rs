@@ -13,13 +13,13 @@ use super::App;
 use crate::command::{CommandAck, QueryResult};
 use crate::error::AppError;
 use crate::ports::{
-    CollectionStore, HttpSender, Location, OpenedCollection, SecretVault, StoreError,
+    BrowserLogin, CollectionStore, HttpSender, Location, OpenedCollection, SecretVault, StoreError,
     StoreErrorKind,
 };
 use crate::view::collection::non_empty;
 use crate::view::{CollectionView, RequestDraft};
 
-impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
+impl<H: HttpSender, S: CollectionStore, V: SecretVault, B: BrowserLogin> App<H, S, V, B> {
     pub(super) fn open_collection(&self, path: &str) -> Result<CommandAck, AppError> {
         let opened = self.inner.store.open(Path::new(path))?;
         self.remember(&opened);

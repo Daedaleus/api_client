@@ -10,16 +10,16 @@
 //! Read leniently from JSON values: exports differ between Postman versions,
 //! and a missing optional field should never make an import fail.
 
-use ac_domain::auth::{Auth, KeyPlacement, OAuth2};
+use ac_domain::auth::{Auth, KeyPlacement, OAuth2, OAuth2Grant};
 use ac_domain::collection::{
     Body, Collection, Folder, FormField, HeaderEntry, Item, ItemId, MultipartField, Request,
 };
 use ac_domain::environment::Variable;
-use ac_domain::protocol::grant_type::CLIENT_CREDENTIALS;
+use ac_domain::protocol::grant_type::{AUTHORIZATION_CODE, CLIENT_CREDENTIALS};
 use ac_domain::tls::CertificateCheck;
 use serde_json::Value;
 
-use crate::import::{Imported, Skipped, SkippedKind};
+use crate::import::{Imported, Skipped, SkippedKind, loopback_redirect};
 
 /// Name of a collection without one.
 const UNNAMED: &str = "Postman";
@@ -203,13 +203,25 @@ fn auth(auth: Option<&Value>, item: &str, skipped: &mut Vec<Skipped>) -> Auth {
         "bearer" => Auth::Bearer {
             token: field("token"),
         },
-        // Only the client credentials grant has a counterpart.
         "oauth2" if field("grant_type") == CLIENT_CREDENTIALS => Auth::OAuth2(OAuth2 {
             token_url: field("accessTokenUrl"),
             client_id: field("clientId"),
             client_secret: field("clientSecret"),
             scope: field("scope"),
+            ..Default::default()
         }),
+        // With or without PKCE in Postman: the app always uses it.
+        "oauth2" if AUTHORIZATION_CODE_GRANTS.contains(&field("grant_type").as_str()) => {
+            Auth::OAuth2(OAuth2 {
+                grant: OAuth2Grant::AuthorizationCode,
+                token_url: field("accessTokenUrl"),
+                auth_url: field("authUrl"),
+                redirect_url: loopback_redirect(&field("redirect_uri")),
+                client_id: field("clientId"),
+                client_secret: field("clientSecret"),
+                scope: field("scope"),
+            })
+        }
         "apikey" => Auth::ApiKey {
             name: field("key"),
             value: field("value"),
@@ -228,6 +240,9 @@ fn auth(auth: Option<&Value>, item: &str, skipped: &mut Vec<Skipped>) -> Auth {
         }
     }
 }
+
+/// Postman's names of the authorization code grant.
+const AUTHORIZATION_CODE_GRANTS: [&str; 2] = [AUTHORIZATION_CODE, "authorization_code_with_pkce"];
 
 fn variables(variables: Option<&Value>) -> Vec<Variable> {
     list(variables)

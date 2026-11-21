@@ -268,7 +268,32 @@ fn client_credentials_flows_become_oauth2() {
             client_id: "{{clientId}}".into(),
             client_secret: "{{clientSecret}}".into(),
             scope: "read write".into(),
+            ..Default::default()
         })
     );
     assert_eq!(imported.skipped.len(), 0);
+}
+
+#[test]
+fn authorization_code_flows_become_oauth2_sign_ins() {
+    let imported = import_collection(
+        r#"{"openapi": "3.0.3", "info": {"title": "T"}, "paths": {},
+            "security": [{"oauth": ["openid"]}],
+            "components": {"securitySchemes": {"oauth": {"type": "oauth2", "flows": {
+                "authorizationCode": {"authorizationUrl": "https://auth.example.com/authorize",
+                    "tokenUrl": "https://auth.example.com/token", "scopes": {}}}}}}}"#,
+    )
+    .unwrap();
+    assert_eq!(
+        imported.collection.auth,
+        Auth::OAuth2(ac_domain::auth::OAuth2 {
+            grant: ac_domain::auth::OAuth2Grant::AuthorizationCode,
+            token_url: "https://auth.example.com/token".into(),
+            auth_url: "https://auth.example.com/authorize".into(),
+            client_id: "{{clientId}}".into(),
+            client_secret: "{{clientSecret}}".into(),
+            scope: "openid".into(),
+            ..Default::default()
+        })
+    );
 }

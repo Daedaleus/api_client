@@ -71,14 +71,18 @@ describe('AuthEditor', () => {
         auth.value = next;
       },
     });
-    await userEvent.selectOptions(screen.getByLabelText('Type'), 'OAuth 2 (client credentials)');
+    await userEvent.selectOptions(screen.getByLabelText('Type'), 'OAuth 2');
+    expect(screen.queryByLabelText('Authorization URL')).not.toBeInTheDocument();
     await userEvent.type(screen.getByLabelText('Token URL'), 'https://auth.test/token');
     await userEvent.type(screen.getByLabelText('Client ID'), 'app');
     await userEvent.type(screen.getByLabelText('Client secret'), 'pw');
     await userEvent.type(screen.getByLabelText('Scope'), 'read');
     expect(auth.value).toEqual({
       kind: 'oauth2',
+      grant: 'clientCredentials',
       tokenUrl: 'https://auth.test/token',
+      authUrl: '',
+      redirectUrl: '',
       clientId: 'app',
       clientSecret: 'pw',
       scope: 'read',
@@ -86,5 +90,33 @@ describe('AuthEditor', () => {
     expect(screen.getByRole('status')).toHaveTextContent('plain text');
     expect(screen.getByText(/never saved/)).toBeInTheDocument();
     expect(authOf('oauth2', auth.value)).toBe(auth.value);
+  });
+
+  it('edits the authorization code sign-in', async () => {
+    const auth = $state<{ value: AuthDraft }>({ value: { kind: 'none' } });
+    render(AuthEditor, {
+      get auth() {
+        return auth.value;
+      },
+      set auth(next) {
+        auth.value = next;
+      },
+    });
+    await userEvent.selectOptions(screen.getByLabelText('Type'), 'OAuth 2');
+    await userEvent.selectOptions(
+      screen.getByLabelText('Grant type'),
+      'Authorization code (sign in in the browser)',
+    );
+    await userEvent.type(screen.getByLabelText('Authorization URL'), 'https://auth.test/authorize');
+    const redirect = screen.getByLabelText('Redirect URL');
+    expect(redirect).toHaveAttribute('placeholder', 'empty: http://127.0.0.1 with a free port');
+    await userEvent.type(redirect, 'http://127.0.0.1:8080/cb');
+    expect(auth.value).toMatchObject({
+      grant: 'authorizationCode',
+      authUrl: 'https://auth.test/authorize',
+      redirectUrl: 'http://127.0.0.1:8080/cb',
+    });
+    expect(screen.getByText(/browser opens/)).toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 });

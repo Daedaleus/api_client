@@ -241,7 +241,42 @@ fn oauth2_client_credentials_are_imported() {
             client_id: "app".into(),
             client_secret: "{{secret}}".into(),
             scope: "read".into(),
+            ..Default::default()
         })
     );
     assert_eq!(imported.skipped.len(), 0);
+}
+
+#[test]
+fn oauth2_authorization_code_is_imported_with_a_loopback_redirect_only() {
+    let collection = |redirect: &str| {
+        format!(
+            r#"{{"info": {{"name": "T", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"}},
+            "auth": {{"type": "oauth2", "oauth2": [
+                {{"key": "grant_type", "value": "authorization_code_with_pkce"}},
+                {{"key": "authUrl", "value": "https://auth.example.com/authorize"}},
+                {{"key": "accessTokenUrl", "value": "https://auth.example.com/token"}},
+                {{"key": "redirect_uri", "value": "{redirect}"}},
+                {{"key": "clientId", "value": "app"}}]}},
+            "item": []}}"#
+        )
+    };
+    let imported = from_postman(&collection("http://localhost:8080/cb")).unwrap();
+    assert_eq!(
+        imported.collection.auth,
+        Auth::OAuth2(ac_domain::auth::OAuth2 {
+            grant: ac_domain::auth::OAuth2Grant::AuthorizationCode,
+            token_url: "https://auth.example.com/token".into(),
+            auth_url: "https://auth.example.com/authorize".into(),
+            redirect_url: "http://localhost:8080/cb".into(),
+            client_id: "app".into(),
+            ..Default::default()
+        })
+    );
+    // Postman's own web callback cannot reach the app: any free port instead.
+    let web = from_postman(&collection("https://oauth.pstmn.io/v1/callback")).unwrap();
+    let Auth::OAuth2(oauth) = web.collection.auth else {
+        panic!("expected OAuth 2");
+    };
+    assert_eq!(oauth.redirect_url, "");
 }

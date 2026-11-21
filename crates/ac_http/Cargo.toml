@@ -1,6 +1,6 @@
 [package]
 name = "ac_http"
-description = "HTTP adapter: implements the HttpSender port with reqwest."
+description = "HTTP adapter: sends requests with reqwest and receives OAuth 2 sign-in redirects."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,14 +10,17 @@ publish.workspace = true
 [dependencies]
 ac_app.workspace = true
 ac_domain.workspace = true
-# multipart: form data with files; tokio fs: reading files to send.
+# multipart: form data with files; tokio fs: reading files to send; net,
+# io-util and time: the loopback listener of the OAuth 2 sign-in.
 reqwest = { workspace = true, features = ["multipart"] }
-tokio = { workspace = true, features = ["fs"] }
+# shell-words: splitting the BROWSER command.
+shell-words.workspace = true
+tokio = { workspace = true, features = ["fs", "io-util", "net", "time"] }
+url.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true
 tokio = { workspace = true, features = ["macros", "rt", "net"] }
-url.workspace = true
 wiremock.workspace = true
 
 [lints]

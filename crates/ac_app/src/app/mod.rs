@@ -34,33 +34,36 @@ use crate::command::{Command, CommandAck, Query, QueryResult};
 use crate::error::AppError;
 use crate::event::AppEvent;
 use crate::oauth::TokenCache;
-use crate::ports::{CollectionStore, HttpSender, SecretVault};
+use crate::ports::{BrowserLogin, CollectionStore, HttpSender, SecretVault};
 
 /// Events kept for slow subscribers before they start missing some.
 const EVENT_CAPACITY: usize = 64;
 
 /// The adapters the application works with.
-pub struct Ports<H, S, V> {
+pub struct Ports<H, S, V, B> {
     /// Sends HTTP requests.
     pub http: H,
     /// Reads and writes collections.
     pub store: S,
     /// Encrypts and decrypts secrets.
     pub vault: V,
+    /// Signs in in the browser (OAuth 2 authorization code).
+    pub login: B,
 }
 
 /// The application: send [`Command`]s and [`Query`]s, receive
 /// [`AppEvent`]s.
 ///
 /// Cheap to clone; clones share state.
-pub struct App<H, S, V> {
-    inner: Arc<Inner<H, S, V>>,
+pub struct App<H, S, V, B> {
+    inner: Arc<Inner<H, S, V, B>>,
 }
 
-struct Inner<H, S, V> {
+struct Inner<H, S, V, B> {
     http: H,
     store: S,
     vault: V,
+    login: B,
     /// Background work runs here, whichever thread calls `execute` – UIs
     /// may call from threads without a runtime (Tauri: the main thread).
     runtime: Handle,
@@ -74,7 +77,7 @@ struct Inner<H, S, V> {
     open: Mutex<Vec<(ItemId, PathBuf)>>,
 }
 
-impl<H, S, V> Clone for App<H, S, V> {
+impl<H, S, V, B> Clone for App<H, S, V, B> {
     fn clone(&self) -> Self {
         Self {
             inner: Arc::clone(&self.inner),
@@ -82,17 +85,18 @@ impl<H, S, V> Clone for App<H, S, V> {
     }
 }
 
-impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
+impl<H: HttpSender, S: CollectionStore, V: SecretVault, B: BrowserLogin> App<H, S, V, B> {
     /// Creates the application with its adapters; background work runs on
     /// `runtime`.
     #[must_use]
-    pub fn new(ports: Ports<H, S, V>, runtime: Handle) -> Self {
+    pub fn new(ports: Ports<H, S, V, B>, runtime: Handle) -> Self {
         let (events, _) = broadcast::channel(EVENT_CAPACITY);
         Self {
             inner: Arc::new(Inner {
                 http: ports.http,
                 store: ports.store,
                 vault: ports.vault,
+                login: ports.login,
                 runtime,
                 events,
                 next_run: AtomicU64::new(1),

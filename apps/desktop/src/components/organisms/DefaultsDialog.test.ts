@@ -72,7 +72,7 @@ describe('DefaultsDialog', () => {
       'Basic',
       'Bearer token',
       'API key',
-      'OAuth 2 (client credentials)',
+      'OAuth 2',
     ]);
     await userEvent.selectOptions(kind, 'Bearer token');
     await userEvent.type(screen.getByLabelText('Token'), 'abc');

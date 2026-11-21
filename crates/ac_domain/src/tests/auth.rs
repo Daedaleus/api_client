@@ -38,6 +38,7 @@ fn credentials_stay_out_of_debug_output() {
             client_id: "app".into(),
             client_secret: "cl1ent".into(),
             scope: String::new(),
+            ..Default::default()
         }),
     ];
     let debug = format!("{all:?}");
@@ -46,4 +47,19 @@ fn credentials_stay_out_of_debug_output() {
         assert!(!debug.contains(secret), "{debug}");
     }
     assert!(debug.contains("alice") && debug.contains("X-API-Key") && debug.contains("Query"));
+}
+
+#[test]
+fn only_http_on_the_loopback_address_can_be_a_redirect() {
+    let check = |url: &str| is_loopback_redirect(&url::Url::parse(url).unwrap());
+    for fine in [
+        "http://localhost:1/",
+        "http://127.0.0.2/cb",
+        "http://[::1]/",
+    ] {
+        assert!(check(fine), "{fine}");
+    }
+    for wrong in ["https://localhost/", "http://example.com/", "file:///x"] {
+        assert!(!check(wrong), "{wrong}");
+    }
 }
