@@ -8,8 +8,10 @@
 //!   file – `postman` (Postman collections v2.1, v2.0) or `openapi`
 //!   (`OpenAPI` 3.0 and 3.1 descriptions, JSON or YAML).
 //!
-//! The Bruno import follows (issue #18).
+//! - [`bruno`]: Bruno collections (a folder of `.bru` files) with their
+//!   environments.
 
+pub mod bruno;
 pub mod curl;
 pub mod import;
 mod openapi;

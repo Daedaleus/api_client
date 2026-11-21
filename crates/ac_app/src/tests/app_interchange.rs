@@ -184,3 +184,59 @@ async fn openapi_descriptions_are_imported_the_same_way() {
     assert_eq!(error.user_text().key, keys::IMPORT_INVALID);
     assert!(error.user_text().args["detail"].contains("Swagger 2.0"));
 }
+
+#[tokio::test]
+async fn bruno_collections_are_imported_from_their_folder() {
+    use crate::command::{Command, CommandAck};
+
+    let fixture = Fixture::new();
+    let source = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../ac_interchange/src/tests/fixtures/bruno-shop");
+    for relative in [
+        "bruno.json",
+        "collection.bru",
+        "environments/Local.bru",
+        "auth/folder.bru",
+        "auth/login.bru",
+        "health.bru",
+    ] {
+        let text = std::fs::read_to_string(source.join(relative)).unwrap();
+        fixture
+            .store
+            .add_file(std::path::Path::new("bruno").join(relative), text);
+    }
+    let ack = fixture
+        .app
+        .execute(Command::ImportCollection {
+            file: std::path::Path::new("bruno")
+                .join("bruno.json")
+                .display()
+                .to_string(),
+            path: "from-bruno".into(),
+        })
+        .unwrap();
+    let CommandAck::CollectionImported {
+        collection,
+        skipped,
+    } = ack
+    else {
+        panic!("expected an imported collection");
+    };
+    assert_eq!(collection.name, "Shop (Bruno)");
+    assert_eq!(collection.environments.len(), 1);
+    assert_eq!(collection.environments[0].name, "Local");
+    let keys: Vec<_> = skipped.iter().map(|text| text.key).collect();
+    assert!(keys.contains(&keys::IMPORT_SKIPPED_HEADERS), "{keys:?}");
+
+    let error = fixture
+        .app
+        .execute(Command::ImportCollection {
+            file: std::path::Path::new("empty")
+                .join("bruno.json")
+                .display()
+                .to_string(),
+            path: "other".into(),
+        })
+        .unwrap_err();
+    assert_eq!(error.user_text().key, keys::STORE_IO);
+}

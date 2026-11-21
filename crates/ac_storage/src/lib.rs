@@ -26,6 +26,7 @@
 //! - `auth`: authentication tables in request, folder and collection files.
 //! - [`create`]: creating collections, folders and requests.
 //! - [`remove`]: removing requests and folders.
+//! - `tree`: reading the text files of a folder tree (folder imports).
 //! - [`store`]: [`FileStore`], the `CollectionStore` port of `ac_app`.
 //! - [`names`]: file and folder names from display names.
 //! - `order`: keeping `order` lists in step with their folder.
@@ -51,6 +52,7 @@ pub mod store;
 #[path = "tests/support.rs"]
 mod test_support;
 mod tls;
+mod tree;
 mod variables;
 
 pub use create::{create_collection, create_folder, create_request};

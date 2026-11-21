@@ -44,6 +44,7 @@ pub(crate) fn from_value(root: &Value) -> Option<Imported> {
     };
     Some(Imported {
         collection,
+        environments: Vec::new(),
         skipped,
     })
 }

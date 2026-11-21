@@ -11,7 +11,9 @@ use ac_domain::collection::{Collection, Folder, Item, ItemId, Request, RequestDe
 use ac_domain::environment::Environment;
 
 use super::lock;
-use crate::ports::{CollectionStore, Location, OpenedCollection, StoreError, StoreErrorKind};
+use crate::ports::{
+    CollectionStore, Location, OpenedCollection, StoreError, StoreErrorKind, TextFile,
+};
 
 /// A [`CollectionStore`] in memory.
 #[derive(Debug, Default)]
@@ -318,6 +320,7 @@ impl CollectionStore for MemoryStore {
         &self,
         root: &Path,
         collection: &Collection,
+        environments: &[Environment],
     ) -> Result<OpenedCollection, StoreError> {
         self.check_failure()?;
         if lock(&self.collections).contains_key(root) {
@@ -328,7 +331,29 @@ impl CollectionStore for MemoryStore {
             });
         }
         lock(&self.collections).insert(root.to_owned(), collection.clone());
+        lock(&self.environments).insert(root.to_owned(), environments.to_vec());
         self.open(root)
+    }
+
+    fn read_tree(&self, dir: &Path, extensions: &[&str]) -> Result<Vec<TextFile>, StoreError> {
+        self.check_failure()?;
+        let files = lock(&self.files);
+        let mut found: Vec<TextFile> = files
+            .iter()
+            .filter_map(|(path, text)| {
+                let relative = path.strip_prefix(dir).ok()?;
+                let extension = relative.extension()?.to_str()?;
+                extensions.contains(&extension).then(|| TextFile {
+                    path: relative.to_string_lossy().replace('\\', "/"),
+                    text: text.clone(),
+                })
+            })
+            .collect();
+        if found.is_empty() {
+            return Err(not_found(dir));
+        }
+        found.sort_by(|a, b| a.path.cmp(&b.path));
+        Ok(found)
     }
 
     fn read_text(&self, file: &Path) -> Result<String, StoreError> {

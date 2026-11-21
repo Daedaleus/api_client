@@ -3,7 +3,9 @@
 
 use std::path::Path;
 
-use ac_app::ports::{CollectionStore, Location, OpenedCollection, StoreError, StoreErrorKind};
+use ac_app::ports::{
+    CollectionStore, Location, OpenedCollection, StoreError, StoreErrorKind, TextFile,
+};
 use ac_domain::collection::{Collection, ItemId, Request, RequestDefaults};
 use ac_domain::environment::Environment;
 
@@ -121,10 +123,17 @@ impl CollectionStore for FileStore {
         &self,
         root: &Path,
         collection: &Collection,
+        environments: &[Environment],
     ) -> Result<OpenedCollection, StoreError> {
-        create::write_collection(root, collection)
+        create::write_collection(root, collection, environments)
             .map(opened)
             .map_err(store_error)
+    }
+
+    fn read_tree(&self, dir: &Path, extensions: &[&str]) -> Result<Vec<TextFile>, StoreError> {
+        let mut files = Vec::new();
+        crate::tree::read_tree(dir, dir, extensions, &mut files).map_err(store_error)?;
+        Ok(files)
     }
 
     fn read_text(&self, file: &Path) -> Result<String, StoreError> {

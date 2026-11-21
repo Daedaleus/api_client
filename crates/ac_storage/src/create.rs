@@ -6,7 +6,10 @@ use std::path::{Path, PathBuf};
 use ac_domain::collection::{Collection, Item, ItemId, Request, RequestDefaults};
 use toml_edit::DocumentMut;
 
+use ac_domain::environment::Environment;
+
 use crate::document;
+use crate::environment_file::create_environment;
 use crate::error::StorageError;
 use crate::format::{COLLECTION_FILE, COLLECTION_FORMAT, CURRENT_VERSION, RESERVED_ROOT_FOLDERS};
 use crate::load::{LoadedCollection, load_collection};
@@ -76,7 +79,7 @@ pub fn create_folder(parent: &Path, name: &str) -> Result<(PathBuf, ItemId), Sto
 }
 
 /// Writes `collection` as a new collection into `root` (imports): its
-/// settings, then every folder and request in order. Ids of folders and
+/// settings, every folder and request in order, then its environments. Ids of folders and
 /// requests are kept; the collection gets a new one.
 ///
 /// # Errors
@@ -85,6 +88,7 @@ pub fn create_folder(parent: &Path, name: &str) -> Result<(PathBuf, ItemId), Sto
 pub fn write_collection(
     root: &Path,
     collection: &Collection,
+    environments: &[Environment],
 ) -> Result<LoadedCollection, StorageError> {
     create_collection(root, &collection.name)?;
     save_collection_defaults(
@@ -96,6 +100,9 @@ pub fn write_collection(
         },
     )?;
     write_items(root, &collection.items)?;
+    for environment in environments {
+        create_environment(root, environment)?;
+    }
     load_collection(root)
 }
 

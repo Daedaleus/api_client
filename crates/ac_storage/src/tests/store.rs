@@ -188,8 +188,23 @@ fn imports_read_text_files_and_write_new_collections() {
         .collection;
     collection.items.push(Item::Request(Request::new("Ping")));
     let root = temp.path().join("imported");
-    let opened = store.import_collection(&root, &collection).unwrap();
+    let opened = store.import_collection(&root, &collection, &[]).unwrap();
     assert_eq!(opened.collection.items.len(), 1);
-    let error = store.import_collection(&root, &collection).unwrap_err();
+    let error = store
+        .import_collection(&root, &collection, &[])
+        .unwrap_err();
     assert_eq!(error.kind, StoreErrorKind::AlreadyExists);
+}
+
+#[test]
+fn folder_trees_are_read_through_the_port() {
+    let temp = tempfile::tempdir().unwrap();
+    std::fs::write(temp.path().join("a.bru"), "a").unwrap();
+    let files = store().read_tree(temp.path(), &["bru"]).unwrap();
+    assert_eq!(files.len(), 1);
+    assert_eq!(files[0].path, "a.bru");
+    let error = store()
+        .read_tree(&temp.path().join("nope"), &["bru"])
+        .unwrap_err();
+    assert_eq!(error.kind, StoreErrorKind::Io);
 }

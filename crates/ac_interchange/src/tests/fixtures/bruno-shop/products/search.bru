@@ -1,0 +1,15 @@
+meta {
+  name: Search
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/search
+  body: formUrlEncoded
+  auth: oauth2
+}
+
+body:form-urlencoded {
+  q: tea
+}

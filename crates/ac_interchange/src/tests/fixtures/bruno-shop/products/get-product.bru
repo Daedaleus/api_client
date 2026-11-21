@@ -1,0 +1,25 @@
+meta {
+  name: Get product
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/products/:id?verbose=true
+  body: none
+  auth: apikey
+}
+
+params:query {
+  verbose: true
+}
+
+params:path {
+  id: 42
+}
+
+auth:apikey {
+  key: X-API-Key
+  value: {{apiKey}}
+  placement: header
+}

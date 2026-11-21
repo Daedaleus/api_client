@@ -1,0 +1,253 @@
+//! One Bruno request file, and the settings of folders and the collection.
+
+use std::path::Path;
+
+use ac_domain::auth::{Auth, KeyPlacement};
+use ac_domain::collection::{Body, FormField, HeaderEntry, MultipartField, Request};
+use ac_domain::environment::Variable;
+use ac_domain::protocol::HttpMethod;
+
+use super::bru::{Block, find};
+use super::{seq_of, skipped};
+use crate::import::{Skipped, SkippedKind};
+
+/// Method blocks of a request file.
+const METHODS: [&str; 9] = [
+    "get", "post", "put", "patch", "delete", "options", "head", "connect", "trace",
+];
+
+/// Blocks with scripts or tests, which have no counterpart yet.
+const SCRIPT_BLOCKS: [&str; 4] = [
+    "script:pre-request",
+    "script:post-response",
+    "tests",
+    "assert",
+];
+
+/// What a folder or the collection passes on.
+pub(super) struct Defaults {
+    pub variables: Vec<Variable>,
+    pub auth: Auth,
+}
+
+/// Variables and auth of `collection.bru` or `folder.bru`.
+pub(super) fn defaults(blocks: &[Block], item: &str, report: &mut Vec<Skipped>) -> Defaults {
+    scripts(blocks, item, report);
+    if let Some(headers) = find(blocks, "headers")
+        && !headers.entries().is_empty()
+    {
+        report.push(skipped(item, SkippedKind::Headers));
+    }
+    let mode = find(blocks, "auth").and_then(|block| block.get("mode"));
+    Defaults {
+        variables: variables(blocks),
+        auth: auth(blocks, mode.as_deref(), item, report),
+    }
+}
+
+/// The request in a request file at `path`, with its `seq`.
+pub(super) fn request(
+    path: &str,
+    blocks: &[Block],
+    root: &Path,
+    report: &mut Vec<Skipped>,
+) -> (u32, Request) {
+    let meta = find(blocks, "meta");
+    let stem = path
+        .rsplit('/')
+        .next()
+        .unwrap_or(path)
+        .trim_end_matches(".bru");
+    let name = meta
+        .and_then(|meta| meta.get("name"))
+        .unwrap_or_else(|| stem.to_owned());
+    let mut request = Request::new(name);
+    scripts(blocks, &request.name, report);
+    if meta.and_then(|meta| meta.get("type")).as_deref() == Some("graphql") {
+        report.push(skipped(&request.name, SkippedKind::Body("graphql".into())));
+    }
+    let Some(method_block) = METHODS.iter().find_map(|method| find(blocks, method)) else {
+        return (seq_of(meta), request);
+    };
+    request.method = method_block
+        .name
+        .to_uppercase()
+        .parse()
+        .unwrap_or(HttpMethod::Get);
+    let (url, path_variables) = path_parameters(&method_block.get("url").unwrap_or_default());
+    request.url = url;
+    request.variables = path_variables;
+    if let Some(params) = find(blocks, "params:path") {
+        for entry in params.entries() {
+            if let Some(variable) = request.variables.iter_mut().find(|v| v.name == entry.key) {
+                variable.value = entry.value;
+            }
+        }
+    }
+    request.variables.extend(variables(blocks));
+    request.headers = find(blocks, "headers").map_or_default(|headers| {
+        headers
+            .entries()
+            .into_iter()
+            .map(|entry| HeaderEntry {
+                name: entry.key,
+                value: entry.value,
+                enabled: entry.enabled,
+            })
+            .collect()
+    });
+    let body_mode = method_block.get("body").unwrap_or_default();
+    request.body = body(blocks, &body_mode, root, &request.name, report);
+    let auth_mode = method_block.get("auth");
+    request.auth = auth(blocks, auth_mode.as_deref(), &request.name, report);
+    (seq_of(meta), request)
+}
+
+/// Bruno's `:param` path parameters as `{{param}}` with a variable each.
+fn path_parameters(url: &str) -> (String, Vec<Variable>) {
+    let (path, query) = url
+        .split_once('?')
+        .map_or((url, None), |(p, q)| (p, Some(q)));
+    let mut variables = Vec::new();
+    let path: Vec<String> = path
+        .split('/')
+        .map(|segment| match segment.strip_prefix(':') {
+            Some(name) if !name.is_empty() => {
+                variables.push(Variable::plain(name, ""));
+                format!("{{{{{name}}}}}")
+            }
+            _ => segment.to_owned(),
+        })
+        .collect();
+    let mut url = path.join("/");
+    if let Some(query) = query {
+        url.push('?');
+        url.push_str(query);
+    }
+    (url, variables)
+}
+
+fn variables(blocks: &[Block]) -> Vec<Variable> {
+    find(blocks, "vars:pre-request").map_or_default(|vars| {
+        vars.entries()
+            .into_iter()
+            .map(|entry| Variable {
+                enabled: entry.enabled,
+                ..Variable::plain(entry.key, entry.value)
+            })
+            .collect()
+    })
+}
+
+fn body(blocks: &[Block], mode: &str, root: &Path, item: &str, report: &mut Vec<Skipped>) -> Body {
+    let text = |name: &str| find(blocks, name).map_or_default(Block::text);
+    match mode {
+        "" | "none" => Body::None,
+        "json" => Body::Json(text("body:json")),
+        "text" => Body::Text(text("body:text")),
+        "xml" => Body::Text(text("body:xml")),
+        "formUrlEncoded" => {
+            Body::Form(find(blocks, "body:form-urlencoded").map_or_default(|form| {
+                form.entries()
+                    .into_iter()
+                    .map(|entry| FormField {
+                        name: entry.key,
+                        value: entry.value,
+                        enabled: entry.enabled,
+                    })
+                    .collect()
+            }))
+        }
+        "multipartForm" => {
+            Body::Multipart(find(blocks, "body:multipart-form").map_or_default(|form| {
+                form.entries()
+                    .into_iter()
+                    .map(|entry| {
+                        let file = file_reference(&entry.value);
+                        MultipartField {
+                            name: entry.key,
+                            file: file.is_some(),
+                            value: file.map_or(entry.value, |file| absolute(root, &file)),
+                            enabled: entry.enabled,
+                        }
+                    })
+                    .collect()
+            }))
+        }
+        "file" => {
+            let file = find(blocks, "body:file")
+                .and_then(|block| {
+                    block
+                        .entries()
+                        .into_iter()
+                        .find(|entry| entry.enabled)
+                        .and_then(|entry| file_reference(&entry.value))
+                })
+                .map_or_default(|file| absolute(root, &file));
+            Body::Binary(file)
+        }
+        other => {
+            report.push(skipped(item, SkippedKind::Body(other.to_owned())));
+            Body::None
+        }
+    }
+}
+
+/// The path in `@file(path)` (several paths: the first).
+fn file_reference(value: &str) -> Option<String> {
+    let inner = value.strip_prefix("@file(")?;
+    let end = inner.find(')')?;
+    inner[..end].split('|').next().map(str::to_owned)
+}
+
+/// `path` as an absolute path (relative ones were relative to `root`).
+fn absolute(root: &Path, path: &str) -> String {
+    let candidate = Path::new(path);
+    if candidate.is_absolute() {
+        path.to_owned()
+    } else {
+        root.join(candidate).display().to_string()
+    }
+}
+
+fn auth(blocks: &[Block], mode: Option<&str>, item: &str, report: &mut Vec<Skipped>) -> Auth {
+    let field = |block: &str, key: &str| {
+        find(blocks, block)
+            .and_then(|block| block.get(key))
+            .unwrap_or_default()
+    };
+    match mode {
+        None | Some("inherit") => Auth::Inherit,
+        Some("none") => Auth::None,
+        Some("basic") => Auth::Basic {
+            username: field("auth:basic", "username"),
+            password: field("auth:basic", "password"),
+        },
+        Some("bearer") => Auth::Bearer {
+            token: field("auth:bearer", "token"),
+        },
+        Some("apikey") => Auth::ApiKey {
+            name: field("auth:apikey", "key"),
+            value: field("auth:apikey", "value"),
+            placement: if field("auth:apikey", "placement") == "queryparams" {
+                KeyPlacement::Query
+            } else {
+                KeyPlacement::Header
+            },
+        },
+        Some(other) => {
+            report.push(skipped(item, SkippedKind::Auth(other.to_owned())));
+            Auth::Inherit
+        }
+    }
+}
+
+fn scripts(blocks: &[Block], item: &str, report: &mut Vec<Skipped>) {
+    let has_code = blocks.iter().any(|block| {
+        SCRIPT_BLOCKS.contains(&block.name.as_str())
+            && block.lines.iter().any(|line| !line.trim().is_empty())
+    });
+    if has_code {
+        report.push(skipped(item, SkippedKind::Scripts));
+    }
+}

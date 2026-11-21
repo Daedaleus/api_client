@@ -2,6 +2,7 @@
 //! from the content, so the user picks a file and nothing else.
 
 use ac_domain::collection::Collection;
+use ac_domain::environment::Environment;
 use serde_json::Value;
 
 use crate::{openapi, postman};
@@ -11,6 +12,8 @@ use crate::{openapi, postman};
 pub struct Imported {
     /// The collection.
     pub collection: Collection,
+    /// Environments that came with it (Bruno).
+    pub environments: Vec<Environment>,
     /// What could not be taken over, in the order it was met.
     pub skipped: Vec<Skipped>,
 }
@@ -33,6 +36,8 @@ pub enum SkippedKind {
     Auth(String),
     /// A body type without counterpart, e.g. `graphql` or `application/xml`.
     Body(String),
+    /// Headers of a folder or the collection (only requests have headers).
+    Headers,
 }
 
 /// Why a file cannot be imported.
