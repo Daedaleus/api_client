@@ -18,7 +18,7 @@ pub mod request_body;
 pub mod response;
 pub mod variable;
 
-pub use auth::{AuthDraft, KeyPlacementView};
+pub use auth::{AuthDraft, CertificateCheckView, KeyPlacementView};
 pub use body::BodyView;
 pub use collection::{CollectionView, HeaderDraft, RequestDraft, TreeItemView};
 pub use environment::EnvironmentDraft;

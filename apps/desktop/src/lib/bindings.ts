@@ -140,6 +140,15 @@ export type BodyView = {
 	binary: boolean,
 };
 
+/**  Whether the server's TLS certificate is checked. */
+export type CertificateCheckView = 
+/**  As the folder or collection around it. */
+"inherit" | 
+/**  Check it. */
+"on" | 
+/**  Accept any certificate. */
+"off";
+
 /**  An open collection. */
 export type CollectionView = CollectionView_Serialize | CollectionView_Deserialize;
 
@@ -159,6 +168,8 @@ export type CollectionView_Deserialize = {
 	variables: VariableDraft_Deserialize[],
 	/**  Authentication for its requests. */
 	auth: AuthDraft,
+	/**  Certificate check for its requests. */
+	certificateCheck: CertificateCheckView,
 	/**  Files that could not be loaded. */
 	problems: UserText[],
 };
@@ -179,6 +190,8 @@ export type CollectionView_Serialize = {
 	variables: VariableDraft_Serialize[],
 	/**  Authentication for its requests. */
 	auth: AuthDraft,
+	/**  Certificate check for its requests. */
+	certificateCheck: CertificateCheckView,
 	/**  Files that could not be loaded. */
 	problems: UserText[],
 };
@@ -242,6 +255,11 @@ variables?: VariableDraft_Deserialize[];
  *  takes that of its folders and collection (see `context`).
  */
 auth?: AuthDraft; 
+/**
+ *  The request's own certificate check; `inherit` takes that of its
+ *  folders and collection.
+ */
+certificateCheck?: CertificateCheckView; 
 /**
  *  Where further `{{variables}}` come from: collection, folders and
  *  environment. Without it only the request's own variables count.
@@ -321,7 +339,9 @@ itemId: string;
 /**  The variables in display order (no secrets). */
 variables: VariableDraft_Deserialize[]; 
 /**  The authentication (`inherit` on the collection means none). */
-auth: AuthDraft } | 
+auth: AuthDraft; 
+/**  The certificate check (`inherit` on the collection means on). */
+certificateCheck: CertificateCheckView } | 
 /**
  *  Set who the collection's secrets are encrypted for and re-encrypt
  *  the secrets of every environment. Nothing changes if any of them
@@ -352,6 +372,11 @@ variables: VariableDraft_Serialize[];
  *  takes that of its folders and collection (see `context`).
  */
 auth: AuthDraft; 
+/**
+ *  The request's own certificate check; `inherit` takes that of its
+ *  folders and collection.
+ */
+certificateCheck: CertificateCheckView; 
 /**
  *  Where further `{{variables}}` come from: collection, folders and
  *  environment. Without it only the request's own variables count.
@@ -431,7 +456,9 @@ itemId: string;
 /**  The variables in display order (no secrets). */
 variables: VariableDraft_Serialize[]; 
 /**  The authentication (`inherit` on the collection means none). */
-auth: AuthDraft } | 
+auth: AuthDraft; 
+/**  The certificate check (`inherit` on the collection means on). */
+certificateCheck: CertificateCheckView } | 
 /**
  *  Set who the collection's secrets are encrypted for and re-encrypt
  *  the secrets of every environment. Nothing changes if any of them
@@ -614,6 +641,8 @@ export type RequestDraft_Deserialize = {
 	variables?: VariableDraft_Deserialize[],
 	/**  Authentication, or inherited. */
 	auth?: AuthDraft,
+	/**  Certificate check, or inherited. */
+	certificateCheck?: CertificateCheckView,
 	/**  The file is never written (set by the app, ignored when saving). */
 	readOnly?: boolean,
 };
@@ -636,6 +665,8 @@ export type RequestDraft_Serialize = {
 	variables: VariableDraft_Serialize[],
 	/**  Authentication, or inherited. */
 	auth: AuthDraft,
+	/**  Certificate check, or inherited. */
+	certificateCheck: CertificateCheckView,
 	/**  The file is never written (set by the app, ignored when saving). */
 	readOnly: boolean,
 };
@@ -772,7 +803,9 @@ items: TreeItemView_Deserialize[];
 /**  Variables for the requests in the folder. */
 variables: VariableDraft_Deserialize[]; 
 /**  Authentication for the requests in the folder. */
-auth: AuthDraft } | 
+auth: AuthDraft; 
+/**  Certificate check for the requests in the folder. */
+certificateCheck: CertificateCheckView } | 
 /**  A request. */
 { kind: "request"; 
 /**  Request id. */
@@ -799,7 +832,9 @@ items: TreeItemView_Serialize[];
 /**  Variables for the requests in the folder. */
 variables: VariableDraft_Serialize[]; 
 /**  Authentication for the requests in the folder. */
-auth: AuthDraft } | 
+auth: AuthDraft; 
+/**  Certificate check for the requests in the folder. */
+certificateCheck: CertificateCheckView } | 
 /**  A request. */
 { kind: "request"; 
 /**  Request id. */

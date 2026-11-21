@@ -1,6 +1,8 @@
-//! Authentication as the editors show and return it.
+//! Authentication and the certificate check as the editors show and return
+//! them.
 
 use ac_domain::auth::{Auth, KeyPlacement};
+use ac_domain::tls::CertificateCheck;
 use serde::{Deserialize, Serialize};
 
 /// The authentication of a request, folder or collection.
@@ -50,6 +52,42 @@ pub enum KeyPlacementView {
     Header,
     /// As a query parameter.
     Query,
+}
+
+/// Whether the server's TLS certificate is checked.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(rename_all = "camelCase")]
+pub enum CertificateCheckView {
+    /// As the folder or collection around it.
+    #[default]
+    Inherit,
+    /// Check it.
+    On,
+    /// Accept any certificate.
+    Off,
+}
+
+impl CertificateCheckView {
+    /// The editor's view of `check`.
+    #[must_use]
+    pub fn from_check(check: CertificateCheck) -> Self {
+        match check {
+            CertificateCheck::Inherit => Self::Inherit,
+            CertificateCheck::On => Self::On,
+            CertificateCheck::Off => Self::Off,
+        }
+    }
+
+    /// The setting the editor describes.
+    #[must_use]
+    pub fn to_check(self) -> CertificateCheck {
+        match self {
+            Self::Inherit => CertificateCheck::Inherit,
+            Self::On => CertificateCheck::On,
+            Self::Off => CertificateCheck::Off,
+        }
+    }
 }
 
 impl AuthDraft {

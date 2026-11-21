@@ -48,6 +48,21 @@ describe('DefaultsDialog', () => {
     expect(workspace.defaults.editing).toBeNull();
   });
 
+  it('switches the certificate check of the collection', async () => {
+    const { api, workspace } = setup('c1');
+    await userEvent.click(screen.getByRole('tab', { name: 'Settings' }));
+    const field = screen.getByLabelText('Check TLS certificate');
+    expect([...(field as HTMLSelectElement).options].map((option) => option.text)).toEqual([
+      'Yes',
+      'No – accept any certificate',
+    ]);
+    await userEvent.selectOptions(field, 'off');
+    api.answers.push(changed(shop()));
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await vi.waitFor(() => expect(workspace.defaults.editing).toBeNull());
+    expect(api.commands.at(-1)).toMatchObject({ certificateCheck: 'off' });
+  });
+
   it('edits the auth; the collection has nothing to inherit from', async () => {
     const { api, workspace } = setup('c1');
     await userEvent.click(screen.getByRole('tab', { name: 'Auth' }));

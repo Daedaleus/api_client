@@ -4,7 +4,13 @@
 
 import type { Api } from '../api';
 import { toUserText } from '../errors';
-import type { AuthDraft, TreeItemView, UserText, VariableDraft } from '../types';
+import type {
+  AuthDraft,
+  CertificateCheckView,
+  TreeItemView,
+  UserText,
+  VariableDraft,
+} from '../types';
 import type { CollectionsState } from './collections.svelte';
 import type { FolderView } from './tree';
 
@@ -21,6 +27,8 @@ export interface DefaultsEdit {
   variables: VariableDraft[];
   /** A copy of the authentication. */
   auth: AuthDraft;
+  /** The certificate check. */
+  certificateCheck: CertificateCheckView;
 }
 
 export class DefaultsState {
@@ -50,6 +58,7 @@ export class DefaultsState {
       isCollection: itemId === collection.id,
       variables: $state.snapshot(target.variables),
       auth: $state.snapshot(target.auth),
+      certificateCheck: target.certificateCheck,
     };
   }
 
@@ -71,6 +80,7 @@ export class DefaultsState {
         itemId: editing.itemId,
         variables: $state.snapshot(editing.variables),
         auth: $state.snapshot(editing.auth),
+        certificateCheck: editing.certificateCheck,
       });
       if (ack.type !== 'collectionChanged') throw new Error(`unexpected answer ${ack.type}`);
       this.#collections.apply(ack.collection);

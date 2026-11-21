@@ -57,6 +57,7 @@ fn missing_folders_are_io_errors() {
 /// Variables only, authentication inherited.
 fn with_variables(variables: &[Variable]) -> RequestDefaults {
     RequestDefaults {
+        certificate_check: ac_domain::tls::CertificateCheck::Inherit,
         variables: variables.to_vec(),
         auth: ac_domain::auth::Auth::Inherit,
     }

@@ -106,6 +106,21 @@ describe('RequestEditor', () => {
     expect(screen.getByRole('tab', { name: /Auth/ })).toHaveTextContent('Basic');
   });
 
+  it('switches the certificate check and warns when it is off', async () => {
+    const tab = new RequestTab(draft('r1', 'Login'), { collectionId: 'c1', requestId: 'r1' });
+    render(RequestEditor, {
+      tab,
+      onsend: vi.fn(),
+      onsave: vi.fn(),
+      checksCertificates: false,
+    });
+    expect(screen.getByRole('status')).toHaveTextContent('TLS certificates are not checked');
+    await userEvent.click(screen.getByRole('tab', { name: 'Settings' }));
+    await userEvent.selectOptions(screen.getByLabelText('Check TLS certificate'), 'off');
+    expect(tab.draft.certificateCheck).toBe('off');
+    expect(screen.getByText(/connections are then not protected/)).toBeInTheDocument();
+  });
+
   it('edits the request variables', async () => {
     const { tab } = setup();
     await userEvent.click(screen.getByRole('tab', { name: /Variables/ }));

@@ -81,6 +81,7 @@ fn unchanged_auth_keeps_the_file_and_folders_and_collections_store_it() {
     assert_eq!(read_file(&path), saved);
 
     let defaults = ac_domain::collection::RequestDefaults {
+        certificate_check: ac_domain::tls::CertificateCheck::Inherit,
         variables: Vec::new(),
         auth: Auth::None,
     };

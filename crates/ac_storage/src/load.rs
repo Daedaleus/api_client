@@ -18,7 +18,7 @@ use crate::format::{
 };
 use crate::names::file_stem;
 use crate::request_file::read_request;
-use crate::{auth, variables};
+use crate::{auth, tls, variables};
 
 /// A loaded collection with the file behind every item.
 #[derive(Debug)]
@@ -79,6 +79,7 @@ pub fn load_collection(root: &Path) -> Result<LoadedCollection, StorageError> {
     let order = document::order(table, &settings)?;
     let variables = variables::read(table.get(variables::KEY), &settings, variables::KEY)?;
     let auth = auth::read(table.get(auth::KEY), &settings, auth::KEY)?;
+    let certificate_check = tls::read(table, &settings)?;
 
     let mut loader = Loader::default();
     loader.entries.insert(
@@ -99,6 +100,7 @@ pub fn load_collection(root: &Path) -> Result<LoadedCollection, StorageError> {
             items,
             variables,
             auth,
+            certificate_check,
         },
         environments,
         entries: loader.entries,
@@ -113,6 +115,7 @@ struct FolderSettings {
     order: Vec<String>,
     variables: Vec<ac_domain::environment::Variable>,
     auth: ac_domain::auth::Auth,
+    certificate_check: ac_domain::tls::CertificateCheck,
     read_only: bool,
 }
 
@@ -199,6 +202,7 @@ impl Loader {
             order: Vec::new(),
             variables: Vec::new(),
             auth: ac_domain::auth::Auth::Inherit,
+            certificate_check: ac_domain::tls::CertificateCheck::Inherit,
             read_only: false,
         };
         let FolderSettings {
@@ -207,6 +211,7 @@ impl Loader {
             order,
             variables,
             auth,
+            certificate_check,
             read_only,
         } = if settings.is_file() {
             match Self::folder_settings(&settings) {
@@ -240,6 +245,7 @@ impl Loader {
             items,
             variables,
             auth,
+            certificate_check,
         })
     }
 
@@ -253,6 +259,7 @@ impl Loader {
             order: document::order(table, settings)?,
             variables: variables::read(table.get(variables::KEY), settings, variables::KEY)?,
             auth: auth::read(table.get(auth::KEY), settings, auth::KEY)?,
+            certificate_check: tls::read(table, settings)?,
             read_only: parsed.read_only(),
         })
     }

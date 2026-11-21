@@ -113,6 +113,7 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
                 body,
                 variables,
                 auth,
+                certificate_check,
                 context,
             } => self.send_request(
                 &Outgoing {
@@ -122,6 +123,7 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
                     body: &body,
                     variables: &variables,
                     auth: &auth,
+                    certificate_check,
                 },
                 context.as_ref(),
             ),
@@ -164,7 +166,14 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
                 item_id,
                 variables,
                 auth,
-            } => self.save_defaults(&collection_id, &item_id, &variables, &auth),
+                certificate_check,
+            } => self.save_defaults(
+                &collection_id,
+                &item_id,
+                &variables,
+                &auth,
+                certificate_check,
+            ),
             Command::SetRecipients {
                 collection_id,
                 recipients,

@@ -183,6 +183,7 @@ impl CollectionStore for MemoryStore {
             collections.insert(
                 root.to_owned(),
                 Collection {
+                    certificate_check: ac_domain::tls::CertificateCheck::Inherit,
                     auth: ac_domain::auth::Auth::Inherit,
                     variables: Vec::new(),
                     id: ItemId::new(),
@@ -213,6 +214,7 @@ impl CollectionStore for MemoryStore {
         let id = ItemId::new();
         self.with_items(parent, |items| {
             items.push(Item::Folder(Folder {
+                certificate_check: ac_domain::tls::CertificateCheck::Inherit,
                 auth: ac_domain::auth::Auth::Inherit,
                 variables: Vec::new(),
                 id,
@@ -245,6 +247,7 @@ impl CollectionStore for MemoryStore {
         let collection = collections.get_mut(root).ok_or_else(|| not_found(root))?;
         collection.variables.clone_from(&defaults.variables);
         collection.auth = defaults.auth.clone();
+        collection.certificate_check = defaults.certificate_check;
         Ok(())
     }
 
@@ -263,6 +266,7 @@ impl CollectionStore for MemoryStore {
                 {
                     folder.variables.clone_from(&defaults.variables);
                     folder.auth = defaults.auth.clone();
+                    folder.certificate_check = defaults.certificate_check;
                 }
             }
         })

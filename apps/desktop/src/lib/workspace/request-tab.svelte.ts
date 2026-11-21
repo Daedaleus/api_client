@@ -45,6 +45,7 @@ export class RequestTab {
       body: { kind: 'none' },
       variables: [],
       auth: { kind: 'inherit' },
+      certificateCheck: 'inherit',
       readOnly: false,
     };
   }

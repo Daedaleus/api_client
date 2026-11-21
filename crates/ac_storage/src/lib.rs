@@ -21,6 +21,7 @@
 //! - `rows`: name/value/enabled lists (headers, variables).
 //! - `variables`: variable lists in collection, folder, environment and
 //!   request files.
+//! - `tls`: the certificate check (`verify_tls`).
 //! - `body`: the body table of request files.
 //! - `auth`: authentication tables in request, folder and collection files.
 //! - [`create`]: creating collections, folders and requests.
@@ -49,6 +50,7 @@ pub mod store;
 #[cfg(test)]
 #[path = "tests/support.rs"]
 mod test_support;
+mod tls;
 mod variables;
 
 pub use create::{create_collection, create_folder, create_request};

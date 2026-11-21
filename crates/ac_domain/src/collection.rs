@@ -9,6 +9,7 @@ use uuid::Uuid;
 use crate::auth::Auth;
 use crate::environment::Variable;
 use crate::protocol::HttpMethod;
+use crate::tls::CertificateCheck;
 
 /// Stable identity of a collection, folder or request. Survives renaming and
 /// moving, so references (open tabs, history) stay valid.
@@ -75,6 +76,8 @@ pub struct Collection {
     pub variables: Vec<Variable>,
     /// Authentication for its requests (`Inherit` here means none).
     pub auth: Auth,
+    /// Certificate check for its requests (`Inherit` here means on).
+    pub certificate_check: CertificateCheck,
 }
 
 impl Collection {
@@ -93,6 +96,18 @@ impl Collection {
             .chain(folders.iter().rev().map(|folder| &folder.auth))
             .chain(std::iter::once(&self.auth));
         crate::auth::effective(chain).clone()
+    }
+
+    /// Whether the certificate is checked for the request `id`: its own
+    /// setting, or that of the innermost folder or the collection that has
+    /// one; on by default.
+    #[must_use]
+    pub fn checks_certificates_for(&self, id: ItemId, own: CertificateCheck) -> bool {
+        let folders = self.folders_around(id);
+        let chain = std::iter::once(own)
+            .chain(folders.iter().rev().map(|folder| folder.certificate_check))
+            .chain(std::iter::once(self.certificate_check));
+        crate::tls::checks_certificates(chain)
     }
 
     /// The folders around the item `id`, outermost first; empty for a
@@ -137,6 +152,8 @@ pub struct RequestDefaults {
     pub variables: Vec<Variable>,
     /// Authentication (see [`crate::auth`]).
     pub auth: Auth,
+    /// Certificate check (see [`crate::tls`]).
+    pub certificate_check: CertificateCheck,
 }
 
 /// A folder of a collection.
@@ -152,6 +169,8 @@ pub struct Folder {
     pub variables: Vec<Variable>,
     /// Authentication for the requests in it, or inherited.
     pub auth: Auth,
+    /// Certificate check for the requests in it, or inherited.
+    pub certificate_check: CertificateCheck,
 }
 
 /// An entry of the request tree.
@@ -202,6 +221,8 @@ pub struct Request {
     pub variables: Vec<Variable>,
     /// Authentication, or inherited from the folders and collection.
     pub auth: Auth,
+    /// Certificate check, or inherited from the folders and collection.
+    pub certificate_check: CertificateCheck,
 }
 
 impl Request {
@@ -217,6 +238,7 @@ impl Request {
             body: Body::None,
             variables: Vec::new(),
             auth: Auth::Inherit,
+            certificate_check: CertificateCheck::Inherit,
         }
     }
 }

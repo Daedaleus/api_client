@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::error::AppError;
 use crate::ports::{Location, OpenedCollection, StoreError};
 use crate::text::UserText;
-use crate::view::{AuthDraft, BodyDraft, EnvironmentDraft, VariableDraft};
+use crate::view::{AuthDraft, BodyDraft, CertificateCheckView, EnvironmentDraft, VariableDraft};
 
 /// An open collection.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -28,6 +28,8 @@ pub struct CollectionView {
     pub variables: Vec<VariableDraft>,
     /// Authentication for its requests.
     pub auth: AuthDraft,
+    /// Certificate check for its requests.
+    pub certificate_check: CertificateCheckView,
     /// Files that could not be loaded.
     pub problems: Vec<UserText>,
 }
@@ -55,6 +57,8 @@ pub enum TreeItemView {
         variables: Vec<VariableDraft>,
         /// Authentication for the requests in the folder.
         auth: AuthDraft,
+        /// Certificate check for the requests in the folder.
+        certificate_check: CertificateCheckView,
     },
     /// A request.
     Request {
@@ -92,6 +96,7 @@ impl CollectionView {
                 .collect(),
             variables: VariableDraft::list(&collection.variables),
             auth: AuthDraft::from_auth(&collection.auth),
+            certificate_check: CertificateCheckView::from_check(collection.certificate_check),
             problems: opened.problems.iter().map(StoreError::user_text).collect(),
         }
     }
@@ -114,6 +119,7 @@ fn tree(items: &[Item], opened: &OpenedCollection) -> Vec<TreeItemView> {
                 items: tree(&folder.items, opened),
                 variables: VariableDraft::list(&folder.variables),
                 auth: AuthDraft::from_auth(&folder.auth),
+                certificate_check: CertificateCheckView::from_check(folder.certificate_check),
             },
             Item::Request(request) => TreeItemView::Request {
                 id: request.id.to_string(),
@@ -148,6 +154,9 @@ pub struct RequestDraft {
     /// Authentication, or inherited.
     #[serde(default)]
     pub auth: AuthDraft,
+    /// Certificate check, or inherited.
+    #[serde(default)]
+    pub certificate_check: CertificateCheckView,
     /// The file is never written (set by the app, ignored when saving).
     #[serde(default)]
     pub read_only: bool,
@@ -204,6 +213,7 @@ impl RequestDraft {
             body: BodyDraft::from_body(&request.body),
             variables: VariableDraft::list(&request.variables),
             auth: AuthDraft::from_auth(&request.auth),
+            certificate_check: CertificateCheckView::from_check(request.certificate_check),
             read_only,
         }
     }
@@ -216,6 +226,7 @@ impl RequestDraft {
         Ok(Request {
             variables: VariableDraft::to_plain_variables(&self.variables),
             auth: self.auth.to_auth(),
+            certificate_check: self.certificate_check.to_check(),
             id: self.id.parse().map_err(|_| AppError::UnknownItem)?,
             name: non_empty(&self.name)?.to_owned(),
             method: self.method.trim().parse()?,

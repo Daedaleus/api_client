@@ -8,7 +8,7 @@ use super::collections::{item_id_from, writable};
 use crate::command::CommandAck;
 use crate::error::AppError;
 use crate::ports::{CollectionStore, HttpSender, SecretVault};
-use crate::view::{AuthDraft, VariableDraft};
+use crate::view::{AuthDraft, CertificateCheckView, VariableDraft};
 
 impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
     pub(super) fn save_defaults(
@@ -17,12 +17,14 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
         item_id: &str,
         variables: &[VariableDraft],
         auth: &AuthDraft,
+        certificate_check: CertificateCheckView,
     ) -> Result<CommandAck, AppError> {
         let opened = self.current(collection_id)?;
         let id = item_id_from(item_id)?;
         let defaults = RequestDefaults {
             variables: VariableDraft::to_plain_variables(variables),
             auth: auth.to_auth(),
+            certificate_check: certificate_check.to_check(),
         };
         if id == opened.collection.id {
             writable(&opened, id)?;

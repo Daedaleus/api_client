@@ -8,8 +8,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::view::{
-    AuthDraft, BodyDraft, CollectionView, EnvironmentDraft, HeaderDraft, RecipientsView,
-    RequestDraft, SendContext, VariableDraft,
+    AuthDraft, BodyDraft, CertificateCheckView, CollectionView, EnvironmentDraft, HeaderDraft,
+    RecipientsView, RequestDraft, SendContext, VariableDraft,
 };
 
 /// Something the user wants the application to do.
@@ -40,6 +40,10 @@ pub enum Command {
         /// takes that of its folders and collection (see `context`).
         #[serde(default)]
         auth: AuthDraft,
+        /// The request's own certificate check; `inherit` takes that of its
+        /// folders and collection.
+        #[serde(default)]
+        certificate_check: CertificateCheckView,
         /// Where further `{{variables}}` come from: collection, folders and
         /// environment. Without it only the request's own variables count.
         #[serde(default)]
@@ -128,6 +132,8 @@ pub enum Command {
         variables: Vec<VariableDraft>,
         /// The authentication (`inherit` on the collection means none).
         auth: AuthDraft,
+        /// The certificate check (`inherit` on the collection means on).
+        certificate_check: CertificateCheckView,
     },
     /// Set who the collection's secrets are encrypted for and re-encrypt
     /// the secrets of every environment. Nothing changes if any of them

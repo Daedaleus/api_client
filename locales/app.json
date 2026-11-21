@@ -1,4 +1,21 @@
 {
+  "editor.settings": { "de": "Einstellungen", "en": "Settings" },
+  "defaults.settings": { "de": "Einstellungen", "en": "Settings" },
+  "tls.label": { "de": "TLS-Zertifikat prüfen", "en": "Check TLS certificate" },
+  "tls.inherit": { "de": "Erben", "en": "Inherit" },
+  "tls.on": { "de": "Ja", "en": "Yes" },
+  "tls.off": {
+    "de": "Nein – jedes Zertifikat akzeptieren",
+    "en": "No – accept any certificate"
+  },
+  "tls.off_note": {
+    "de": "Nur für Testserver mit selbst signiertem Zertifikat: Verbindungen sind dann nicht vor Abhören geschützt.",
+    "en": "Only for test servers with self-signed certificates: connections are then not protected against eavesdropping."
+  },
+  "tls.warning": {
+    "de": "⚠ TLS-Zertifikate werden für diesen Request nicht geprüft.",
+    "en": "⚠ TLS certificates are not checked for this request."
+  },
   "editor.body_form": { "de": "Formular", "en": "Form" },
   "editor.body_multipart": { "de": "Multipart", "en": "Multipart" },
   "editor.body_binary": { "de": "Datei", "en": "File" },

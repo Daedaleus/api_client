@@ -7,6 +7,7 @@ use super::*;
 
 fn request(method: HttpMethod, url: &str, headers: Vec<Header>) -> ResolvedRequest {
     ResolvedRequest {
+        verify_tls: true,
         method,
         url: Url::parse(url).unwrap(),
         headers,
@@ -215,4 +216,19 @@ async fn unreadable_files_fail_the_request() {
         );
         assert_eq!(error.user_text().key, "error.file_unreadable");
     }
+}
+
+#[tokio::test]
+async fn requests_without_certificate_check_use_the_unchecking_client() {
+    // Only plain HTTP is available here: this shows the request goes out
+    // through the second client; checking real certificates is reqwest's job.
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let mut get = request(HttpMethod::Get, &server.uri(), vec![]);
+    get.verify_tls = false;
+    assert_eq!(sender().send(get).await.unwrap().status.as_u16(), 200);
 }
