@@ -78,14 +78,12 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
                 Err(error) => RunResultOutcome::Failed {
                     error: error.user_text(),
                 },
-                Ok(resolved) => match self.inner.http.send(resolved).await {
+                Ok(prepared) => match self.inner.send(prepared).await {
                     Ok(response) => RunResultOutcome::Response {
                         status: response.status.as_u16(),
                         elapsed_ms: u64::try_from(response.elapsed.as_millis()).unwrap_or(u64::MAX),
                     },
-                    Err(error) => RunResultOutcome::Failed {
-                        error: error.user_text(),
-                    },
+                    Err(error) => RunResultOutcome::Failed { error },
                 },
             };
             results.push(RunResult {

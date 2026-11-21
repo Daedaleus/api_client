@@ -10,11 +10,12 @@
 //! Read leniently from JSON values: exports differ between Postman versions,
 //! and a missing optional field should never make an import fail.
 
-use ac_domain::auth::{Auth, KeyPlacement};
+use ac_domain::auth::{Auth, KeyPlacement, OAuth2};
 use ac_domain::collection::{
     Body, Collection, Folder, FormField, HeaderEntry, Item, ItemId, MultipartField, Request,
 };
 use ac_domain::environment::Variable;
+use ac_domain::protocol::grant_type::CLIENT_CREDENTIALS;
 use ac_domain::tls::CertificateCheck;
 use serde_json::Value;
 
@@ -202,6 +203,13 @@ fn auth(auth: Option<&Value>, item: &str, skipped: &mut Vec<Skipped>) -> Auth {
         "bearer" => Auth::Bearer {
             token: field("token"),
         },
+        // Only the client credentials grant has a counterpart.
+        "oauth2" if field("grant_type") == CLIENT_CREDENTIALS => Auth::OAuth2(OAuth2 {
+            token_url: field("accessTokenUrl"),
+            client_id: field("clientId"),
+            client_secret: field("clientSecret"),
+            scope: field("scope"),
+        }),
         "apikey" => Auth::ApiKey {
             name: field("key"),
             value: field("value"),

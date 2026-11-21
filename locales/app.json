@@ -110,10 +110,12 @@
   "auth.kind_basic": { "de": "Basic", "en": "Basic" },
   "auth.kind_bearer": { "de": "Bearer-Token", "en": "Bearer token" },
   "auth.kind_apiKey": { "de": "API-Key", "en": "API key" },
+  "auth.kind_oauth2": { "de": "OAuth 2 (Client Credentials)", "en": "OAuth 2 (client credentials)" },
   "auth.badge_none": { "de": "aus", "en": "off" },
   "auth.badge_basic": { "de": "Basic", "en": "Basic" },
   "auth.badge_bearer": { "de": "Bearer", "en": "Bearer" },
   "auth.badge_apiKey": { "de": "Key", "en": "Key" },
+  "auth.badge_oauth2": { "de": "OAuth", "en": "OAuth" },
   "auth.inherit_note": {
     "de": "Nimmt die Auth des umgebenden Ordners oder der Collection.",
     "en": "Uses the auth of the folder or collection around it."
@@ -126,6 +128,14 @@
   "auth.key_placement": { "de": "Senden als", "en": "Send as" },
   "auth.placement_header": { "de": "Header", "en": "Header" },
   "auth.placement_query": { "de": "Query-Parameter", "en": "Query parameter" },
+  "auth.token_url": { "de": "Token-URL", "en": "Token URL" },
+  "auth.client_id": { "de": "Client-ID", "en": "Client ID" },
+  "auth.client_secret": { "de": "Client-Secret", "en": "Client secret" },
+  "auth.scope": { "de": "Scope", "en": "Scope" },
+  "auth.oauth2_note": {
+    "de": "Das Token wird beim Senden geholt, bis zum Ablauf im Speicher gehalten und nie gespeichert.",
+    "en": "The token is fetched when sending, kept in memory until it expires and never saved."
+  },
   "auth.plain_warning": {
     "de": "Zugangsdaten stehen so im Klartext in der Datei. Besser eine {{variable}} aus einer Umgebung mit Secret verwenden.",
     "en": "Credentials are stored in plain text in the file this way. Better use a {{variable}} from an environment with a secret."
@@ -397,6 +407,10 @@
   "error.request": {
     "de": "Request fehlgeschlagen: {detail}",
     "en": "Request failed: {detail}"
+  },
+  "error.oauth_token": {
+    "de": "Kein OAuth-Token erhalten: {detail}",
+    "en": "No OAuth token received: {detail}"
   },
   "error.store_io": {
     "de": "„{path}“ kann nicht gelesen oder geschrieben werden: {detail}",

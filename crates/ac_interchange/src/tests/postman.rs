@@ -220,3 +220,28 @@ fn small_and_odd_exports() {
         []
     );
 }
+
+#[test]
+fn oauth2_client_credentials_are_imported() {
+    let imported = from_postman(
+        r#"{"info": {"name": "T", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"},
+            "auth": {"type": "oauth2", "oauth2": [
+                {"key": "grant_type", "value": "client_credentials"},
+                {"key": "accessTokenUrl", "value": "{{auth}}/token"},
+                {"key": "clientId", "value": "app"},
+                {"key": "clientSecret", "value": "{{secret}}"},
+                {"key": "scope", "value": "read"}]},
+            "item": []}"#,
+    )
+    .unwrap();
+    assert_eq!(
+        imported.collection.auth,
+        Auth::OAuth2(ac_domain::auth::OAuth2 {
+            token_url: "{{auth}}/token".into(),
+            client_id: "app".into(),
+            client_secret: "{{secret}}".into(),
+            scope: "read".into(),
+        })
+    );
+    assert_eq!(imported.skipped.len(), 0);
+}

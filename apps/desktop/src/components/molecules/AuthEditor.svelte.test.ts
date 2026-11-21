@@ -60,4 +60,31 @@ describe('AuthEditor', () => {
     });
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
+
+  it('edits OAuth 2 client credentials', async () => {
+    const auth = $state<{ value: AuthDraft }>({ value: { kind: 'bearer', token: '' } });
+    render(AuthEditor, {
+      get auth() {
+        return auth.value;
+      },
+      set auth(next) {
+        auth.value = next;
+      },
+    });
+    await userEvent.selectOptions(screen.getByLabelText('Type'), 'OAuth 2 (client credentials)');
+    await userEvent.type(screen.getByLabelText('Token URL'), 'https://auth.test/token');
+    await userEvent.type(screen.getByLabelText('Client ID'), 'app');
+    await userEvent.type(screen.getByLabelText('Client secret'), 'pw');
+    await userEvent.type(screen.getByLabelText('Scope'), 'read');
+    expect(auth.value).toEqual({
+      kind: 'oauth2',
+      tokenUrl: 'https://auth.test/token',
+      clientId: 'app',
+      clientSecret: 'pw',
+      scope: 'read',
+    });
+    expect(screen.getByRole('status')).toHaveTextContent('plain text');
+    expect(screen.getByText(/never saved/)).toBeInTheDocument();
+    expect(authOf('oauth2', auth.value)).toBe(auth.value);
+  });
 });

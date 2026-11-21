@@ -10,6 +10,7 @@ use ac_interchange::{Imported, Skipped, SkippedKind, import_collection};
 use super::App;
 use crate::command::{CommandAck, QueryResult};
 use crate::error::AppError;
+use crate::oauth::{TOKEN_PLACEHOLDER, authorize};
 use crate::ports::{CollectionStore, HttpSender, SecretVault};
 use crate::text::{UserText, keys};
 use crate::view::{CollectionView, OutgoingRequest, RequestDraft};
@@ -53,9 +54,14 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
     }
 
     /// The cURL command that sends exactly what sending `request` would:
-    /// variables (also secrets) filled in, inherited auth applied.
+    /// variables (also secrets) filled in, inherited auth applied. An OAuth 2
+    /// token is fetched only when sending, so a placeholder stands in.
     pub(super) fn query_curl(&self, request: &OutgoingRequest) -> Result<QueryResult, AppError> {
-        let resolved = self.prepare(request)?;
+        let prepared = self.prepare(request)?;
+        let mut resolved = prepared.request;
+        if prepared.client_credentials.is_some() {
+            authorize(&mut resolved, TOKEN_PLACEHOLDER);
+        }
         Ok(QueryResult::Curl {
             command: to_curl(&resolved),
         })

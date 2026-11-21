@@ -29,7 +29,7 @@ fn with_auth(
         auth,
         files_base: None,
     };
-    resolve_request(&entered, variables)
+    resolve_request(&entered, variables).map(|prepared| prepared.request)
 }
 
 /// Method and URL only.

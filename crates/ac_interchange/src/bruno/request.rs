@@ -2,10 +2,11 @@
 
 use std::path::Path;
 
-use ac_domain::auth::{Auth, KeyPlacement};
+use ac_domain::auth::{Auth, KeyPlacement, OAuth2};
 use ac_domain::collection::{Body, FormField, HeaderEntry, MultipartField, Request};
 use ac_domain::environment::Variable;
 use ac_domain::protocol::HttpMethod;
+use ac_domain::protocol::grant_type::CLIENT_CREDENTIALS;
 
 use super::bru::{Block, find};
 use super::{seq_of, skipped};
@@ -226,6 +227,14 @@ fn auth(blocks: &[Block], mode: Option<&str>, item: &str, report: &mut Vec<Skipp
         Some("bearer") => Auth::Bearer {
             token: field("auth:bearer", "token"),
         },
+        Some("oauth2") if field("auth:oauth2", "grant_type") == CLIENT_CREDENTIALS => {
+            Auth::OAuth2(OAuth2 {
+                token_url: field("auth:oauth2", "access_token_url"),
+                client_id: field("auth:oauth2", "client_id"),
+                client_secret: field("auth:oauth2", "client_secret"),
+                scope: field("auth:oauth2", "scope"),
+            })
+        }
         Some("apikey") => Auth::ApiKey {
             name: field("auth:apikey", "key"),
             value: field("auth:apikey", "value"),

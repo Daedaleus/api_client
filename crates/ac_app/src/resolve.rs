@@ -13,6 +13,7 @@ use base64::engine::general_purpose::STANDARD as BASE64;
 use url::Url;
 
 use crate::error::AppError;
+use crate::oauth::ClientCredentials;
 use crate::resolve_body::resolve_body;
 
 /// Scheme assumed when the user enters a URL without one, as other API
@@ -33,6 +34,14 @@ pub(crate) struct Entered<'a> {
     pub verify_tls: bool,
 }
 
+/// A request ready to send – once an OAuth 2 token, if any, is added.
+#[derive(Debug)]
+pub(crate) struct Prepared {
+    pub request: ResolvedRequest,
+    /// Fetch a token with these and send it as bearer authorization.
+    pub client_credentials: Option<ClientCredentials>,
+}
+
 /// Validates method, URL and headers as entered and prepares the body.
 ///
 /// Every `{{name}}` in the URL, header names and values, the body and the
@@ -44,7 +53,7 @@ pub(crate) struct Entered<'a> {
 pub(crate) fn resolve_request(
     entered: &Entered<'_>,
     variables: &HashMap<&str, &str>,
-) -> Result<ResolvedRequest, AppError> {
+) -> Result<Prepared, AppError> {
     let fill = |text: &str| interpolate(text, |name| variables.get(name).copied());
     let method: HttpMethod = entered.method.trim().parse()?;
     let mut url = resolve_url(&fill(entered.url)?)?;
@@ -63,16 +72,23 @@ pub(crate) fn resolve_request(
     let mut headers = resolve_headers(&headers)?;
     apply_auth(entered.auth, &mut url, &mut headers, &fill)?;
     let body = resolve_body(entered.body, &mut headers, entered.files_base, &fill)?;
-    Ok(ResolvedRequest {
-        method,
-        url,
-        headers,
-        body,
-        verify_tls: entered.verify_tls,
+    let client_credentials = match entered.auth {
+        Auth::OAuth2(oauth) => Some(ClientCredentials::resolve(oauth, &fill)?),
+        _ => None,
+    };
+    Ok(Prepared {
+        request: ResolvedRequest {
+            method,
+            url,
+            headers,
+            body,
+            verify_tls: entered.verify_tls,
+        },
+        client_credentials,
     })
 }
 
-fn resolve_url(url: &str) -> Result<Url, AppError> {
+pub(crate) fn resolve_url(url: &str) -> Result<Url, AppError> {
     let url = url.trim();
     if url.is_empty() {
         return Err(AppError::EmptyUrl);
@@ -114,7 +130,8 @@ fn apply_auth(
     fill: &impl Fn(&str) -> Result<String, UnresolvedVariable>,
 ) -> Result<(), AppError> {
     let (name, value) = match auth {
-        Auth::Inherit | Auth::None => return Ok(()),
+        // The OAuth 2 token is fetched and added when sending.
+        Auth::Inherit | Auth::None | Auth::OAuth2(_) => return Ok(()),
         Auth::Basic { username, password } => {
             let credentials = format!("{}:{}", fill(username)?, fill(password)?);
             let value = format!("{} {}", auth_scheme::BASIC, BASE64.encode(credentials));

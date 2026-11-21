@@ -2,17 +2,18 @@
 //!
 //! ```toml
 //! [request.auth]            # [auth] in folder.toml and collection.toml
-//! type = "bearer"           # none | basic | bearer | api-key
+//! type = "bearer"           # none | basic | bearer | api-key | oauth2
 //! token = "{{token}}"
 //! ```
 //!
 //! No table means "inherit". `basic` has `username` and `password`,
 //! `bearer` has `token`, `api-key` has `name`, `value` and
-//! `in` (`header` or `query`).
+//! `in` (`header` or `query`), `oauth2` (client credentials) has
+//! `token_url`, `client_id`, `client_secret` and optionally `scope`.
 
 use std::path::Path;
 
-use ac_domain::auth::{Auth, KeyPlacement};
+use ac_domain::auth::{Auth, KeyPlacement, OAuth2};
 use toml_edit::{Item, Table, TableLike};
 
 use crate::document;
@@ -26,6 +27,7 @@ const NONE: &str = "none";
 const BASIC: &str = "basic";
 const BEARER: &str = "bearer";
 const API_KEY: &str = "api-key";
+const OAUTH2: &str = "oauth2";
 const IN: &str = "in";
 const HEADER: &str = "header";
 const QUERY: &str = "query";
@@ -55,6 +57,12 @@ pub(crate) fn read(
         Some(BEARER) => Ok(Auth::Bearer {
             token: text("token")?,
         }),
+        Some(OAUTH2) => Ok(Auth::OAuth2(OAuth2 {
+            token_url: text("token_url")?,
+            client_id: text("client_id")?,
+            client_secret: text("client_secret")?,
+            scope: text("scope")?,
+        })),
         Some(API_KEY) => Ok(Auth::ApiKey {
             name: text("name")?,
             value: text("value")?,
@@ -73,7 +81,7 @@ pub(crate) fn read(
         other => Err(StorageError::invalid(
             path,
             field,
-            format!("type must be none, basic, bearer or api-key, found {other:?}"),
+            format!("type must be none, basic, bearer, api-key or oauth2, found {other:?}"),
         )),
     }
 }
@@ -105,6 +113,15 @@ fn to_table(auth: &Auth) -> Option<Table> {
         Auth::Bearer { token } => {
             set(TYPE, BEARER);
             set("token", token);
+        }
+        Auth::OAuth2(oauth) => {
+            set(TYPE, OAUTH2);
+            set("token_url", &oauth.token_url);
+            set("client_id", &oauth.client_id);
+            set("client_secret", &oauth.client_secret);
+            if !oauth.scope.is_empty() {
+                set("scope", &oauth.scope);
+            }
         }
         Auth::ApiKey {
             name,

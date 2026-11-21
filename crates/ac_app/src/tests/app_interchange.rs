@@ -240,3 +240,22 @@ async fn bruno_collections_are_imported_from_their_folder() {
         .unwrap_err();
     assert_eq!(error.user_text().key, keys::STORE_IO);
 }
+
+#[tokio::test]
+async fn the_curl_command_holds_a_placeholder_for_an_oauth_token() {
+    let fixture = Fixture::new();
+    let mut request = OutgoingRequest::get("https://api.example.com");
+    request.auth = AuthDraft::OAuth2 {
+        token_url: "https://auth.example.com/token".into(),
+        client_id: "app".into(),
+        client_secret: "pw".into(),
+        scope: String::new(),
+    };
+    let command = curl(&fixture, request).unwrap();
+    assert!(
+        command.contains("--header 'authorization: Bearer <access token>'"),
+        "{command}"
+    );
+    assert!(!command.contains("pw"), "{command}");
+    assert_eq!(fixture.http.sent().len(), 0);
+}

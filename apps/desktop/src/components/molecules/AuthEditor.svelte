@@ -17,6 +17,10 @@
         return previous.kind === 'apiKey'
           ? previous
           : { kind, name: '', value: '', placement: 'header' };
+      case 'oauth2':
+        return previous.kind === 'oauth2'
+          ? previous
+          : { kind, tokenUrl: '', clientId: '', clientSecret: '', scope: '' };
     }
   }
 
@@ -29,7 +33,9 @@
           ? [auth.token]
           : auth.kind === 'apiKey'
             ? [auth.value]
-            : [];
+            : auth.kind === 'oauth2'
+              ? [auth.clientSecret]
+              : [];
     return credentials.some((value) => value.trim() !== '' && !/\{\{[^}]*\}\}/.test(value));
   }
 </script>
@@ -48,7 +54,7 @@
 
   let { auth = $bindable(), root = false }: Props = $props();
 
-  const KINDS: AuthKind[] = ['inherit', 'none', 'basic', 'bearer', 'apiKey'];
+  const KINDS: AuthKind[] = ['inherit', 'none', 'basic', 'bearer', 'apiKey', 'oauth2'];
   let kinds = $derived(root ? KINDS.filter((kind) => kind !== 'none') : KINDS);
 
   function label(kind: AuthKind): string {
@@ -102,6 +108,29 @@
         <option value="query">{i18n.t('auth.placement_query')}</option>
       </select>
     </label>
+  {:else if auth.kind === 'oauth2'}
+    <label class="auth-editor__field">
+      <span class="auth-editor__label">{i18n.t('auth.token_url')}</span>
+      <input class="auth-editor__input" type="text" spellcheck="false" bind:value={auth.tokenUrl} />
+    </label>
+    <label class="auth-editor__field">
+      <span class="auth-editor__label">{i18n.t('auth.client_id')}</span>
+      <input class="auth-editor__input" type="text" spellcheck="false" bind:value={auth.clientId} />
+    </label>
+    <label class="auth-editor__field">
+      <span class="auth-editor__label">{i18n.t('auth.client_secret')}</span>
+      <input
+        class="auth-editor__input"
+        type="text"
+        spellcheck="false"
+        bind:value={auth.clientSecret}
+      />
+    </label>
+    <label class="auth-editor__field">
+      <span class="auth-editor__label">{i18n.t('auth.scope')}</span>
+      <input class="auth-editor__input" type="text" spellcheck="false" bind:value={auth.scope} />
+    </label>
+    <p class="auth-editor__note">{i18n.t('auth.oauth2_note')}</p>
   {/if}
 
   {#if hasPlainCredential(auth)}

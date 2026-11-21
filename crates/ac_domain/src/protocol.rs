@@ -194,6 +194,8 @@ pub mod header {
     pub const CONTENT_TYPE: &str = "content-type";
     /// `Authorization` (lower case: header names compare case-insensitively).
     pub const AUTHORIZATION: &str = "authorization";
+    /// `Accept`
+    pub const ACCEPT: &str = "accept";
 
     /// Whether `value` can be sent as a header value: no line breaks or NUL,
     /// which would split or end the header (RFC 9110, section 5.5).
@@ -221,6 +223,12 @@ pub mod auth_scheme {
     pub const BASIC: &str = "Basic";
     /// Bearer token.
     pub const BEARER: &str = "Bearer";
+}
+
+/// OAuth 2 grant types (RFC 6749).
+pub mod grant_type {
+    /// The client authenticates as itself, without a user.
+    pub const CLIENT_CREDENTIALS: &str = "client_credentials";
 }
 
 #[cfg(test)]

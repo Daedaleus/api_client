@@ -17,7 +17,8 @@
 //   8. a collection variable is saved and used; a request variable of the
 //      same name overrides it,
 //   9. bearer auth with the secret as token is sent; set on the collection,
-//      the request inherits it,
+//      the request inherits it; with OAuth 2 client credentials the token is
+//      fetched once from the token URL and sent,
 //  10. a multipart upload and a binary body read a file relative to the
 //      collection folder,
 //  11. switching the certificate check off shows a warning and is saved,
@@ -129,9 +130,17 @@ async function freePort() {
 
 // --- Local test server -----------------------------------------------------
 
+/** Token requests (OAuth 2) received, with their Authorization header. */
+const tokenRequests = [];
+
 server = http.createServer((request, response) => {
   response.setHeader('Content-Type', 'application/json');
   response.setHeader('X-Test', 'e2e');
+  if (request.url === '/token') {
+    tokenRequests.push(request.headers.authorization ?? null);
+    response.end('{"access_token":"e2e-token","token_type":"Bearer","expires_in":3600}');
+    return;
+  }
   if (!request.url.startsWith('/echo')) {
     response.end('{"hello":"world","price":1.10,"items":[1,2]}');
     return;
@@ -624,6 +633,49 @@ check(
   'request inherits bearer auth with the decrypted secret',
 );
 check(exitCode === null, 'program still running after sending with auth');
+
+// OAuth 2 client credentials on the collection: the token is fetched once.
+await evaluate(`document.querySelectorAll('.sidebar__collection-header .icon-button')[2].click()`);
+await waitFor(`!!document.querySelector('.defaults-dialog')`, 'collection settings dialog');
+await evaluate(`document.querySelectorAll('.defaults-dialog__section')[1].click()`);
+await waitFor(`!!document.querySelector('.defaults-dialog .auth-editor__select')`, 'auth section');
+await evaluate(setValue('.defaults-dialog .auth-editor__select', 'oauth2', 'change'));
+await waitFor(
+  `document.querySelectorAll('.defaults-dialog .auth-editor__input').length === 4`,
+  'OAuth 2 fields',
+);
+await evaluate(`(() => {
+  const inputs = document.querySelectorAll('.defaults-dialog .auth-editor__input');
+  ['{{baseUrl}}/token', 'e2e-client', '{{token}}', 'read'].forEach((value, index) => {
+    inputs[index].value = value;
+    inputs[index].dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  return true;
+})()`);
+await evaluate(`document.querySelector('.defaults-dialog [type=submit]').click()`);
+await waitFor(`!document.querySelector('.defaults-dialog')`, 'collection OAuth 2 saved');
+const withOAuth = readFileSync(path.join(collectionDir, 'collection.toml'), 'utf8');
+check(
+  withOAuth.includes('type = "oauth2"') &&
+    withOAuth.includes('client_secret = "{{token}}"') &&
+    !withOAuth.includes(secretValue) &&
+    !withOAuth.includes('e2e-token'),
+  'OAuth 2 saved with the variable, never the secret or the token',
+);
+for (const round of [1, 2]) {
+  await evaluate(setValue('.url-bar__input', `{{baseUrl}}/echo?oauth=${round}`));
+  await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);
+  const echoed = await echoWith(`oauth=${round}`, `echo with OAuth 2 (${round})`);
+  check(
+    echoed.includes('"authorization": "Bearer e2e-token"'),
+    `OAuth 2 token sent as bearer (${round})`,
+  );
+}
+check(
+  tokenRequests.length === 1 && tokenRequests[0]?.startsWith('Basic '),
+  `token fetched once with client authentication (${tokenRequests.length})`,
+);
+check(exitCode === null, 'program still running after sending with OAuth 2');
 
 // --- 10. Multipart and binary bodies ---------------------------------------------
 
