@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import Button from '../atoms/Button.svelte';
+  import AuthEditor from '../molecules/AuthEditor.svelte';
   import BodyEditor from '../molecules/BodyEditor.svelte';
   import RowsEditor, { type RowLabels } from '../molecules/RowsEditor.svelte';
   import UrlBar from '../molecules/UrlBar.svelte';
@@ -43,8 +44,8 @@
     empty: 'editor.no_variables',
   };
 
-  type Section = 'headers' | 'body' | 'variables';
-  const SECTIONS: Section[] = ['headers', 'body', 'variables'];
+  type Section = 'headers' | 'body' | 'auth' | 'variables';
+  const SECTIONS: Section[] = ['headers', 'body', 'auth', 'variables'];
   let section = $state<Section>('headers');
   let activeVariables = $derived(
     tab.draft.variables.filter((variable) => variable.enabled && variable.name.trim() !== '')
@@ -109,6 +110,8 @@
           <span class="request-editor__count">{activeHeaders}</span>
         {:else if name === 'body' && tab.draft.body.kind !== 'none'}
           <span class="request-editor__count">{tab.draft.body.kind.toUpperCase()}</span>
+        {:else if name === 'auth' && tab.draft.auth.kind !== 'inherit'}
+          <span class="request-editor__count">{i18n.t(`auth.badge_${tab.draft.auth.kind}`)}</span>
         {:else if name === 'variables' && activeVariables > 0}
           <span class="request-editor__count">{activeVariables}</span>
         {/if}
@@ -120,6 +123,8 @@
       <RowsEditor bind:rows={tab.draft.headers} labels={HEADER_LABELS} />
     {:else if section === 'body'}
       <BodyEditor bind:body={tab.draft.body} />
+    {:else if section === 'auth'}
+      <AuthEditor bind:auth={tab.draft.auth} />
     {:else}
       <p class="request-editor__note">{i18n.t('editor.variables_hint')}</p>
       <RowsEditor bind:rows={tab.draft.variables} labels={VARIABLE_LABELS} />

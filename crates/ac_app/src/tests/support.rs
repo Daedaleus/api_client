@@ -42,12 +42,14 @@ impl Fixture {
         login.body = Body::Json("{}".into());
         let health = Request::new("Health");
         let auth = Folder {
+            auth: ac_domain::auth::Auth::Inherit,
             variables: Vec::new(),
             id: ItemId::new(),
             name: "Auth".into(),
             items: vec![Item::Request(login.clone())],
         };
         let collection = Collection {
+            auth: ac_domain::auth::Auth::Inherit,
             variables: Vec::new(),
             id: ItemId::new(),
             name: "Shop".into(),
@@ -159,5 +161,5 @@ pub(crate) fn changed(ack: CommandAck) -> (CollectionView, Option<String>) {
     else {
         panic!("expected a changed collection, got {ack:?}");
     };
-    (collection, created_id)
+    (*collection, created_id)
 }

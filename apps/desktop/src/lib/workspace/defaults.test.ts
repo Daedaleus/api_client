@@ -27,7 +27,7 @@ function setup(collection = layered()) {
   return { api, workspace };
 }
 
-describe('variables in the workspace', () => {
+describe('variables and auth in the workspace', () => {
   it('previews with collection, environment, folders and the request, stronger winning', async () => {
     const { api, workspace } = setup();
     api.queryAnswers.push({
@@ -47,6 +47,7 @@ describe('variables in the workspace', () => {
     expect(api.commands.at(-1)).toMatchObject({
       type: 'sendRequest',
       variables: [row('a', 'own')],
+      auth: { kind: 'inherit' },
       context: { collectionId: 'c1', requestId: 'r1', environmentId: 'e1' },
     });
     workspace.environments.choose('c1', null);
@@ -66,7 +67,7 @@ describe('variables in the workspace', () => {
 
   it('edits the variables of the collection and of folders', async () => {
     const { api, workspace } = setup();
-    const state = workspace.variables;
+    const state = workspace.defaults;
     state.open('c1', 'missing');
     state.open('other', 'c1');
     expect(state.editing).toBeNull();
@@ -80,6 +81,7 @@ describe('variables in the workspace', () => {
       variables: [row('host', 'folder')],
     });
     state.editing!.variables.push(row('v', '2'));
+    state.editing!.auth = { kind: 'bearer', token: '{{token}}' };
     expect(workspace.collections.find('c1')?.items[0]).toMatchObject({
       variables: [row('host', 'folder')],
     });
@@ -92,10 +94,11 @@ describe('variables in the workspace', () => {
     api.answers.push(changed({ ...layered(), name: 'Shop 2' }));
     await state.save();
     expect(api.commands.at(-1)).toEqual({
-      type: 'saveVariables',
+      type: 'saveDefaults',
       collectionId: 'c1',
       itemId: 'f1',
       variables: [row('host', 'folder'), row('v', '2')],
+      auth: { kind: 'bearer', token: '{{token}}' },
     });
     expect(state.editing).toBeNull();
     expect(workspace.collections.find('c1')?.name).toBe('Shop 2');

@@ -7,14 +7,14 @@
 //! - `environments`: environments of open collections.
 //! - `secrets`: secret variable values (decrypt for sending, encrypt on save).
 //! - `recipients`: who secrets are encrypted for, re-encrypting on change.
-//! - `variables`: variables of the collection and its folders.
+//! - `defaults`: what the collection and its folders pass on to requests.
 
 mod collections;
+mod defaults;
 mod environments;
 mod recipients;
 mod runs;
 mod secrets;
-mod variables;
 
 use std::path::PathBuf;
 use std::sync::atomic::AtomicU64;
@@ -112,6 +112,7 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
                 headers,
                 body,
                 variables,
+                auth,
                 context,
             } => self.send_request(
                 &Outgoing {
@@ -120,6 +121,7 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
                     headers: &headers,
                     body: &body,
                     variables: &variables,
+                    auth: &auth,
                 },
                 context.as_ref(),
             ),
@@ -157,11 +159,12 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
                 collection_id,
                 environment,
             } => self.save_environment(&collection_id, &environment),
-            Command::SaveVariables {
+            Command::SaveDefaults {
                 collection_id,
                 item_id,
                 variables,
-            } => self.save_variables(&collection_id, &item_id, &variables),
+                auth,
+            } => self.save_defaults(&collection_id, &item_id, &variables, &auth),
             Command::SetRecipients {
                 collection_id,
                 recipients,

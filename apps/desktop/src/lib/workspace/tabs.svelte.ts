@@ -96,6 +96,7 @@ export class TabsState {
         headers: tab.draft.headers,
         body: tab.draft.body,
         variables: tab.draft.variables,
+        auth: tab.draft.auth,
         context,
       });
       if (ack.type !== 'runStarted') {

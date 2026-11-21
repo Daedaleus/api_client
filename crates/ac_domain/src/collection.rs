@@ -6,6 +6,7 @@ use std::str::FromStr;
 
 use uuid::Uuid;
 
+use crate::auth::Auth;
 use crate::environment::Variable;
 use crate::protocol::HttpMethod;
 
@@ -72,6 +73,8 @@ pub struct Collection {
     /// Variables for every request of the collection (weakest, see
     /// [`crate::scope`]).
     pub variables: Vec<Variable>,
+    /// Authentication for its requests (`Inherit` here means none).
+    pub auth: Auth,
 }
 
 impl Collection {
@@ -79,6 +82,17 @@ impl Collection {
     #[must_use]
     pub fn find(&self, id: ItemId) -> Option<&Item> {
         find_in(&self.items, id)
+    }
+
+    /// The authentication that applies to the request `id`: its own, or
+    /// that of the innermost folder or the collection that sets one.
+    #[must_use]
+    pub fn auth_for(&self, id: ItemId, own: &'_ Auth) -> Auth {
+        let folders = self.folders_around(id);
+        let chain = std::iter::once(own)
+            .chain(folders.iter().rev().map(|folder| &folder.auth))
+            .chain(std::iter::once(&self.auth));
+        crate::auth::effective(chain).clone()
     }
 
     /// The folders around the item `id`, outermost first; empty for a
@@ -116,6 +130,15 @@ fn find_in(items: &[Item], id: ItemId) -> Option<&Item> {
     })
 }
 
+/// What a collection or folder passes on to the requests in it.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct RequestDefaults {
+    /// Variables (see [`crate::scope`]).
+    pub variables: Vec<Variable>,
+    /// Authentication (see [`crate::auth`]).
+    pub auth: Auth,
+}
+
 /// A folder of a collection.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Folder {
@@ -127,6 +150,8 @@ pub struct Folder {
     pub items: Vec<Item>,
     /// Variables for the requests in this folder and its subfolders.
     pub variables: Vec<Variable>,
+    /// Authentication for the requests in it, or inherited.
+    pub auth: Auth,
 }
 
 /// An entry of the request tree.
@@ -175,6 +200,8 @@ pub struct Request {
     pub body: Body,
     /// Variables of this request only (strongest, see [`crate::scope`]).
     pub variables: Vec<Variable>,
+    /// Authentication, or inherited from the folders and collection.
+    pub auth: Auth,
 }
 
 impl Request {
@@ -189,6 +216,7 @@ impl Request {
             headers: Vec::new(),
             body: Body::None,
             variables: Vec::new(),
+            auth: Auth::Inherit,
         }
     }
 }

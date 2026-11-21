@@ -18,7 +18,7 @@ use crate::format::{
 };
 use crate::names::file_stem;
 use crate::request_file::read_request;
-use crate::variables;
+use crate::{auth, variables};
 
 /// A loaded collection with the file behind every item.
 #[derive(Debug)]
@@ -78,6 +78,7 @@ pub fn load_collection(root: &Path) -> Result<LoadedCollection, StorageError> {
     let name = document::opt_str(table, "name", &settings)?.unwrap_or_else(|| file_stem(root));
     let order = document::order(table, &settings)?;
     let variables = variables::read(table.get(variables::KEY), &settings, variables::KEY)?;
+    let auth = auth::read(table.get(auth::KEY), &settings, auth::KEY)?;
 
     let mut loader = Loader::default();
     loader.entries.insert(
@@ -97,6 +98,7 @@ pub fn load_collection(root: &Path) -> Result<LoadedCollection, StorageError> {
             name,
             items,
             variables,
+            auth,
         },
         environments,
         entries: loader.entries,
@@ -110,6 +112,7 @@ struct FolderSettings {
     name: String,
     order: Vec<String>,
     variables: Vec<ac_domain::environment::Variable>,
+    auth: ac_domain::auth::Auth,
     read_only: bool,
 }
 
@@ -195,6 +198,7 @@ impl Loader {
             name: file_stem(dir),
             order: Vec::new(),
             variables: Vec::new(),
+            auth: ac_domain::auth::Auth::Inherit,
             read_only: false,
         };
         let FolderSettings {
@@ -202,6 +206,7 @@ impl Loader {
             name,
             order,
             variables,
+            auth,
             read_only,
         } = if settings.is_file() {
             match Self::folder_settings(&settings) {
@@ -234,6 +239,7 @@ impl Loader {
             name,
             items,
             variables,
+            auth,
         })
     }
 
@@ -246,6 +252,7 @@ impl Loader {
             name: document::opt_str(table, "name", settings)?.unwrap_or_else(|| file_stem(dir)),
             order: document::order(table, settings)?,
             variables: variables::read(table.get(variables::KEY), settings, variables::KEY)?,
+            auth: auth::read(table.get(auth::KEY), settings, auth::KEY)?,
             read_only: parsed.read_only(),
         })
     }

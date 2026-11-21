@@ -7,8 +7,8 @@ use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
-use ac_domain::collection::{Collection, Folder, Item, ItemId, Request};
-use ac_domain::environment::{Environment, Variable};
+use ac_domain::collection::{Collection, Folder, Item, ItemId, Request, RequestDefaults};
+use ac_domain::environment::Environment;
 
 use super::lock;
 use crate::ports::{CollectionStore, Location, OpenedCollection, StoreError, StoreErrorKind};
@@ -183,6 +183,7 @@ impl CollectionStore for MemoryStore {
             collections.insert(
                 root.to_owned(),
                 Collection {
+                    auth: ac_domain::auth::Auth::Inherit,
                     variables: Vec::new(),
                     id: ItemId::new(),
                     name: name.to_owned(),
@@ -212,6 +213,7 @@ impl CollectionStore for MemoryStore {
         let id = ItemId::new();
         self.with_items(parent, |items| {
             items.push(Item::Folder(Folder {
+                auth: ac_domain::auth::Auth::Inherit,
                 variables: Vec::new(),
                 id,
                 name: name.to_owned(),
@@ -233,24 +235,25 @@ impl CollectionStore for MemoryStore {
         })
     }
 
-    fn save_collection_variables(
+    fn save_collection_defaults(
         &self,
         root: &Path,
-        variables: &[Variable],
+        defaults: &RequestDefaults,
     ) -> Result<(), StoreError> {
         self.check_failure()?;
         let mut collections = lock(&self.collections);
         let collection = collections.get_mut(root).ok_or_else(|| not_found(root))?;
-        collection.variables = variables.to_vec();
+        collection.variables.clone_from(&defaults.variables);
+        collection.auth = defaults.auth.clone();
         Ok(())
     }
 
-    fn save_folder_variables(
+    fn save_folder_defaults(
         &self,
         dir: &Path,
         id: ItemId,
         _name: &str,
-        variables: &[Variable],
+        defaults: &RequestDefaults,
     ) -> Result<(), StoreError> {
         self.check_failure()?;
         self.with_items(parent_of(dir), |items| {
@@ -258,7 +261,8 @@ impl CollectionStore for MemoryStore {
                 if let Item::Folder(folder) = item
                     && folder.id == id
                 {
-                    folder.variables = variables.to_vec();
+                    folder.variables.clone_from(&defaults.variables);
+                    folder.auth = defaults.auth.clone();
                 }
             }
         })

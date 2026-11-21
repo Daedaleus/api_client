@@ -1,9 +1,38 @@
 use super::*;
 use crate::text::keys;
 
+/// Resolves without authentication.
+fn resolve(
+    method: &str,
+    url: &str,
+    headers: &[HeaderEntry],
+    body: &Body,
+    variables: &HashMap<&str, &str>,
+) -> Result<ResolvedRequest, AppError> {
+    with_auth(method, url, headers, body, &Auth::None, variables)
+}
+
+fn with_auth(
+    method: &str,
+    url: &str,
+    headers: &[HeaderEntry],
+    body: &Body,
+    auth: &Auth,
+    variables: &HashMap<&str, &str>,
+) -> Result<ResolvedRequest, AppError> {
+    let entered = Entered {
+        method,
+        url,
+        headers,
+        body,
+        auth,
+    };
+    resolve_request(&entered, variables)
+}
+
 /// Method and URL only.
 fn simple(method: &str, url: &str) -> Result<ResolvedRequest, AppError> {
-    resolve_request(method, url, &[], &Body::None, &HashMap::new())
+    resolve(method, url, &[], &Body::None, &HashMap::new())
 }
 
 fn entry(name: &str, value: &str, enabled: bool) -> HeaderEntry {
@@ -38,8 +67,7 @@ fn enabled_named_headers_are_sent_in_order() {
         entry("  ", "ignored", true),
         entry(" X-Trace ", "a b", true),
     ];
-    let request =
-        resolve_request("GET", "example.com", &headers, &Body::None, &HashMap::new()).unwrap();
+    let request = resolve("GET", "example.com", &headers, &Body::None, &HashMap::new()).unwrap();
     assert_eq!(
         request.headers,
         [
@@ -51,7 +79,7 @@ fn enabled_named_headers_are_sent_in_order() {
 
 #[test]
 fn bodies_get_a_content_type_unless_one_is_set() {
-    let json = resolve_request(
+    let json = resolve(
         "POST",
         "x.example",
         &[],
@@ -65,7 +93,7 @@ fn bodies_get_a_content_type_unless_one_is_set() {
         [Header::new("Content-Type", "application/json")]
     );
 
-    let text = resolve_request(
+    let text = resolve(
         "POST",
         "x.example",
         &[],
@@ -79,7 +107,7 @@ fn bodies_get_a_content_type_unless_one_is_set() {
     );
 
     let own = [entry("content-type", "application/vnd.api+json", true)];
-    let custom = resolve_request(
+    let custom = resolve(
         "POST",
         "x.example",
         &own,
@@ -94,7 +122,7 @@ fn bodies_get_a_content_type_unless_one_is_set() {
 
     // A disabled Content-Type does not count.
     let disabled = [entry("Content-Type", "text/xml", false)];
-    let request = resolve_request(
+    let request = resolve(
         "POST",
         "x.example",
         &disabled,
@@ -129,12 +157,12 @@ fn headers_that_cannot_be_sent_are_refused() {
         entry("Bad Name", "x", true),
         entry("X-Inject", "a\r\nEvil: yes", true),
     ] {
-        let error = resolve_request("GET", "x.example", &[header], &Body::None, &HashMap::new())
-            .unwrap_err();
+        let error =
+            resolve("GET", "x.example", &[header], &Body::None, &HashMap::new()).unwrap_err();
         assert_eq!(error.user_text().key, keys::HEADER_INVALID);
         assert!(error.to_string().contains("invalid header"));
     }
-    let error = resolve_request(
+    let error = resolve(
         "GET",
         "x.example",
         &[entry("Bad Name", "x", true)],
@@ -153,7 +181,7 @@ fn variables_are_resolved_in_url_headers_and_body() {
         ("header", "X-Token"),
         ("id", "42"),
     ]);
-    let request = resolve_request(
+    let request = resolve(
         "PUT",
         "{{baseUrl}}/items/{{ id }}",
         &[
@@ -176,7 +204,7 @@ fn unknown_variables_stop_the_request() {
         ("x.example", "{{missing}}", "b"),
         ("x.example", "a", "{{missing}}"),
     ] {
-        let error = resolve_request(
+        let error = resolve(
             "POST",
             url,
             &[entry("X-A", header, true)],
@@ -199,4 +227,107 @@ fn errors_carry_the_offending_value() {
         .unwrap_err()
         .user_text();
     assert_ne!(text.args["reason"], "");
+}
+
+fn authorized(auth: &Auth, headers: &[HeaderEntry]) -> ResolvedRequest {
+    let variables = HashMap::from([("user", "alice"), ("token", "s3cr3t")]);
+    with_auth(
+        "GET",
+        "x.example/a?b=1",
+        headers,
+        &Body::None,
+        auth,
+        &variables,
+    )
+    .unwrap()
+}
+
+#[test]
+fn basic_and_bearer_set_the_authorization_header() {
+    let basic = Auth::Basic {
+        username: "{{user}}".into(),
+        password: "open sesame".into(),
+    };
+    assert_eq!(
+        authorized(&basic, &[]).headers,
+        [Header::new(
+            "authorization",
+            "Basic YWxpY2U6b3BlbiBzZXNhbWU="
+        )]
+    );
+    let bearer = Auth::Bearer {
+        token: "{{token}}".into(),
+    };
+    assert_eq!(
+        authorized(&bearer, &[]).headers,
+        [Header::new("authorization", "Bearer s3cr3t")]
+    );
+    // A header the user typed wins.
+    let own = [entry("Authorization", "Custom x", true)];
+    assert_eq!(
+        authorized(&bearer, &own).headers,
+        [Header::new("Authorization", "Custom x")]
+    );
+    assert_eq!(authorized(&Auth::None, &[]).headers, []);
+    assert_eq!(authorized(&Auth::Inherit, &[]).headers, []);
+}
+
+#[test]
+fn api_keys_go_into_a_header_or_the_query() {
+    let header = Auth::ApiKey {
+        name: " X-API-Key ".into(),
+        value: "{{token}}".into(),
+        placement: KeyPlacement::Header,
+    };
+    assert_eq!(
+        authorized(&header, &[]).headers,
+        [Header::new("X-API-Key", "s3cr3t")]
+    );
+    let query = Auth::ApiKey {
+        name: "key".into(),
+        value: "{{token}}".into(),
+        placement: KeyPlacement::Query,
+    };
+    assert_eq!(
+        authorized(&query, &[]).url.as_str(),
+        "http://x.example/a?b=1&key=s3cr3t"
+    );
+    let present = Auth::ApiKey {
+        name: "b".into(),
+        value: "2".into(),
+        placement: KeyPlacement::Query,
+    };
+    assert_eq!(
+        authorized(&present, &[]).url.as_str(),
+        "http://x.example/a?b=1"
+    );
+
+    let invalid = Auth::ApiKey {
+        name: "Bad Name".into(),
+        value: "x".into(),
+        placement: KeyPlacement::Header,
+    };
+    let error = with_auth(
+        "GET",
+        "x.example",
+        &[],
+        &Body::None,
+        &invalid,
+        &HashMap::new(),
+    )
+    .unwrap_err();
+    assert_eq!(error, AppError::InvalidHeader("Bad Name".into()));
+    let missing = Auth::Bearer {
+        token: "{{nope}}".into(),
+    };
+    let error = with_auth(
+        "GET",
+        "x.example",
+        &[],
+        &Body::None,
+        &missing,
+        &HashMap::new(),
+    )
+    .unwrap_err();
+    assert_eq!(error.user_text().key, keys::VARIABLE_UNKNOWN);
 }

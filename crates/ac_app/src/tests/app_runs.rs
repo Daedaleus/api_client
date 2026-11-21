@@ -40,6 +40,7 @@ fn send(method: &str, url: &str) -> Command {
         headers: Vec::new(),
         body: BodyDraft::None,
         variables: Vec::new(),
+        auth: crate::view::AuthDraft::Inherit,
         context: None,
     }
 }
@@ -59,6 +60,7 @@ async fn headers_and_body_are_sent() {
             content: "{\"a\":1}".into(),
         },
         variables: Vec::new(),
+        auth: crate::view::AuthDraft::Inherit,
         context: None,
     })
     .unwrap();
