@@ -332,11 +332,12 @@ auth: AuthDraft;
 /**  The certificate check (`inherit` on the collection means on). */
 certificateCheck: CertificateCheckView }) & { environment?: never; file?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never } | 
 /**
- *  Import a Postman collection (v2.1, v2.0) as a new collection and open
- *  it.
+ *  Import another tool's collection as a new collection and open it:
+ *  a Postman collection (v2.1, v2.0) or an `OpenAPI` 3 description (JSON
+ *  or YAML), detected from the file.
  */
-({ type: "importPostman"; 
-/**  The exported Postman file. */
+({ type: "importCollection"; 
+/**  The file to import. */
 file: string; 
 /**  The folder for the new collection (created if needed). */
 path: string }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; itemId?: never; name?: never; parentId?: never; recipients?: never; request?: never; variables?: never } | 
@@ -435,11 +436,12 @@ auth: AuthDraft;
 /**  The certificate check (`inherit` on the collection means on). */
 certificateCheck: CertificateCheckView }) & { environment?: never; file?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never } | 
 /**
- *  Import a Postman collection (v2.1, v2.0) as a new collection and open
- *  it.
+ *  Import another tool's collection as a new collection and open it:
+ *  a Postman collection (v2.1, v2.0) or an `OpenAPI` 3 description (JSON
+ *  or YAML), detected from the file.
  */
-({ type: "importPostman"; 
-/**  The exported Postman file. */
+({ type: "importCollection"; 
+/**  The file to import. */
 file: string; 
 /**  The folder for the new collection (created if needed). */
 path: string }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; itemId?: never; name?: never; parentId?: never; recipients?: never; request?: never; variables?: never } | 

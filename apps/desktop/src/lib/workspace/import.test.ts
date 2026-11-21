@@ -15,14 +15,14 @@ function setup() {
 
 const skipped = [{ key: 'import.skipped_scripts', args: { item: 'Login' } }];
 
-describe('Postman import', () => {
+describe('collection import', () => {
   beforeEach(() => i18n.setLocale('en'));
 
   it('does nothing when the file or the folder is not chosen', async () => {
     const { api, workspace } = setup();
-    await workspace.importPostman();
+    await workspace.importCollection();
     api.file = 'C:\\exports\\shop.json';
-    await workspace.importPostman();
+    await workspace.importCollection();
     expect(api.commands).toEqual([]);
   });
 
@@ -32,14 +32,14 @@ describe('Postman import', () => {
     api.file = 'C:\\exports\\shop.json';
     api.folder = 'C:\\apis\\shop';
     api.answers.push({ type: 'collectionImported', collection: shop(), skipped });
-    const importing = workspace.importPostman();
+    const importing = workspace.importCollection();
     expect(await screen.findByRole('dialog')).toHaveTextContent('Import finished');
     expect(screen.getByText('“Login”: scripts (scripting comes later)')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'OK' }));
     await importing;
     expect(api.commands).toEqual([
-      { type: 'importPostman', file: 'C:\\exports\\shop.json', path: 'C:\\apis\\shop' },
+      { type: 'importCollection', file: 'C:\\exports\\shop.json', path: 'C:\\apis\\shop' },
     ]);
     expect(workspace.collections.find('c1')?.name).toBe('Shop');
     expect(workspace.dialogs.current).toBeNull();
@@ -50,15 +50,15 @@ describe('Postman import', () => {
     api.file = 'a.json';
     api.folder = 'b';
     api.answers.push({ type: 'collectionImported', collection: shop(), skipped: [] });
-    await workspace.importPostman();
+    await workspace.importCollection();
     expect(workspace.dialogs.current).toBeNull();
 
-    api.answers.push({ fail: { key: 'error.postman_invalid', args: { detail: 'x' } } });
-    await workspace.importPostman();
-    expect(workspace.collections.error?.key).toBe('error.postman_invalid');
+    api.answers.push({ fail: { key: 'error.import_invalid', args: { detail: 'x' } } });
+    await workspace.importCollection();
+    expect(workspace.collections.error?.key).toBe('error.import_invalid');
 
     api.answers.push({ type: 'runStarted', runId: 1 });
-    await workspace.importPostman();
+    await workspace.importCollection();
     expect(workspace.collections.error?.args.detail).toBe('unexpected answer runStarted');
   });
 

@@ -16,7 +16,7 @@
     <Button onclick={() => workspace.openCollection()}>{i18n.t('sidebar.open')}</Button>
     <Button onclick={() => workspace.createCollection()}>{i18n.t('sidebar.create')}</Button>
     <Button onclick={() => workspace.curl.openImport()}>{i18n.t('curl.import')}</Button>
-    <Button onclick={() => workspace.importPostman()}>{i18n.t('import.postman')}</Button>
+    <Button onclick={() => workspace.importCollection()}>{i18n.t('import.collection')}</Button>
   </div>
 
   {#if workspace.collections.error}

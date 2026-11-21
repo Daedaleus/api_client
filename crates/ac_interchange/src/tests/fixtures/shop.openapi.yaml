@@ -1,0 +1,157 @@
+# Shortened example in the shape of an OpenAPI 3.0 description.
+openapi: 3.0.3
+info:
+  title: Shop API
+  version: 1.0.0
+servers:
+  - url: https://{region}.api.example.com/v1/
+    variables:
+      region:
+        default: eu
+tags:
+  - name: products
+  - name: auth
+security:
+  - bearerAuth: []
+paths:
+  /products:
+    get:
+      tags: [products]
+      summary: List products
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            example: tea
+        - name: X-Request-Id
+          in: header
+          schema:
+            type: string
+    post:
+      tags: [products]
+      operationId: createProduct
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewProduct'
+      responses:
+        '201':
+          description: created
+  /products/{productId}:
+    parameters:
+      - name: productId
+        in: path
+        required: true
+        schema:
+          type: integer
+          example: 42
+    get:
+      tags: [products]
+      summary: Get a product
+    put:
+      tags: [products]
+      summary: Replace the image
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  example: Teapot
+                image:
+                  type: string
+                  format: binary
+  /products/{productId}/raw:
+    put:
+      tags: [products]
+      summary: Upload raw data
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/octet-stream: {}
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Log in
+      security: []
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: string
+                  example: alice
+                password:
+                  type: string
+  /admin/stats:
+    get:
+      summary: Statistics
+      security:
+        - apiKey: []
+  /oauth/thing:
+    get:
+      summary: OAuth only
+      security:
+        - oauth: []
+  /proto:
+    post:
+      requestBody:
+        content:
+          application/x-protobuf: {}
+components:
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+  schemas:
+    NewProduct:
+      allOf:
+        - $ref: '#/components/schemas/Named'
+        - type: object
+          properties:
+            price:
+              type: number
+            tags:
+              type: array
+              items:
+                type: string
+            createdAt:
+              type: string
+              format: date-time
+            status:
+              type: string
+              enum: [draft, live]
+    Named:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Teapot
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+    apiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    oauth:
+      type: oauth2
+      flows: {}

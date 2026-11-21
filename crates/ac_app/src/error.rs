@@ -54,9 +54,9 @@ pub enum AppError {
     /// A pasted text is no usable cURL command.
     #[error(transparent)]
     Curl(#[from] ac_interchange::curl::CurlError),
-    /// A file is no usable Postman collection.
+    /// A file cannot be imported.
     #[error(transparent)]
-    Postman(#[from] ac_interchange::postman::PostmanError),
+    Import(#[from] ac_interchange::ImportError),
     /// The collection is not open.
     #[error("collection is not open")]
     UnknownCollection,
@@ -114,8 +114,8 @@ impl AppError {
             Self::Curl(error) => {
                 UserText::new(keys::CURL_INVALID).with("detail", error.to_string())
             }
-            Self::Postman(error) => {
-                UserText::new(keys::POSTMAN_INVALID).with("detail", error.to_string())
+            Self::Import(error) => {
+                UserText::new(keys::IMPORT_INVALID).with("detail", error.to_string())
             }
             Self::UnknownCollection => UserText::new(keys::UNKNOWN_COLLECTION),
             Self::UnknownItem => UserText::new(keys::UNKNOWN_ITEM),

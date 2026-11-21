@@ -4,9 +4,15 @@
 //!
 //! - [`curl`]: a resolved request as a cURL command, and a pasted cURL
 //!   command as a request.
-//! - [`postman`]: Postman collections (v2.1, v2.0) as collections.
+//! - [`import`]: importing a collection, the format detected from the
+//!   file – `postman` (Postman collections v2.1, v2.0) or `openapi`
+//!   (`OpenAPI` 3.0 and 3.1 descriptions, JSON or YAML).
 //!
-//! Bruno and `OpenAPI` imports follow (issue #18).
+//! The Bruno import follows (issue #18).
 
 pub mod curl;
-pub mod postman;
+pub mod import;
+mod openapi;
+mod postman;
+
+pub use import::{ImportError, Imported, Skipped, SkippedKind, import_collection};

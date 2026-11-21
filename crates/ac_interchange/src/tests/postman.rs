@@ -1,6 +1,11 @@
 use ac_domain::protocol::HttpMethod;
 
 use super::*;
+use crate::import::{ImportError, import_collection};
+
+fn from_postman(text: &str) -> Result<Imported, ImportError> {
+    import_collection(text)
+}
 
 const SHOP: &str = include_str!("fixtures/shop.postman_collection.json");
 
@@ -205,8 +210,8 @@ fn small_and_odd_exports() {
     assert!(matches!(&b.body, Body::Multipart(fields) if fields[0].value.is_empty()));
     assert_eq!(files.collection.variables, []);
 
-    assert!(matches!(from_postman("nope"), Err(PostmanError::Json(_))));
-    assert_eq!(from_postman("{}"), Err(PostmanError::NotPostman));
+    assert!(matches!(from_postman("{nope"), Err(ImportError::Parse(_))));
+    assert_eq!(from_postman("{}"), Err(ImportError::Unknown));
     assert_eq!(
         from_postman(r#"{"info": {}, "item": 1}"#)
             .unwrap()

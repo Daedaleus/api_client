@@ -155,7 +155,7 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
                 &auth,
                 certificate_check,
             ),
-            Command::ImportPostman { file, path } => self.import_postman(&file, &path),
+            Command::ImportCollection { file, path } => self.import_collection(&file, &path),
             Command::SetRecipients {
                 collection_id,
                 recipients,

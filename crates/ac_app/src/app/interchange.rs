@@ -4,7 +4,7 @@
 use std::path::Path;
 
 use ac_interchange::curl::{from_curl, to_curl};
-use ac_interchange::postman::{Skipped, SkippedKind, from_postman};
+use ac_interchange::{Skipped, SkippedKind, import_collection};
 
 use super::App;
 use crate::command::{CommandAck, QueryResult};
@@ -14,11 +14,11 @@ use crate::text::{UserText, keys};
 use crate::view::{CollectionView, OutgoingRequest, RequestDraft};
 
 impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
-    /// Converts a Postman export into a new collection in `path` and opens
-    /// it; what has no counterpart is listed for the user.
-    pub(super) fn import_postman(&self, file: &str, path: &str) -> Result<CommandAck, AppError> {
+    /// Converts another tool's file into a new collection in `path` and
+    /// opens it; what has no counterpart is listed for the user.
+    pub(super) fn import_collection(&self, file: &str, path: &str) -> Result<CommandAck, AppError> {
         let text = self.inner.store.read_text(Path::new(file))?;
-        let imported = from_postman(&text)?;
+        let imported = import_collection(&text)?;
         let opened = self
             .inner
             .store

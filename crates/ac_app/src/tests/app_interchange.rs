@@ -86,7 +86,7 @@ async fn postman_exports_become_new_open_collections() {
     fixture.store.add_file("export.json", POSTMAN);
     let ack = fixture
         .app
-        .execute(Command::ImportPostman {
+        .execute(Command::ImportCollection {
             file: "export.json".into(),
             path: "imported".into(),
         })
@@ -122,7 +122,7 @@ async fn postman_exports_become_new_open_collections() {
 
     let error = fixture
         .app
-        .execute(Command::ImportPostman {
+        .execute(Command::ImportCollection {
             file: "export.json".into(),
             path: "imported".into(),
         })
@@ -131,18 +131,56 @@ async fn postman_exports_become_new_open_collections() {
     fixture.store.add_file("broken.json", "{");
     let error = fixture
         .app
-        .execute(Command::ImportPostman {
+        .execute(Command::ImportCollection {
             file: "broken.json".into(),
             path: "other".into(),
         })
         .unwrap_err();
-    assert_eq!(error.user_text().key, keys::POSTMAN_INVALID);
+    assert_eq!(error.user_text().key, keys::IMPORT_INVALID);
     let error = fixture
         .app
-        .execute(Command::ImportPostman {
+        .execute(Command::ImportCollection {
             file: "missing.json".into(),
             path: "other".into(),
         })
         .unwrap_err();
     assert_eq!(error.user_text().key, keys::STORE_IO);
+}
+
+const OPENAPI: &str = include_str!("../../../ac_interchange/src/tests/fixtures/shop.openapi.yaml");
+
+#[tokio::test]
+async fn openapi_descriptions_are_imported_the_same_way() {
+    use crate::command::{Command, CommandAck};
+
+    let fixture = Fixture::new();
+    fixture.store.add_file("shop.yaml", OPENAPI);
+    let ack = fixture
+        .app
+        .execute(Command::ImportCollection {
+            file: "shop.yaml".into(),
+            path: "from-openapi".into(),
+        })
+        .unwrap();
+    let CommandAck::CollectionImported {
+        collection,
+        skipped,
+    } = ack
+    else {
+        panic!("expected an imported collection");
+    };
+    assert_eq!(collection.name, "Shop API");
+    assert_eq!(collection.variables[0].name, "baseUrl");
+    assert_eq!(skipped.len(), 2);
+
+    fixture.store.add_file("old.yaml", "swagger: '2.0'");
+    let error = fixture
+        .app
+        .execute(Command::ImportCollection {
+            file: "old.yaml".into(),
+            path: "old".into(),
+        })
+        .unwrap_err();
+    assert_eq!(error.user_text().key, keys::IMPORT_INVALID);
+    assert!(error.user_text().args["detail"].contains("Swagger 2.0"));
 }

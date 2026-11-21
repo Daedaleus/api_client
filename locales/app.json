@@ -1,8 +1,9 @@
 {
-  "error.postman_invalid": {
-    "de": "Das ist keine verwendbare Postman-Collection: {detail}",
-    "en": "This is no usable Postman collection: {detail}"
+  "error.import_invalid": {
+    "de": "Diese Datei lässt sich nicht importieren: {detail}",
+    "en": "This file cannot be imported: {detail}"
   },
+  "import.collection": { "de": "Importieren", "en": "Import" },
   "import.skipped_scripts": {
     "de": "„{item}“: Skripte (Scripting folgt später)",
     "en": "“{item}”: scripts (scripting comes later)"
@@ -15,7 +16,6 @@
     "de": "„{item}“: Body-Art {mode}",
     "en": "“{item}”: body type {mode}"
   },
-  "import.postman": { "de": "Postman importieren", "en": "Import Postman" },
   "import.done": { "de": "Import abgeschlossen", "en": "Import finished" },
   "import.skipped_intro": {
     "de": "Die Collection ist angelegt. Nicht übernommen wurde:",
