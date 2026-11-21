@@ -57,6 +57,12 @@ pub enum AppError {
     /// A file cannot be imported.
     #[error(transparent)]
     Import(#[from] ac_interchange::ImportError),
+    /// No environment of this name in the collection.
+    #[error("no environment named {0:?}")]
+    UnknownEnvironment(String),
+    /// Nothing in the collection matches what should be run.
+    #[error("no folder or request at {0:?}")]
+    NothingToRun(String),
     /// The collection is not open.
     #[error("collection is not open")]
     UnknownCollection,
@@ -116,6 +122,12 @@ impl AppError {
             }
             Self::Import(error) => {
                 UserText::new(keys::IMPORT_INVALID).with("detail", error.to_string())
+            }
+            Self::UnknownEnvironment(name) => {
+                UserText::new(keys::UNKNOWN_ENVIRONMENT).with("name", name.clone())
+            }
+            Self::NothingToRun(path) => {
+                UserText::new(keys::NOTHING_TO_RUN).with("path", path.clone())
             }
             Self::UnknownCollection => UserText::new(keys::UNKNOWN_COLLECTION),
             Self::UnknownItem => UserText::new(keys::UNKNOWN_ITEM),

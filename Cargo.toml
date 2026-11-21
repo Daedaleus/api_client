@@ -26,6 +26,8 @@ age = { version = "0.12", features = ["armor", "ssh"] }
 base64 = "0.22"
 reqwest = "0.13"
 serde = { version = "1", features = ["derive"] }
+# clap: command line arguments of the CLI runner.
+clap = { version = "4", features = ["derive"] }
 # shell-words: splitting pasted cURL commands like a POSIX shell.
 shell-words = "1"
 serde_json = "1"

@@ -1,4 +1,10 @@
 {
+  "cli.heading": {"de": "{collection}", "en": "{collection}"},
+  "cli.heading_environment": {"de": "{collection} · Umgebung {environment}", "en": "{collection} · environment {environment}"},
+  "cli.summary": {"de": "{total} Requests: {passed} bestanden, {failed} fehlgeschlagen", "en": "{total} requests: {passed} passed, {failed} failed"},
+  "cli.error": {"de": "Fehler: {message}", "en": "Error: {message}"},
+  "error.unknown_environment": {"de": "Keine Umgebung namens „{name}“.", "en": "No environment named “{name}”."},
+  "error.nothing_to_run": {"de": "Kein Ordner oder Request unter „{path}“.", "en": "No folder or request at “{path}”."},
   "import.skipped_headers": {
     "de": "„{item}“: Header von Ordner oder Collection (nur Requests haben Header)",
     "en": "“{item}”: headers of a folder or the collection (only requests have headers)"
