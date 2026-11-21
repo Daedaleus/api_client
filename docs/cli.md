@@ -39,7 +39,10 @@ machine, not for CI.
 English); JSON and JUnit are the same in every language, apart from error
 messages.
 
-**Scripts** run as in the app ([scripting](scripting.md)): variables a
-script sets carry over to the following requests of the run, and a failing
-script after the response fails its request. Tests with `expect` follow;
-then a request passes when its tests pass.
+**Scripts and tests** run as in the app ([scripting](scripting.md)):
+variables a script sets carry over to the following requests of the run. A
+request passes only when it got a response (below 400 unless
+`--allow-error-status`), its script after the response did not fail and all
+its tests passed. The text report lists each test under its request, JSON
+has them per result, and JUnit has one test case per request plus one per
+test.

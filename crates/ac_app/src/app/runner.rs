@@ -9,6 +9,7 @@ use crate::error::AppError;
 use crate::ports::{BrowserLogin, CollectionStore, HttpSender, ScriptRunner, SecretVault};
 use crate::view::{
     OutgoingRequest, RequestDraft, RunReport, RunResult, RunResultOutcome, SendContext,
+    TestResultView,
 };
 
 /// Which requests to run, and with what.
@@ -91,6 +92,11 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault, B: BrowserLogin, R: Scri
                 path,
                 method: draft.method,
                 outcome,
+                tests: execution
+                    .tests
+                    .iter()
+                    .map(TestResultView::from_result)
+                    .collect(),
             });
         }
         Ok(RunReport { results })

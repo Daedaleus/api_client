@@ -118,12 +118,13 @@ fn reports_serialize_for_machines() {
                 status: 200,
                 elapsed_ms: 12,
             },
+            tests: Vec::new(),
         }],
     };
     assert_eq!(
         serde_json::to_value(&report).unwrap(),
         serde_json::json!({"results": [{"path": ["Health"], "method": "GET",
-            "outcome": {"kind": "response", "status": 200, "elapsedMs": 12}}]})
+            "outcome": {"kind": "response", "status": 200, "elapsedMs": 12}, "tests": []}]})
     );
 }
 
@@ -268,4 +269,33 @@ async fn a_failing_post_response_script_fails_the_request() {
         &report.results[0].outcome,
         RunResultOutcome::Failed { error } if error.key == keys::SCRIPT_POST_RESPONSE
     ));
+}
+
+#[tokio::test]
+async fn a_failed_test_fails_the_request() {
+    let fixture = Fixture::with_scripts(
+        FakeHttpSender::new().reply(Ok(response(200, "text/plain", ""))),
+        crate::testing::FakeScriptRunner::new().result(Ok(crate::ports::ScriptOutcome {
+            tests: vec![crate::ports::TestResult {
+                name: "is 201".into(),
+                passed: false,
+                message: Some("expected 200 to be 201".into()),
+            }],
+            ..crate::ports::ScriptOutcome::default()
+        })),
+    );
+    let mut health = fixture.draft(&fixture.health);
+    health.url = "https://health.example.com".into();
+    health.scripts.post_response = "test('is 201', () => expect(res.status).toBe(201))".into();
+    fixture.save(health).unwrap();
+    let report = fixture
+        .app
+        .run(&fixture.collection, &plan(None, Some("Health")))
+        .await
+        .unwrap();
+    let result = &report.results[0];
+    assert!(result.responded(true));
+    assert!(!result.passed(true));
+    assert_eq!(report.failed(true), 1);
+    assert_eq!(result.tests[0].name, "is 201");
 }

@@ -32,7 +32,8 @@
 //      appear in time without blocking the window for long,
 //  15. scripts: the pre-request script sets a header and a variable used in
 //      the URL, the post-response script logs and sets a variable for the
-//      next request, a syntax error stops the request and names its line,
+//      next request and runs tests (one failing on purpose), a syntax error
+//      stops the request and names its line,
 // and the program is still running after each send.
 //
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
@@ -1057,7 +1058,7 @@ await evaluate(
   setNth(
     '.scripts-editor__input',
     1,
-    "const echoed = res.json<{ xClient: string; method: string }>();\nlog('status ' + res.status + ' ' + echoed.xClient);\nenv.set('echoed', echoed.method);",
+    "const echoed = res.json<{ xClient: string; method: string }>();\nlog('status ' + res.status + ' ' + echoed.xClient);\nenv.set('echoed', echoed.method);\ntest('status is 200', () => expect(res.status).toBe(200));\ntest('fails on purpose', () => expect(echoed).toHaveProperty('missing'));",
   ),
 );
 await evaluate(setValue('.url-bar__select', 'GET', 'change'));
@@ -1082,6 +1083,23 @@ const logText = await waitFor(
 check(
   logText.includes('pre ran') && logText.includes('status 200 from-script'),
   `both scripts logged (${JSON.stringify(logText)})`,
+);
+const testsTab = await evaluate(
+  `[...document.querySelectorAll('.response__tab')].find((tab) => tab.textContent.includes('Tests'))?.textContent ?? ''`,
+);
+await evaluate(
+  `[...document.querySelectorAll('.response__tab')].find((tab) => tab.textContent.includes('Tests')).click()`,
+);
+const testList = await waitFor(
+  `document.querySelector('.test-results')?.textContent ?? null`,
+  'test results',
+);
+check(
+  testsTab.includes('1/2') &&
+    testList.includes('status is 200') &&
+    testList.includes('expected') &&
+    testList.includes('to have property missing'),
+  `tests listed with the failure (${JSON.stringify(testsTab)})`,
 );
 await evaluate(setValue('.url-bar__input', `${echoUrl}?second={{echoed}}`));
 await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);

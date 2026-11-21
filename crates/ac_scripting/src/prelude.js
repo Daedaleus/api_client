@@ -76,6 +76,119 @@
     });
   }
 
+  // --- Tests -------------------------------------------------------------
+
+  /** A value as it appears in failure messages. */
+  const show = (value) => {
+    if (value === undefined) return 'undefined';
+    if (typeof value === 'function') return 'a function';
+    try {
+      return JSON.stringify(value) ?? String(value);
+    } catch {
+      return String(value);
+    }
+  };
+  const deepEqual = (a, b) => {
+    if (Object.is(a, b)) return true;
+    if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null) return false;
+    if (Array.isArray(a) !== Array.isArray(b)) return false;
+    const keys = Object.keys(a);
+    return (
+      keys.length === Object.keys(b).length &&
+      keys.every((key) => Object.hasOwn(b, key) && deepEqual(a[key], b[key]))
+    );
+  };
+
+  class AssertionError extends Error {
+    name = 'AssertionError';
+  }
+
+  const matchers = (actual, negated) => {
+    const check = (ok, description) => {
+      if (Boolean(ok) === negated) {
+        throw new AssertionError(`expected ${show(actual)} ${negated ? 'not ' : ''}${description}`);
+      }
+    };
+    return {
+      toBe: (expected) => check(Object.is(actual, expected), `to be ${show(expected)}`),
+      toEqual: (expected) => check(deepEqual(actual, expected), `to equal ${show(expected)}`),
+      toBeTruthy: () => check(actual, 'to be truthy'),
+      toBeFalsy: () => check(!actual, 'to be falsy'),
+      toBeDefined: () => check(actual !== undefined, 'to be defined'),
+      toBeUndefined: () => check(actual === undefined, 'to be undefined'),
+      toBeNull: () => check(actual === null, 'to be null'),
+      toBeGreaterThan: (n) => check(actual > n, `to be greater than ${show(n)}`),
+      toBeGreaterThanOrEqual: (n) => check(actual >= n, `to be at least ${show(n)}`),
+      toBeLessThan: (n) => check(actual < n, `to be less than ${show(n)}`),
+      toBeLessThanOrEqual: (n) => check(actual <= n, `to be at most ${show(n)}`),
+      toContain: (item) =>
+        check(
+          actual !== null &&
+            actual !== undefined &&
+            typeof actual.includes === 'function' &&
+            actual.includes(item),
+          `to contain ${show(item)}`,
+        ),
+      toMatch: (pattern) =>
+        check(
+          typeof actual === 'string' &&
+            (pattern instanceof RegExp ? pattern.test(actual) : actual.includes(String(pattern))),
+          `to match ${pattern instanceof RegExp ? String(pattern) : show(pattern)}`,
+        ),
+      toHaveLength: (n) =>
+        check(actual !== null && actual !== undefined && actual.length === n, `to have length ${n}`),
+      toHaveProperty: (path, ...value) => {
+        const keys = Array.isArray(path) ? path.map(String) : String(path).split('.');
+        let current = actual;
+        let found = true;
+        for (const key of keys) {
+          if (current !== null && current !== undefined && Object.hasOwn(Object(current), key)) {
+            current = current[key];
+          } else {
+            found = false;
+            break;
+          }
+        }
+        const wanted = value.length > 0 ? ` = ${show(value[0])}` : '';
+        check(
+          found && (value.length === 0 || deepEqual(current, value[0])),
+          `to have property ${keys.join('.')}${wanted}`,
+        );
+      },
+    };
+  };
+  const expect = (actual) => ({ ...matchers(actual, false), not: matchers(actual, true) });
+
+  const tests = [];
+  const pending = [];
+  /** The message of what a failed test threw. */
+  const messageOf = (error) => {
+    if (!(error instanceof Error)) return String(error);
+    const generic = error.name === 'Error' || error.name === 'AssertionError';
+    return generic ? error.message : `${error.name}: ${error.message}`;
+  };
+  const test = (name, check) => {
+    // Recorded in the order of the calls, also for async tests.
+    const entry = { name: String(name), passed: true, message: null };
+    tests.push(entry);
+    const fail = (error) => {
+      entry.passed = false;
+      entry.message = messageOf(error);
+    };
+    try {
+      const result = check();
+      if (result && typeof result.then === 'function') {
+        pending.push(Promise.resolve(result).then(() => {}, fail));
+      }
+    } catch (error) {
+      fail(error);
+    }
+  };
+  define('test', test);
+  define('expect', expect);
+  /** Waits for async tests; the host calls it after the script. */
+  define('__settle', () => Promise.all(pending));
+
   define('__output', () =>
     JSON.stringify({
       request: {
@@ -86,6 +199,7 @@
       },
       variables: set,
       logs,
+      tests,
     }),
   );
 })();

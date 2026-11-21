@@ -156,3 +156,80 @@ fn runaway_scripts_are_stopped() {
     );
     assert_eq!(Limits::default().time, Duration::from_secs(5));
 }
+
+#[test]
+fn tests_record_each_check_and_go_on_after_a_failure() {
+    let source = r"
+        test('status is 201', () => expect(res.status).toBe(201));
+        test('status is 200', () => { expect(res.status).toBe(200); });
+        test('token present', () => {
+            const body = res.json();
+            expect(body).toHaveProperty('token', 't0k');
+            expect(body.items).toEqual([1, 2]);
+            expect(body.items).toHaveLength(2);
+            expect(body.items).toContain(2);
+            expect(res.getHeader('content-type')).toMatch(/json/);
+            expect(res.text()).toMatch('token');
+        });
+        test('negations', () => {
+            expect(res.status).not.toBe(500);
+            expect(res.json().missing).toBeUndefined();
+            expect(null).toBeNull();
+            expect(0).toBeFalsy();
+            expect('x').toBeTruthy();
+            expect(1).toBeDefined();
+            expect(res.timeMs).toBeLessThan(1000);
+            expect(res.timeMs).toBeLessThanOrEqual(12);
+            expect(res.timeMs).toBeGreaterThan(1);
+            expect(res.timeMs).toBeGreaterThanOrEqual(12);
+            expect({ a: { b: 1 } }).not.toEqual({ a: { b: 2 } });
+            expect([1]).not.toEqual({ 0: 1 });
+            expect({ a: 1 }).not.toHaveProperty(['a', 'b']);
+        });
+        test('async', async () => {
+            const value = await Promise.resolve(3);
+            expect(value).toBe(4);
+        });
+        test('thrown error', () => { throw new TypeError('boom'); });
+        test('thrown text', () => { throw 'plain'; });
+        test('bad matchers', () => expect(undefined).toContain(1));
+        test('objects in messages', () => expect({ a: 1 }).toEqual([1]));
+        log('after the tests');
+    ";
+    let outcome = run_default(&job(ScriptPhase::PostResponse, source)).unwrap();
+    let summary: Vec<(String, bool, Option<String>)> = outcome
+        .tests
+        .into_iter()
+        .map(|test| (test.name, test.passed, test.message))
+        .collect();
+    let failed = |name: &str, message: &str| (name.to_owned(), false, Some(message.to_owned()));
+    let passed = |name: &str| (name.to_owned(), true, None);
+    assert_eq!(
+        summary,
+        [
+            passed("status is 201"),
+            failed("status is 200", "expected 201 to be 200"),
+            passed("token present"),
+            passed("negations"),
+            failed("async", "expected 3 to be 4"),
+            failed("thrown error", "TypeError: boom"),
+            failed("thrown text", "plain"),
+            failed("bad matchers", "expected undefined to contain 1"),
+            failed("objects in messages", "expected {\"a\":1} to equal [1]"),
+        ]
+    );
+    assert_eq!(outcome.logs, ["after the tests"]);
+}
+
+#[test]
+fn expect_outside_a_test_fails_the_script() {
+    let error = run_default(&job(
+        ScriptPhase::PostResponse,
+        "expect(res.status).toBe(200)",
+    ))
+    .unwrap_err();
+    assert_eq!(
+        error,
+        ScriptError::Failed("AssertionError: expected 201 to be 200".into())
+    );
+}

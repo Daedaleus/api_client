@@ -26,7 +26,7 @@ async fn the_runner_runs_scripts_off_the_async_threads() {
 #[test]
 fn declarations_and_prelude_match() {
     let prelude = include_str!("../prelude.js");
-    for global in ["req", "res", "env", "log", "console"] {
+    for global in ["req", "res", "env", "log", "console", "test", "expect"] {
         assert!(
             API_DECLARATIONS.contains(&format!("declare const {global}:"))
                 || API_DECLARATIONS.contains(&format!("declare function {global}(")),

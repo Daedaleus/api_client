@@ -67,3 +67,36 @@ declare const console: {
   error(...values: unknown[]): void;
   debug(...values: unknown[]): void;
 };
+
+/**
+ * A named test: runs `check` and records whether it passed. A failing
+ * `expect` inside fails only this test; the script goes on.
+ */
+declare function test(name: string, check: () => void | Promise<void>): void;
+
+/** Checks for `expect(actual)`; `.not` turns each one around. */
+interface Matchers {
+  /** Same value (`Object.is`). */
+  toBe(expected: unknown): void;
+  /** Same content, compared deeply (objects and arrays). */
+  toEqual(expected: unknown): void;
+  toBeTruthy(): void;
+  toBeFalsy(): void;
+  toBeDefined(): void;
+  toBeUndefined(): void;
+  toBeNull(): void;
+  toBeGreaterThan(expected: number): void;
+  toBeGreaterThanOrEqual(expected: number): void;
+  toBeLessThan(expected: number): void;
+  toBeLessThanOrEqual(expected: number): void;
+  /** A string or array containing `expected`. */
+  toContain(expected: unknown): void;
+  /** A string matching a regular expression or containing a text. */
+  toMatch(expected: RegExp | string): void;
+  toHaveLength(expected: number): void;
+  /** An object with this property (path like `"user.id"`), optionally with this value. */
+  toHaveProperty(path: string | string[], value?: unknown): void;
+}
+
+/** Starts a check of `actual`, e.g. `expect(res.status).toBe(200)`. */
+declare function expect(actual: unknown): Matchers & { not: Matchers };

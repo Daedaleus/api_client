@@ -49,6 +49,7 @@ async fn the_pre_request_script_changes_the_request_before_variables_are_filled_
             request: changed,
             variables: vec![pair("id", "42")],
             logs: vec!["pre ran".into()],
+            tests: Vec::new(),
         })),
     );
     let request = outgoing(&fixture, "{{baseUrl}}/old", "req.method = 'POST'", "");
@@ -93,7 +94,7 @@ async fn a_failing_pre_request_script_stops_the_run() {
         })),
     );
     let request = outgoing(&fixture, "{{baseUrl}}/x", "nope(", "");
-    let RunOutcomeView::Failed { error, logs } = fixture
+    let RunOutcomeView::Failed { error, logs, .. } = fixture
         .app
         .run_with_scripts(&request, None)
         .await
@@ -122,7 +123,7 @@ async fn a_failing_pre_request_script_stops_the_run() {
             ..ScriptOutcome::default()
         })),
     );
-    let RunOutcomeView::Failed { error, logs } = fixture
+    let RunOutcomeView::Failed { error, logs, .. } = fixture
         .app
         .run_with_scripts(&outgoing(&fixture, "x", "req.url = ''", ""), None)
         .await
@@ -225,4 +226,51 @@ async fn scripts_also_run_from_send_and_errors_explain_themselves() {
         "used more than 64 MB of memory"
     );
     assert_eq!(ScriptError::Failed("boom".into()).to_string(), "boom");
+}
+
+#[tokio::test]
+async fn tests_of_both_scripts_reach_the_view_in_order() {
+    let result = |name: &str, passed: bool| crate::ports::TestResult {
+        name: name.into(),
+        passed,
+        message: (!passed).then(|| "expected 1 to be 2".into()),
+    };
+    let fixture = Fixture::with_scripts(
+        FakeHttpSender::new().reply(Ok(response(200, "text/plain", "ok"))),
+        FakeScriptRunner::new()
+            .result(Ok(ScriptOutcome {
+                request: ScriptRequest {
+                    method: "GET".into(),
+                    url: "{{baseUrl}}/x".into(),
+                    ..ScriptRequest::default()
+                },
+                tests: vec![result("pre", true)],
+                ..ScriptOutcome::default()
+            }))
+            .result(Ok(ScriptOutcome {
+                tests: vec![result("post", false)],
+                ..ScriptOutcome::default()
+            })),
+    );
+    let request = outgoing(
+        &fixture,
+        "{{baseUrl}}/x",
+        "test('pre', () => {})",
+        "test('post', () => {})",
+    );
+    let RunOutcomeView::Completed(view) = fixture
+        .app
+        .run_with_scripts(&request, None)
+        .await
+        .into_view()
+    else {
+        panic!("expected a response");
+    };
+    let names: Vec<_> = view
+        .tests
+        .iter()
+        .map(|test| (test.name.as_str(), test.passed))
+        .collect();
+    assert_eq!(names, [("pre", true), ("post", false)]);
+    assert_eq!(view.tests[1].message.as_deref(), Some("expected 1 to be 2"));
 }

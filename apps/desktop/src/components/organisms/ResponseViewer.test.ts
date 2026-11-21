@@ -21,6 +21,7 @@ function completed(
     body: { text: '{\n  "a": 1\n}', pretty: true, truncated: false, binary: false, ...body },
     logs: [],
     scriptError: null,
+    tests: [],
   };
 }
 
@@ -65,7 +66,7 @@ describe('ResponseViewer', () => {
   it('shows why a request failed, in the chosen language', () => {
     i18n.setLocale('de');
     render(ResponseViewer, {
-      outcome: { kind: 'failed', error: { key: 'error.timeout', args: {} }, logs: [] },
+      outcome: { kind: 'failed', error: { key: 'error.timeout', args: {} }, logs: [], tests: [] },
       sending: false,
     });
     expect(screen.getByRole('alert')).toHaveTextContent('Request fehlgeschlagen');
@@ -92,6 +93,7 @@ describe('ResponseViewer', () => {
         kind: 'failed',
         error: { key: 'error.script_pre_request', args: { detail: 'stopped after 5 s' } },
         logs: ['started'],
+        tests: [],
       },
       sending: false,
     });
@@ -108,5 +110,39 @@ describe('ResponseViewer', () => {
     await view.rerender({ outcome: completed(), sending: false });
     expect(screen.queryByRole('tab', { name: /Log/ })).not.toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Body' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('lists the tests with what failed and counts them on the tab', async () => {
+    render(ResponseViewer, {
+      outcome: {
+        ...completed(),
+        tests: [
+          { name: 'status is 200', passed: true, message: null },
+          { name: 'has items', passed: false, message: 'expected 0 to be greater than 0' },
+        ],
+      },
+      sending: false,
+    });
+    const tab = screen.getByRole('tab', { name: /Tests/ });
+    expect(tab).toHaveTextContent('1/2');
+    await userEvent.click(tab);
+    const list = screen.getByRole('list', { name: 'Tests' });
+    expect(list).toHaveTextContent('status is 200');
+    expect(list).toHaveTextContent('expected 0 to be greater than 0');
+    expect(screen.getAllByRole('img', { name: 'failed' })).toHaveLength(1);
+    expect(screen.getAllByRole('img', { name: 'passed' })).toHaveLength(1);
+  });
+
+  it('shows the tests of a failed run below the error', () => {
+    render(ResponseViewer, {
+      outcome: {
+        kind: 'failed',
+        error: { key: 'error.timeout', args: {} },
+        logs: [],
+        tests: [{ name: 'before', passed: true, message: null }],
+      },
+      sending: false,
+    });
+    expect(screen.getByRole('list', { name: 'Tests' })).toHaveTextContent('before');
   });
 });

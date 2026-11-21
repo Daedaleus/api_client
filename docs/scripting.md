@@ -33,11 +33,42 @@ The complete API with all types is
 | `res` | The response (only after it): `status`, `timeMs`, `getHeader`, `headers()`, `text()`, `json()`. |
 | `env` | Variables: `get`, `has` see every variable that applies to the request; `set` sets one. |
 | `log(...)` / `console.log(...)` | A line in the log; values other than strings as JSON. |
+| `test(name, check)` | A named test; see below. |
+| `expect(value)` | Checks inside a test, e.g. `expect(res.status).toBe(200)`. |
 
 **Variables set with `env.set`** are the strongest of all – stronger than
 the request's own – and apply to this and the following requests of the
 collection until it is closed. They are kept in memory only and never
 written to disk, so a token a script stores cannot end up in git.
+
+## Tests
+
+```ts
+test('status is 200', () => {
+  expect(res.status).toBe(200);
+});
+
+test('returns the product', () => {
+  const product = res.json();
+  expect(product).toHaveProperty('id', 42);
+  expect(product.tags).toContain('tea');
+  expect(res.getHeader('content-type')).toMatch(/json/);
+});
+```
+
+A failing `expect` fails only its test; the script goes on. Results appear
+in the response's *Tests* tab (passed of total, with the reason for each
+failure). Tests may be `async`. `expect` outside a test fails the whole
+script.
+
+Checks: `toBe`, `toEqual` (deep), `toBeTruthy`, `toBeFalsy`, `toBeDefined`,
+`toBeUndefined`, `toBeNull`, `toBeGreaterThan`, `toBeGreaterThanOrEqual`,
+`toBeLessThan`, `toBeLessThanOrEqual`, `toContain`, `toMatch`,
+`toHaveLength`, `toHaveProperty`; each one can be turned around with `.not`
+(`expect(res.status).not.toBe(500)`).
+
+The [command line runner](cli.md) runs the tests too: a request passes only
+when all its tests pass, and the JUnit report lists every test.
 
 ## Limits
 
@@ -53,4 +84,4 @@ counts a failing script after the response as a failed request.
 
 TypeScript types are removed before running, not checked; syntax errors are
 reported with their line. A checker and completion in the editor follow
-(ADR S2), as do tests with `expect`.
+(ADR S2).

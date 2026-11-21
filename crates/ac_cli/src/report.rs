@@ -54,6 +54,12 @@ pub(crate) fn text(
                 texts.text(error)
             ),
         };
+        for test in &result.tests {
+            let _ = match &test.message {
+                None => writeln!(out, "      {PASSED} {}", test.name),
+                Some(message) => writeln!(out, "      {FAILED} {}  – {message}", test.name),
+            };
+        }
     }
     let total = report.results.len();
     let failed = report.failed(error_status_fails);
@@ -66,6 +72,23 @@ pub(crate) fn text(
         ],
     ));
     out.push('\n');
+    let all_tests: Vec<_> = report
+        .results
+        .iter()
+        .flat_map(|result| &result.tests)
+        .collect();
+    if !all_tests.is_empty() {
+        let passed = all_tests.iter().filter(|test| test.passed).count();
+        out.push_str(&texts.get(
+            keys::TESTS,
+            &[
+                ("total", &all_tests.len().to_string()),
+                ("passed", &passed.to_string()),
+                ("failed", &(all_tests.len() - passed).to_string()),
+            ],
+        ));
+        out.push('\n');
+    }
     out
 }
 
@@ -91,15 +114,28 @@ pub(crate) fn json(report: &RunReport, error_status_fails: bool) -> String {
     out
 }
 
-/// `JUnit` XML: one test suite, one test case per request.
+/// `JUnit` XML: one test suite; one test case per request (failed if it got
+/// no response or an error status) and one per test of its scripts.
 pub(crate) fn junit(
     report: &RunReport,
     collection: &str,
     error_status_fails: bool,
     texts: &Texts,
 ) -> String {
-    let total = report.results.len();
-    let failed = report.failed(error_status_fails);
+    let test_count = report
+        .results
+        .iter()
+        .map(|result| result.tests.len())
+        .sum::<usize>();
+    let total = report.results.len() + test_count;
+    let failed = report
+        .results
+        .iter()
+        .map(|result| {
+            usize::from(!result.responded(error_status_fails))
+                + result.tests.iter().filter(|test| !test.passed).count()
+        })
+        .sum::<usize>();
     let seconds: u64 = report.results.iter().map(elapsed_ms).sum();
     let mut out = String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
     let _ = writeln!(
@@ -125,19 +161,35 @@ pub(crate) fn junit(
             escape(&format!("{} {name}", result.method)),
             millis(elapsed_ms(result))
         );
-        if result.passed(error_status_fails) {
+        if result.responded(error_status_fails) {
             out.push_str("/>\n");
-            continue;
+        } else {
+            let message = match &result.outcome {
+                RunResultOutcome::Response { status, .. } => format!("HTTP {status}"),
+                RunResultOutcome::Failed { error } => texts.text(error),
+            };
+            let _ = writeln!(
+                out,
+                "><failure message=\"{}\"/></testcase>",
+                escape(&message)
+            );
         }
-        let message = match &result.outcome {
-            RunResultOutcome::Response { status, .. } => format!("HTTP {status}"),
-            RunResultOutcome::Failed { error } => texts.text(error),
-        };
-        let _ = writeln!(
-            out,
-            "><failure message=\"{}\"/></testcase>",
-            escape(&message)
-        );
+        let suite = escape(&result.path.join("."));
+        for test in &result.tests {
+            let _ = write!(
+                out,
+                "  <testcase classname=\"{suite}\" name=\"{}\" time=\"0.000\"",
+                escape(&test.name)
+            );
+            let _ = match &test.message {
+                None => writeln!(out, "/>"),
+                Some(message) => writeln!(
+                    out,
+                    "><failure message=\"{}\"/></testcase>",
+                    escape(message)
+                ),
+            };
+        }
     }
     out.push_str("</testsuite></testsuites>\n");
     out

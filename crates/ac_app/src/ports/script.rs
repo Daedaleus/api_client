@@ -78,6 +78,19 @@ pub struct ScriptOutcome {
     pub variables: Vec<(String, String)>,
     /// Lines the script logged.
     pub logs: Vec<String>,
+    /// Tests the script ran with `test(…)`, in order.
+    pub tests: Vec<TestResult>,
+}
+
+/// The result of one `test(…)` in a script.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TestResult {
+    /// The test's name.
+    pub name: String,
+    /// Whether every check in it held.
+    pub passed: bool,
+    /// Why it failed, e.g. `expected 404 to be 200`.
+    pub message: Option<String>,
 }
 
 /// Why a script did not finish.

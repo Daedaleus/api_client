@@ -5,6 +5,7 @@ use ac_domain::protocol::{StatusClass, header};
 use serde::Serialize;
 
 use super::body::{BodyView, preview};
+use crate::ports::TestResult;
 use crate::text::UserText;
 
 /// Result of one request run.
@@ -24,7 +25,34 @@ pub enum RunOutcomeView {
         error: UserText,
         /// Lines the pre-request script logged before.
         logs: Vec<String>,
+        /// Tests the pre-request script ran before.
+        tests: Vec<TestResultView>,
     },
+}
+
+/// The result of one `test(…)` of a script.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(rename_all = "camelCase")]
+pub struct TestResultView {
+    /// The test's name.
+    pub name: String,
+    /// Whether every check in it held.
+    pub passed: bool,
+    /// Why it failed (technical, from the script).
+    pub message: Option<String>,
+}
+
+impl TestResultView {
+    /// The view of a script's test result.
+    #[must_use]
+    pub fn from_result(result: &TestResult) -> Self {
+        Self {
+            name: result.name.clone(),
+            passed: result.passed,
+            message: result.message.clone(),
+        }
+    }
 }
 
 /// A response prepared for display.
@@ -50,6 +78,8 @@ pub struct ResponseView {
     pub logs: Vec<String>,
     /// Why the post-response script failed, if it did.
     pub script_error: Option<UserText>,
+    /// Tests of both scripts, in order.
+    pub tests: Vec<TestResultView>,
 }
 
 /// Class of a status code as the UI sees it (serialized in camelCase).
@@ -115,6 +145,7 @@ impl ResponseView {
             body: preview(response.header(header::CONTENT_TYPE), &response.body),
             logs: Vec::new(),
             script_error: None,
+            tests: Vec::new(),
         }
     }
 }

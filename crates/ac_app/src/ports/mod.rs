@@ -16,7 +16,7 @@ pub mod store;
 pub use http::{HttpSender, TransportError};
 pub use login::{BrowserLogin, LoginError, PendingLogin};
 pub use script::{
-    ScriptError, ScriptJob, ScriptOutcome, ScriptRequest, ScriptResponse, ScriptRunner,
+    ScriptError, ScriptJob, ScriptOutcome, ScriptRequest, ScriptResponse, ScriptRunner, TestResult,
 };
 pub use secrets::{SecretError, SecretValues, SecretVault};
 pub use store::{

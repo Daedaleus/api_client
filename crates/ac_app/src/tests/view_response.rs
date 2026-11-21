@@ -60,20 +60,23 @@ fn outcome_json_matches_the_ui_contract() {
             "headers": [{ "name": "X-Id", "value": "1" }],
             "body": { "text": "ok", "pretty": false, "truncated": false, "binary": false },
             "logs": [],
-            "scriptError": null
+            "scriptError": null,
+            "tests": []
         })
     );
 
     let failed = RunOutcomeView::Failed {
         error: UserText::new("error.timeout"),
         logs: vec!["before".into()],
+        tests: Vec::new(),
     };
     assert_eq!(
         serde_json::to_value(&failed).unwrap(),
         serde_json::json!({
             "kind": "failed",
             "error": { "key": "error.timeout", "args": {} },
-            "logs": ["before"]
+            "logs": ["before"],
+            "tests": []
         })
     );
 }

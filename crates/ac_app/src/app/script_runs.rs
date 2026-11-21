@@ -18,12 +18,13 @@ use super::runs::scope;
 use crate::error::AppError;
 use crate::ports::{
     BrowserLogin, CollectionStore, HttpSender, ScriptJob, ScriptRequest, ScriptResponse,
-    ScriptRunner, SecretVault,
+    ScriptRunner, SecretVault, TestResult,
 };
 use crate::resolve::Prepared;
 use crate::text::UserText;
 use crate::view::{
-    BodyDraft, HeaderDraft, OutgoingRequest, ResponseView, RunOutcomeView, VariableDraft,
+    BodyDraft, HeaderDraft, OutgoingRequest, ResponseView, RunOutcomeView, TestResultView,
+    VariableDraft,
 };
 
 /// Variables set by scripts, per open collection (`None`: requests outside
@@ -39,14 +40,17 @@ pub(super) struct Execution {
     pub logs: Vec<String>,
     /// Why the post-response script failed (the response is still shown).
     pub script_error: Option<UserText>,
+    /// Tests of both scripts, in order.
+    pub tests: Vec<TestResult>,
 }
 
 impl Execution {
-    fn failed(error: UserText, logs: Vec<String>) -> Self {
+    fn failed(error: UserText, logs: Vec<String>, tests: Vec<TestResult>) -> Self {
         Self {
             response: Err(error),
             logs,
             script_error: None,
+            tests,
         }
     }
 
@@ -57,11 +61,13 @@ impl Execution {
                 let mut view = ResponseView::from_response(&response);
                 view.logs = self.logs;
                 view.script_error = self.script_error;
+                view.tests = self.tests.iter().map(TestResultView::from_result).collect();
                 RunOutcomeView::Completed(view)
             }
             Err(error) => RunOutcomeView::Failed {
                 error,
                 logs: self.logs,
+                tests: self.tests.iter().map(TestResultView::from_result).collect(),
             },
         }
     }
@@ -84,26 +90,32 @@ where
     ) -> Execution {
         let scripts = outgoing.scripts.to_scripts();
         let mut logs = Vec::new();
+        let mut tests = Vec::new();
         let mut outgoing = outgoing.clone();
         if let Some(source) = scripts.get(ScriptPhase::PreRequest) {
             let job = match self.job(&outgoing, ScriptPhase::PreRequest, source) {
                 Ok(job) => job,
-                Err(error) => return Execution::failed(error.user_text(), logs),
+                Err(error) => return Execution::failed(error.user_text(), logs, tests),
             };
             match self.inner.scripts.run(job).await {
                 Ok(outcome) => {
                     apply(&mut outgoing, outcome.request);
                     self.set_runtime_variables(&outgoing, outcome.variables);
                     logs.extend(outcome.logs);
+                    tests.extend(outcome.tests);
                 }
                 Err(error) => {
-                    return Execution::failed(error.user_text(ScriptPhase::PreRequest), logs);
+                    return Execution::failed(
+                        error.user_text(ScriptPhase::PreRequest),
+                        logs,
+                        tests,
+                    );
                 }
             }
         }
         let prepared = match prepared.map_or_else(|| self.prepare(&outgoing), Ok) {
             Ok(prepared) => prepared,
-            Err(error) => return Execution::failed(error.user_text(), logs),
+            Err(error) => return Execution::failed(error.user_text(), logs, tests),
         };
         let sent = prepared.request.clone();
         let response = self.inner.send(prepared).await;
@@ -123,6 +135,7 @@ where
                     Ok(outcome) => {
                         self.set_runtime_variables(&outgoing, outcome.variables);
                         logs.extend(outcome.logs);
+                        tests.extend(outcome.tests);
                     }
                     Err(error) => script_error = Some(error.user_text(ScriptPhase::PostResponse)),
                 },
@@ -132,6 +145,7 @@ where
             response,
             logs,
             script_error,
+            tests,
         }
     }
 
