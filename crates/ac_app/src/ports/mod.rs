@@ -4,12 +4,15 @@
 //! - [`http`]: sending requests ([`HttpSender`]).
 //! - [`store`]: reading and writing collections ([`CollectionStore`]).
 //! - [`secrets`]: encrypting secret values ([`SecretVault`]).
+//! - [`login`]: signing in in the browser ([`BrowserLogin`]).
 
 pub mod http;
+pub mod login;
 pub mod secrets;
 pub mod store;
 
 pub use http::{HttpSender, TransportError};
+pub use login::{BrowserLogin, LoginError, PendingLogin};
 pub use secrets::{SecretError, SecretValues, SecretVault};
 pub use store::{
     CollectionStore, Location, OpenedCollection, StoreError, StoreErrorKind, TextFile,

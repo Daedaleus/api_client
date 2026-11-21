@@ -31,6 +31,10 @@ app's). In CI, put the content of an age key file into the environment
 variable `API_CLIENT_IDENTITY` and add its public key to the collection's
 recipients ([ADR S4](adr/s4-age-keys.md)).
 
+**OAuth 2:** client credentials work as in the app. The authorization code
+opens the browser for signing in, so it is meant for runs on a developer's
+machine, not for CI.
+
 **Language:** texts follow `LC_ALL`, `LC_MESSAGES` or `LANG` (German or
 English); JSON and JUnit are the same in every language, apart from error
 messages.

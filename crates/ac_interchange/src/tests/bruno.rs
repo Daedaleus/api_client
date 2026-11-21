@@ -286,6 +286,34 @@ fn oauth2_client_credentials_are_imported() {
             client_id: "app".into(),
             client_secret: "{{secret}}".into(),
             scope: "read".into(),
+            ..Default::default()
+        })
+    );
+    assert_eq!(imported.skipped.len(), 0);
+}
+
+#[test]
+fn oauth2_authorization_code_is_imported() {
+    let imported = from_files(
+        Path::new("/bruno"),
+        &[BrunoFile {
+            path: "me.bru".into(),
+            text: "meta {\n  name: Me\n}\nget {\n  url: x\n  auth: oauth2\n}\nauth:oauth2 {\n  grant_type: authorization_code\n  callback_url: http://127.0.0.1:9000/cb\n  authorization_url: https://auth.example.com/authorize\n  access_token_url: https://auth.example.com/token\n  client_id: app\n  client_secret:\n  scope: openid\n  pkce: true\n}".into(),
+        }],
+    );
+    let Item::Request(request) = &imported.collection.items[0] else {
+        panic!("expected a request");
+    };
+    assert_eq!(
+        request.auth,
+        Auth::OAuth2(ac_domain::auth::OAuth2 {
+            grant: ac_domain::auth::OAuth2Grant::AuthorizationCode,
+            token_url: "https://auth.example.com/token".into(),
+            auth_url: "https://auth.example.com/authorize".into(),
+            redirect_url: "http://127.0.0.1:9000/cb".into(),
+            client_id: "app".into(),
+            scope: "openid".into(),
+            ..Default::default()
         })
     );
     assert_eq!(imported.skipped.len(), 0);

@@ -41,9 +41,23 @@ fn every_kind_round_trips() {
             client_id: "app".into(),
             client_secret: "{{secret}}".into(),
             scope: "read write".into(),
+            ..Default::default()
         }),
         Auth::OAuth2(OAuth2 {
             token_url: "t".into(),
+            ..OAuth2::default()
+        }),
+        Auth::OAuth2(OAuth2 {
+            grant: ac_domain::auth::OAuth2Grant::AuthorizationCode,
+            token_url: "https://auth.example.com/token".into(),
+            auth_url: "https://auth.example.com/authorize".into(),
+            redirect_url: "http://127.0.0.1:8080/cb".into(),
+            client_id: "app".into(),
+            ..OAuth2::default()
+        }),
+        Auth::OAuth2(OAuth2 {
+            grant: ac_domain::auth::OAuth2Grant::AuthorizationCode,
+            auth_url: "a".into(),
             ..OAuth2::default()
         }),
     ] {
@@ -67,6 +81,7 @@ fn missing_values_get_defaults_and_wrong_ones_are_reported() {
         "[auth]\ntype = \"oauth\"",
         "[auth]\n",
         "[auth]\ntype = \"api-key\"\nin = \"cookie\"",
+        "[auth]\ntype = \"oauth2\"\ngrant = \"implicit\"",
     ] {
         assert!(parse(text).is_err(), "{text}");
     }

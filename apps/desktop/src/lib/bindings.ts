@@ -66,10 +66,16 @@ password: string } |
 { kind: "bearer"; 
 /**  The token. */
 token: string } | 
-/**  OAuth 2, client credentials grant. */
+/**  OAuth 2. */
 { kind: "oauth2"; 
+/**  How the token is obtained. */
+grant: OAuth2GrantView; 
 /**  Where tokens come from. */
 tokenUrl: string; 
+/**  Where the user signs in (authorization code). */
+authUrl: string; 
+/**  Where the browser returns to; empty for any free port. */
+redirectUrl: string; 
 /**  Client id. */
 clientId: string; 
 /**  Client secret. */
@@ -554,6 +560,13 @@ export type MultipartFieldDraft_Serialize = {
 	/**  `value` is a file path. */
 	file: boolean,
 };
+
+/**  How an OAuth 2 token is obtained. */
+export type OAuth2GrantView = 
+/**  Client credentials. */
+"clientCredentials" | 
+/**  Authorization code with PKCE, signing in in the browser. */
+"authorizationCode";
 
 /**  A request as entered in the editor, with where its variables come from. */
 export type OutgoingRequest = OutgoingRequest_Serialize | OutgoingRequest_Deserialize;

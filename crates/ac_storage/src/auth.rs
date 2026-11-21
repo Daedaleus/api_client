@@ -8,12 +8,14 @@
 //!
 //! No table means "inherit". `basic` has `username` and `password`,
 //! `bearer` has `token`, `api-key` has `name`, `value` and
-//! `in` (`header` or `query`), `oauth2` (client credentials) has
-//! `token_url`, `client_id`, `client_secret` and optionally `scope`.
+//! `in` (`header` or `query`), `oauth2` has `grant`
+//! (`client-credentials`, the default, or `authorization-code`),
+//! `token_url`, `client_id`, `client_secret`, optionally `scope` and, for
+//! the authorization code, `auth_url` and optionally `redirect_url`.
 
 use std::path::Path;
 
-use ac_domain::auth::{Auth, KeyPlacement, OAuth2};
+use ac_domain::auth::{Auth, KeyPlacement, OAuth2, OAuth2Grant};
 use toml_edit::{Item, Table, TableLike};
 
 use crate::document;
@@ -28,6 +30,9 @@ const BASIC: &str = "basic";
 const BEARER: &str = "bearer";
 const API_KEY: &str = "api-key";
 const OAUTH2: &str = "oauth2";
+const GRANT: &str = "grant";
+const CLIENT_CREDENTIALS: &str = "client-credentials";
+const AUTHORIZATION_CODE: &str = "authorization-code";
 const IN: &str = "in";
 const HEADER: &str = "header";
 const QUERY: &str = "query";
@@ -58,7 +63,22 @@ pub(crate) fn read(
             token: text("token")?,
         }),
         Some(OAUTH2) => Ok(Auth::OAuth2(OAuth2 {
+            grant: match document::opt_str(table, GRANT, path)?.as_deref() {
+                None | Some(CLIENT_CREDENTIALS) => OAuth2Grant::ClientCredentials,
+                Some(AUTHORIZATION_CODE) => OAuth2Grant::AuthorizationCode,
+                Some(other) => {
+                    return Err(StorageError::invalid(
+                        path,
+                        field,
+                        format!(
+                            "`grant` must be \"{CLIENT_CREDENTIALS}\" or \"{AUTHORIZATION_CODE}\", found {other:?}"
+                        ),
+                    ));
+                }
+            },
             token_url: text("token_url")?,
+            auth_url: text("auth_url")?,
+            redirect_url: text("redirect_url")?,
             client_id: text("client_id")?,
             client_secret: text("client_secret")?,
             scope: text("scope")?,
@@ -116,6 +136,16 @@ fn to_table(auth: &Auth) -> Option<Table> {
         }
         Auth::OAuth2(oauth) => {
             set(TYPE, OAUTH2);
+            match oauth.grant {
+                OAuth2Grant::ClientCredentials => set(GRANT, CLIENT_CREDENTIALS),
+                OAuth2Grant::AuthorizationCode => {
+                    set(GRANT, AUTHORIZATION_CODE);
+                    set("auth_url", &oauth.auth_url);
+                    if !oauth.redirect_url.is_empty() {
+                        set("redirect_url", &oauth.redirect_url);
+                    }
+                }
+            }
             set("token_url", &oauth.token_url);
             set("client_id", &oauth.client_id);
             set("client_secret", &oauth.client_secret);

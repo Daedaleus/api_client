@@ -139,6 +139,9 @@ async fn fetches_an_oauth_token_once_and_sends_it() {
     let mut health = fixture.draft(&fixture.health);
     health.url = "https://health.example.com".into();
     health.auth = crate::view::AuthDraft::OAuth2 {
+        grant: crate::view::OAuth2GrantView::ClientCredentials,
+        auth_url: String::new(),
+        redirect_url: String::new(),
         token_url: "{{baseUrl}}/token".into(),
         client_id: "app".into(),
         client_secret: "pw".into(),
@@ -183,6 +186,9 @@ async fn a_request_without_an_oauth_token_fails() {
     let mut health = fixture.draft(&fixture.health);
     health.url = "https://health.example.com".into();
     health.auth = crate::view::AuthDraft::OAuth2 {
+        grant: crate::view::OAuth2GrantView::ClientCredentials,
+        auth_url: String::new(),
+        redirect_url: String::new(),
         token_url: "https://auth.example.com/token".into(),
         client_id: "app".into(),
         client_secret: "pw".into(),
@@ -199,4 +205,44 @@ async fn a_request_without_an_oauth_token_fails() {
         RunResultOutcome::Failed { error } if error.key == keys::OAUTH_TOKEN
     ));
     assert_eq!(fixture.http.sent().len(), 1);
+}
+
+#[tokio::test]
+async fn signs_in_in_the_browser_for_the_authorization_code() {
+    let fixture = Fixture::with_ports(
+        FakeHttpSender::new()
+            .reply(Ok(response(
+                200,
+                "application/json",
+                r#"{"access_token":"u"}"#,
+            )))
+            .reply(Ok(response(200, "text/plain", ""))),
+        crate::testing::FakeBrowserLogin::new()
+            .answer(crate::testing::LoginAnswer::Approve("c".into())),
+    );
+    let mut health = fixture.draft(&fixture.health);
+    health.url = "https://health.example.com".into();
+    health.auth = crate::view::AuthDraft::OAuth2 {
+        grant: crate::view::OAuth2GrantView::AuthorizationCode,
+        token_url: "https://auth.example.com/token".into(),
+        auth_url: "https://auth.example.com/authorize".into(),
+        redirect_url: String::new(),
+        client_id: "app".into(),
+        client_secret: String::new(),
+        scope: String::new(),
+    };
+    fixture.save(health).unwrap();
+    let report = fixture
+        .app
+        .run(&fixture.collection, &plan(None, Some("Health")))
+        .await
+        .unwrap();
+    assert_eq!(report.failed(true), 0);
+    assert_eq!(fixture.browser.opened().len(), 1);
+    assert!(
+        fixture.http.sent()[1]
+            .headers
+            .iter()
+            .any(|header| header.name == "authorization" && header.value == "Bearer u")
+    );
 }

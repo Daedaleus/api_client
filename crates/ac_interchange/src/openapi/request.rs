@@ -1,7 +1,7 @@
 //! One operation of a description as a request: name, URL with variables,
 //! headers, body and auth.
 
-use ac_domain::auth::{Auth, KeyPlacement, OAuth2};
+use ac_domain::auth::{Auth, KeyPlacement, OAuth2, OAuth2Grant};
 use ac_domain::collection::{Body, FormField, HeaderEntry, MultipartField, Request};
 use ac_domain::environment::Variable;
 use ac_domain::protocol::HttpMethod;
@@ -271,27 +271,11 @@ pub(super) fn security(
             })
         }
         ("oauth2", _) => {
-            let token_url = scheme
-                .get("flows")
-                .and_then(|flows| flows.get("clientCredentials"))
-                .and_then(|flow| flow.get("tokenUrl"))
-                .and_then(Value::as_str);
-            let Some(token_url) = token_url else {
+            let auth = oauth2(scheme, scopes);
+            if auth.is_none() {
                 skipped.push(skipped_auth(item, "oauth2".into()));
-                return None;
-            };
-            let scope: Vec<&str> = scopes
-                .as_array()
-                .into_iter()
-                .flatten()
-                .filter_map(Value::as_str)
-                .collect();
-            Some(Auth::OAuth2(OAuth2 {
-                token_url: token_url.to_owned(),
-                client_id: "{{clientId}}".into(),
-                client_secret: "{{clientSecret}}".into(),
-                scope: scope.join(" "),
-            }))
+            }
+            auth
         }
         (other, scheme_name) => {
             let label = if scheme_name.is_empty() {
@@ -303,6 +287,42 @@ pub(super) fn security(
             None
         }
     }
+}
+
+/// An `oauth2` scheme with a client credentials or authorization code flow
+/// (client credentials first: they need no user); `scopes` are those the
+/// operation requires.
+fn oauth2(scheme: &Value, scopes: &Value) -> Option<Auth> {
+    let flow = |name: &str, key: &str| {
+        scheme
+            .get("flows")
+            .and_then(|flows| flows.get(name))
+            .and_then(|flow| flow.get(key))
+            .and_then(Value::as_str)
+            .map(str::to_owned)
+    };
+    let scope = scopes
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(Value::as_str)
+        .collect::<Vec<_>>()
+        .join(" ");
+    let base = OAuth2 {
+        client_id: "{{clientId}}".into(),
+        client_secret: "{{clientSecret}}".into(),
+        scope,
+        ..OAuth2::default()
+    };
+    if let Some(token_url) = flow("clientCredentials", "tokenUrl") {
+        return Some(Auth::OAuth2(OAuth2 { token_url, ..base }));
+    }
+    Some(Auth::OAuth2(OAuth2 {
+        grant: OAuth2Grant::AuthorizationCode,
+        auth_url: flow("authorizationCode", "authorizationUrl")?,
+        token_url: flow("authorizationCode", "tokenUrl")?,
+        ..base
+    }))
 }
 
 fn skipped_auth(item: &str, label: String) -> Skipped {

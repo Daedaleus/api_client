@@ -22,7 +22,7 @@ pub mod response;
 pub mod run_report;
 pub mod variable;
 
-pub use auth::{AuthDraft, CertificateCheckView, KeyPlacementView};
+pub use auth::{AuthDraft, CertificateCheckView, KeyPlacementView, OAuth2GrantView};
 pub use body::BodyView;
 pub use collection::{CollectionView, HeaderDraft, RequestDraft, TreeItemView};
 pub use environment::EnvironmentDraft;

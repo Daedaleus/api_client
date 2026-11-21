@@ -16,12 +16,12 @@ use crate::command::{CommandAck, RunId};
 use crate::error::AppError;
 use crate::event::AppEvent;
 use crate::oauth::authorize;
-use crate::ports::{CollectionStore, HttpSender, SecretVault};
+use crate::ports::{BrowserLogin, CollectionStore, HttpSender, SecretVault};
 use crate::resolve::{Entered, Prepared, resolve_request};
 use crate::text::UserText;
 use crate::view::{HeaderDraft, OutgoingRequest, ResponseView, RunOutcomeView, VariableDraft};
 
-impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
+impl<H: HttpSender, S: CollectionStore, V: SecretVault, B: BrowserLogin> App<H, S, V, B> {
     pub(super) fn send_request(&self, outgoing: &OutgoingRequest) -> Result<CommandAck, AppError> {
         let prepared = self.prepare(outgoing)?;
         let run_id = RunId(self.inner.next_run.fetch_add(1, Ordering::Relaxed));
@@ -77,15 +77,15 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
     }
 }
 
-impl<H: HttpSender, S, V> Inner<H, S, V> {
+impl<H: HttpSender, S, V, B: BrowserLogin> Inner<H, S, V, B> {
     /// Sends a prepared request, fetching its OAuth 2 token first if it
     /// needs one.
     pub(super) async fn send(&self, prepared: Prepared) -> Result<Response, UserText> {
         let mut request = prepared.request;
-        if let Some(credentials) = &prepared.client_credentials {
+        if let Some(client) = &prepared.oauth {
             let token = self
                 .tokens
-                .token(&self.http, credentials, request.verify_tls)
+                .token(&self.http, &self.login, client, request.verify_tls)
                 .await
                 .map_err(|error| error.user_text())?;
             authorize(&mut request, &token);

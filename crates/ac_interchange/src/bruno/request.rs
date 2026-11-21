@@ -2,15 +2,15 @@
 
 use std::path::Path;
 
-use ac_domain::auth::{Auth, KeyPlacement, OAuth2};
+use ac_domain::auth::{Auth, KeyPlacement, OAuth2, OAuth2Grant};
 use ac_domain::collection::{Body, FormField, HeaderEntry, MultipartField, Request};
 use ac_domain::environment::Variable;
 use ac_domain::protocol::HttpMethod;
-use ac_domain::protocol::grant_type::CLIENT_CREDENTIALS;
+use ac_domain::protocol::grant_type::{AUTHORIZATION_CODE, CLIENT_CREDENTIALS};
 
 use super::bru::{Block, find};
 use super::{seq_of, skipped};
-use crate::import::{Skipped, SkippedKind};
+use crate::import::{Skipped, SkippedKind, loopback_redirect};
 
 /// Method blocks of a request file.
 const METHODS: [&str; 9] = [
@@ -230,6 +230,18 @@ fn auth(blocks: &[Block], mode: Option<&str>, item: &str, report: &mut Vec<Skipp
         Some("oauth2") if field("auth:oauth2", "grant_type") == CLIENT_CREDENTIALS => {
             Auth::OAuth2(OAuth2 {
                 token_url: field("auth:oauth2", "access_token_url"),
+                client_id: field("auth:oauth2", "client_id"),
+                client_secret: field("auth:oauth2", "client_secret"),
+                scope: field("auth:oauth2", "scope"),
+                ..Default::default()
+            })
+        }
+        Some("oauth2") if field("auth:oauth2", "grant_type") == AUTHORIZATION_CODE => {
+            Auth::OAuth2(OAuth2 {
+                grant: OAuth2Grant::AuthorizationCode,
+                token_url: field("auth:oauth2", "access_token_url"),
+                auth_url: field("auth:oauth2", "authorization_url"),
+                redirect_url: loopback_redirect(&field("auth:oauth2", "callback_url")),
                 client_id: field("auth:oauth2", "client_id"),
                 client_secret: field("auth:oauth2", "client_secret"),
                 scope: field("auth:oauth2", "scope"),

@@ -3,12 +3,15 @@
 //! - [`http`]: [`FakeHttpSender`] with queued replies.
 //! - [`store`]: [`MemoryStore`], collections kept in memory.
 //! - [`secrets`]: [`FakeVault`], readable "encryption" with fake keys.
+//! - [`login`]: [`FakeBrowserLogin`], sign-ins with queued answers.
 
 pub mod http;
+pub mod login;
 pub mod secrets;
 pub mod store;
 
 pub use http::{FakeHttpSender, response};
+pub use login::{FAKE_PORT, FakeBrowserLogin, LoginAnswer};
 pub use secrets::FakeVault;
 pub use store::MemoryStore;
 

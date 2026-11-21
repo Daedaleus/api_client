@@ -8,11 +8,11 @@ use super::*;
 use crate::app::Ports;
 use crate::command::Command;
 use crate::ports::TransportError;
-use crate::testing::{FakeHttpSender, FakeVault, MemoryStore, response};
+use crate::testing::{FakeBrowserLogin, FakeHttpSender, FakeVault, MemoryStore, response};
 use crate::text::{UserText, keys};
 use crate::view::BodyDraft;
 
-type TestApp = App<Arc<FakeHttpSender>, MemoryStore, FakeVault>;
+type TestApp = App<Arc<FakeHttpSender>, MemoryStore, FakeVault, FakeBrowserLogin>;
 
 fn app(fake: FakeHttpSender) -> (TestApp, Arc<FakeHttpSender>) {
     let fake = Arc::new(fake);
@@ -21,6 +21,7 @@ fn app(fake: FakeHttpSender) -> (TestApp, Arc<FakeHttpSender>) {
             http: Arc::clone(&fake),
             store: MemoryStore::new(),
             vault: FakeVault::default(),
+            login: FakeBrowserLogin::new(),
         },
         Handle::current(),
     );

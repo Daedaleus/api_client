@@ -71,6 +71,15 @@ pub fn import_collection(text: &str) -> Result<Imported, ImportError> {
 }
 
 /// The document in `text`: JSON, else YAML (which also covers most JSON).
+/// An imported OAuth 2 redirect URL if the app can receive it; empty (any
+/// free port) otherwise, e.g. for the web callbacks of other tools.
+pub(crate) fn loopback_redirect(url: &str) -> String {
+    match url::Url::parse(url.trim()) {
+        Ok(parsed) if ac_domain::auth::is_loopback_redirect(&parsed) => url.trim().to_owned(),
+        _ => String::new(),
+    }
+}
+
 pub(crate) fn parse(text: &str) -> Result<Value, ImportError> {
     if let Ok(value) = serde_json::from_str(text) {
         return Ok(value);

@@ -12,14 +12,15 @@ use tokio::runtime::Handle;
 use crate::app::{App, Ports};
 use crate::command::{Command, CommandAck, Query, QueryResult};
 use crate::error::AppError;
-use crate::testing::{FakeHttpSender, FakeVault, MemoryStore};
+use crate::testing::{FakeBrowserLogin, FakeHttpSender, FakeVault, MemoryStore};
 use crate::view::{CollectionView, RequestDraft, TreeItemView};
 
 /// `Shop` with `Auth/Login` and `Health`, and the environment `Dev`
 /// (`baseUrl`); opened in an app. Must be created inside a Tokio runtime.
 pub(crate) struct Fixture {
-    pub app: App<Arc<FakeHttpSender>, Arc<MemoryStore>, Arc<FakeVault>>,
+    pub app: App<Arc<FakeHttpSender>, Arc<MemoryStore>, Arc<FakeVault>, Arc<FakeBrowserLogin>>,
     pub http: Arc<FakeHttpSender>,
+    pub browser: Arc<FakeBrowserLogin>,
     pub store: Arc<MemoryStore>,
     pub vault: Arc<FakeVault>,
     pub root: PathBuf,
@@ -36,6 +37,10 @@ impl Fixture {
     }
 
     pub fn with_http(http: FakeHttpSender) -> Self {
+        Self::with_ports(http, FakeBrowserLogin::new())
+    }
+
+    pub fn with_ports(http: FakeHttpSender, browser: FakeBrowserLogin) -> Self {
         let mut login = Request::new("Login");
         login.method = HttpMethod::Post;
         login.url = "{{baseUrl}}/login".into();
@@ -72,17 +77,20 @@ impl Fixture {
         );
         let http = Arc::new(http);
         let vault = Arc::new(FakeVault::default());
+        let browser = Arc::new(browser);
         let app = App::new(
             Ports {
                 http: Arc::clone(&http),
                 store: Arc::clone(&store),
                 vault: Arc::clone(&vault),
+                login: Arc::clone(&browser),
             },
             Handle::current(),
         );
         let fixture = Self {
             app,
             http,
+            browser,
             store,
             vault,
             root,

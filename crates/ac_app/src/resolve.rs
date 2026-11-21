@@ -13,7 +13,7 @@ use base64::engine::general_purpose::STANDARD as BASE64;
 use url::Url;
 
 use crate::error::AppError;
-use crate::oauth::ClientCredentials;
+use crate::oauth::OAuthClient;
 use crate::resolve_body::resolve_body;
 
 /// Scheme assumed when the user enters a URL without one, as other API
@@ -38,8 +38,8 @@ pub(crate) struct Entered<'a> {
 #[derive(Debug)]
 pub(crate) struct Prepared {
     pub request: ResolvedRequest,
-    /// Fetch a token with these and send it as bearer authorization.
-    pub client_credentials: Option<ClientCredentials>,
+    /// Obtain a token with these and send it as bearer authorization.
+    pub oauth: Option<OAuthClient>,
 }
 
 /// Validates method, URL and headers as entered and prepares the body.
@@ -72,8 +72,8 @@ pub(crate) fn resolve_request(
     let mut headers = resolve_headers(&headers)?;
     apply_auth(entered.auth, &mut url, &mut headers, &fill)?;
     let body = resolve_body(entered.body, &mut headers, entered.files_base, &fill)?;
-    let client_credentials = match entered.auth {
-        Auth::OAuth2(oauth) => Some(ClientCredentials::resolve(oauth, &fill)?),
+    let oauth = match entered.auth {
+        Auth::OAuth2(oauth) => Some(OAuthClient::resolve(oauth, &fill)?),
         _ => None,
     };
     Ok(Prepared {
@@ -84,7 +84,7 @@ pub(crate) fn resolve_request(
             body,
             verify_tls: entered.verify_tls,
         },
-        client_credentials,
+        oauth,
     })
 }
 

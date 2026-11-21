@@ -6,7 +6,7 @@ use ac_domain::collection::{Item, Request};
 
 use super::App;
 use crate::error::AppError;
-use crate::ports::{CollectionStore, HttpSender, SecretVault};
+use crate::ports::{BrowserLogin, CollectionStore, HttpSender, SecretVault};
 use crate::view::{
     OutgoingRequest, RequestDraft, RunReport, RunResult, RunResultOutcome, SendContext,
 };
@@ -21,7 +21,7 @@ pub struct RunPlan {
     pub only: Option<String>,
 }
 
-impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
+impl<H: HttpSender, S: CollectionStore, V: SecretVault, B: BrowserLogin> App<H, S, V, B> {
     /// Runs the requests of an open collection one after another and
     /// reports what happened. Requests that cannot be sent (an unknown
     /// variable, say) are reported as failed; the run goes on.

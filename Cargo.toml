@@ -24,6 +24,9 @@ ac_storage = { path = "crates/ac_storage" }
 age = { version = "0.12", features = ["armor", "ssh"] }
 # base64: the credentials of HTTP Basic authentication.
 base64 = "0.22"
+# getrandom and sha2: the PKCE verifier and challenge of the OAuth 2 sign-in.
+getrandom = "0.3"
+sha2 = "0.10"
 reqwest = "0.13"
 serde = { version = "1", features = ["derive"] }
 # clap: command line arguments of the CLI runner.

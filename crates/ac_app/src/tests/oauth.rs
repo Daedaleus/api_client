@@ -1,56 +1,55 @@
 use ac_domain::environment::interpolate;
+use ac_domain::protocol::HttpMethod;
 
 use super::*;
-use crate::testing::{FakeHttpSender, response};
 
-fn credentials() -> ClientCredentials {
-    ClientCredentials {
-        token_url: Url::parse("https://auth.example.com/token").unwrap(),
-        client_id: "shop app".into(),
-        client_secret: "s3cr:t".into(),
-        scope: "read write".into(),
+fn variables(name: &str) -> Option<&'static str> {
+    match name {
+        "auth" => Some("auth.example.com"),
+        "id" => Some("app"),
+        "secret" => Some("pw"),
+        _ => None,
     }
 }
 
-fn token_reply(body: &str) -> Response {
-    response(200, media_type::JSON, body)
+fn fill(text: &str) -> Result<String, UnresolvedVariable> {
+    interpolate(text, variables)
 }
 
-fn header<'a>(request: &'a ResolvedRequest, name: &str) -> Option<&'a str> {
-    request
-        .headers
-        .iter()
-        .find(|header| header.name.eq_ignore_ascii_case(name))
-        .map(|header| header.value.as_str())
+fn code_flow(redirect_url: &str) -> OAuth2 {
+    OAuth2 {
+        grant: OAuth2Grant::AuthorizationCode,
+        token_url: "https://{{auth}}/token".into(),
+        auth_url: "https://{{auth}}/authorize".into(),
+        redirect_url: redirect_url.into(),
+        client_id: "{{id}}".into(),
+        ..OAuth2::default()
+    }
 }
 
 #[test]
-fn resolves_variables_and_checks_the_token_url() {
+fn client_credentials_resolve_with_variables() {
     let oauth = OAuth2 {
         token_url: "{{auth}}/token".into(),
         client_id: " {{id}} ".into(),
         client_secret: "{{secret}}".into(),
-        scope: String::new(),
+        scope: " read ".into(),
+        ..OAuth2::default()
     };
-    let fill = |text: &str| {
-        interpolate(text, |name| match name {
-            "auth" => Some("auth.example.com"),
-            "id" => Some("app"),
-            "secret" => Some("pw"),
-            _ => None,
-        })
-    };
-    let resolved = ClientCredentials::resolve(&oauth, &fill).unwrap();
-    assert_eq!(resolved.token_url.as_str(), "http://auth.example.com/token");
-    assert_eq!(resolved.client_id, "app");
-    assert_eq!(resolved.client_secret, "pw");
+    let client = OAuthClient::resolve(&oauth, &fill).unwrap();
+    assert_eq!(client.flow, Flow::ClientCredentials);
+    assert_eq!(client.token_url.as_str(), "http://auth.example.com/token");
+    assert_eq!(client.client_id, "app");
+    assert_eq!(client.client_secret, "pw");
+    assert_eq!(client.scope, "read");
+    assert!(!client.is_interactive());
 
     let unknown = OAuth2 {
         client_secret: "{{nope}}".into(),
         ..oauth.clone()
     };
     assert!(matches!(
-        ClientCredentials::resolve(&unknown, &fill),
+        OAuthClient::resolve(&unknown, &fill),
         Err(AppError::UnresolvedVariable(_))
     ));
     let empty = OAuth2 {
@@ -58,147 +57,93 @@ fn resolves_variables_and_checks_the_token_url() {
         ..oauth
     };
     assert_eq!(
-        ClientCredentials::resolve(&empty, &fill).unwrap_err(),
+        OAuthClient::resolve(&empty, &fill).unwrap_err(),
+        AppError::EmptyUrl
+    );
+}
+
+#[test]
+fn the_authorization_code_returns_to_a_loopback_address() {
+    let client = OAuthClient::resolve(&code_flow(""), &fill).unwrap();
+    assert!(client.is_interactive());
+    let Flow::AuthorizationCode { auth_url, redirect } = &client.flow else {
+        panic!("expected the authorization code");
+    };
+    assert_eq!(auth_url.as_str(), "https://auth.example.com/authorize");
+    assert_eq!(redirect.as_str(), "http://127.0.0.1:0/callback");
+
+    for fine in [
+        "http://localhost:8080/callback",
+        "http://127.0.0.1:9000/",
+        "http://[::1]:9000/cb",
+    ] {
+        assert!(
+            OAuthClient::resolve(&code_flow(fine), &fill).is_ok(),
+            "{fine}"
+        );
+    }
+    for wrong in [
+        "https://127.0.0.1/cb",
+        "http://example.com/cb",
+        "http://10.0.0.1/cb",
+        "not a url",
+    ] {
+        assert_eq!(
+            OAuthClient::resolve(&code_flow(wrong), &fill).unwrap_err(),
+            AppError::RedirectNotLoopback(wrong.into()),
+        );
+    }
+    let text = AppError::RedirectNotLoopback("x".into()).user_text();
+    assert_eq!(text.key, keys::OAUTH_REDIRECT);
+
+    let no_auth_url = OAuth2 {
+        auth_url: String::new(),
+        ..code_flow("")
+    };
+    assert_eq!(
+        OAuthClient::resolve(&no_auth_url, &fill).unwrap_err(),
         AppError::EmptyUrl
     );
 }
 
 #[test]
 fn debug_output_hides_the_secret() {
-    let text = format!("{:?}", credentials());
-    assert!(text.contains("shop app"));
-    assert!(!text.contains("s3cr"));
+    let oauth = OAuth2 {
+        client_secret: "{{secret}}".into(),
+        ..code_flow("")
+    };
+    let text = format!("{:?}", OAuthClient::resolve(&oauth, &fill).unwrap());
+    assert!(text.contains("app"), "{text}");
+    assert!(!text.contains("pw"), "{text}");
 }
 
 #[test]
-fn token_request_is_a_form_post_with_basic_client_authentication() {
-    let request = credentials().token_request(false);
-    assert_eq!(request.method, HttpMethod::Post);
-    assert_eq!(request.url.as_str(), "https://auth.example.com/token");
-    assert!(!request.verify_tls);
-    // "shop+app:s3cr%3At", form-encoded before Base64.
-    assert_eq!(
-        header(&request, header::AUTHORIZATION),
-        Some("Basic c2hvcCthcHA6czNjciUzQXQ=")
-    );
-    assert_eq!(
-        header(&request, header::CONTENT_TYPE),
-        Some(media_type::FORM)
-    );
-    assert_eq!(
-        request.body_bytes(),
-        Some(&b"grant_type=client_credentials&scope=read+write"[..])
-    );
-
-    let no_scope = ClientCredentials {
-        scope: String::new(),
-        ..credentials()
-    };
-    assert_eq!(
-        no_scope.token_request(true).body_bytes(),
-        Some(&b"grant_type=client_credentials"[..])
-    );
-}
-
-#[tokio::test]
-async fn keeps_a_token_until_shortly_before_it_expires() {
-    let http = FakeHttpSender::new()
-        .reply(Ok(token_reply(
-            r#"{"access_token":"abc","expires_in":3600}"#,
-        )))
-        .reply(Ok(token_reply(r#"{"access_token":"new"}"#)));
-    let cache = TokenCache::default();
-    assert_eq!(
-        cache.token(&http, &credentials(), true).await.unwrap(),
-        "abc"
-    );
-    assert_eq!(
-        cache.token(&http, &credentials(), true).await.unwrap(),
-        "abc"
-    );
-    assert_eq!(http.sent().len(), 1);
-
-    // Other credentials, other token.
-    let other = ClientCredentials {
-        scope: "admin".into(),
-        ..credentials()
-    };
-    assert_eq!(cache.token(&http, &other, true).await.unwrap(), "new");
-    assert_eq!(http.sent().len(), 2);
-}
-
-#[tokio::test]
-async fn fetches_anew_without_a_usable_lifetime() {
-    let http = FakeHttpSender::new()
-        // Expires within the margin.
-        .reply(Ok(token_reply(r#"{"access_token":"a","expires_in":"20"}"#)))
-        // No lifetime at all.
-        .reply(Ok(token_reply(r#"{"access_token":"b"}"#)))
-        .reply(Ok(token_reply(r#"{"access_token":"c","expires_in":"60"}"#)));
-    let cache = TokenCache::default();
-    for expected in ["a", "b", "c", "c"] {
-        assert_eq!(
-            cache.token(&http, &credentials(), true).await.unwrap(),
-            expected
-        );
-    }
-    assert_eq!(http.sent().len(), 3);
-}
-
-#[tokio::test]
-async fn reports_why_no_token_came() {
-    let http = FakeHttpSender::new()
-        .reply(Ok(response(
-            401,
-            media_type::JSON,
-            r#"{"error":"invalid_client","error_description":"unknown client"}"#,
-        )))
-        .reply(Ok(response(
-            400,
-            media_type::JSON,
-            r#"{"error":"invalid_scope"}"#,
-        )))
-        .reply(Ok(response(502, "text/html", "<h1>Bad gateway</h1>")))
-        .reply(Ok(token_reply(r#"{"token":"x"}"#)))
-        .reply(Err(TransportError::Timeout));
-    let cache = TokenCache::default();
-    let mut errors = Vec::new();
-    for _ in 0..5 {
-        errors.push(cache.token(&http, &credentials(), true).await.unwrap_err());
-    }
-    let refused = |status, reason: &str| TokenError::Refused {
-        status,
-        reason: reason.into(),
-    };
-    assert_eq!(
-        errors,
-        [
-            refused(401, "invalid_client (unknown client)"),
-            refused(400, "invalid_scope"),
-            refused(502, "<h1>Bad gateway</h1>"),
-            TokenError::NoToken,
-            TokenError::Transport(TransportError::Timeout),
-        ]
-    );
-    let text = errors[0].user_text();
-    assert_eq!(text.key, keys::OAUTH_TOKEN);
-    assert_eq!(
-        text.args["detail"],
-        "status 401: invalid_client (unknown client)"
-    );
+fn errors_explain_themselves() {
+    let timeout = TokenError::Login(LoginError::TimedOut).user_text();
+    assert_eq!(timeout.key, keys::OAUTH_SIGN_IN_TIMEOUT);
+    let browser = TokenError::Login(LoginError::Browser("gone".into())).user_text();
+    assert_eq!(browser.key, keys::OAUTH_TOKEN);
+    assert_eq!(browser.args["detail"], "cannot open the browser: gone");
+    let denied = TokenError::Denied("access_denied".into()).user_text();
+    assert_eq!(denied.args["detail"], "sign-in refused: access_denied");
 }
 
 #[test]
 fn authorize_keeps_an_authorization_header_the_user_set() {
-    let mut request = credentials().token_request(true);
+    let mut request = ResolvedRequest {
+        method: HttpMethod::Get,
+        url: Url::parse("https://api.example.com").unwrap(),
+        headers: vec![Header::new("Authorization", "Basic x")],
+        body: None,
+        verify_tls: true,
+    };
     authorize(&mut request, "abc");
-    assert!(
-        header(&request, header::AUTHORIZATION)
-            .unwrap()
-            .starts_with("Basic")
-    );
+    assert_eq!(request.headers.len(), 1);
 
     request.headers.clear();
     authorize(&mut request, "abc");
-    assert_eq!(header(&request, header::AUTHORIZATION), Some("Bearer abc"));
+    assert_eq!(
+        request.headers,
+        [Header::new(header::AUTHORIZATION, "Bearer abc")]
+    );
 }

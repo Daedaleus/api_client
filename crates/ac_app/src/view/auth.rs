@@ -1,7 +1,7 @@
 //! Authentication and the certificate check as the editors show and return
 //! them.
 
-use ac_domain::auth::{Auth, KeyPlacement, OAuth2};
+use ac_domain::auth::{Auth, KeyPlacement, OAuth2, OAuth2Grant};
 use ac_domain::tls::CertificateCheck;
 use serde::{Deserialize, Serialize};
 
@@ -31,11 +31,17 @@ pub enum AuthDraft {
         /// The token.
         token: String,
     },
-    /// OAuth 2, client credentials grant.
+    /// OAuth 2.
     #[serde(rename = "oauth2")]
     OAuth2 {
+        /// How the token is obtained.
+        grant: OAuth2GrantView,
         /// Where tokens come from.
         token_url: String,
+        /// Where the user signs in (authorization code).
+        auth_url: String,
+        /// Where the browser returns to; empty for any free port.
+        redirect_url: String,
         /// Client id.
         client_id: String,
         /// Client secret.
@@ -64,6 +70,18 @@ pub enum KeyPlacementView {
     Header,
     /// As a query parameter.
     Query,
+}
+
+/// How an OAuth 2 token is obtained.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(rename_all = "camelCase")]
+pub enum OAuth2GrantView {
+    /// Client credentials.
+    #[default]
+    ClientCredentials,
+    /// Authorization code with PKCE, signing in in the browser.
+    AuthorizationCode,
 }
 
 /// Whether the server's TLS certificate is checked.
@@ -117,7 +135,13 @@ impl AuthDraft {
                 token: token.clone(),
             },
             Auth::OAuth2(oauth) => Self::OAuth2 {
+                grant: match oauth.grant {
+                    OAuth2Grant::ClientCredentials => OAuth2GrantView::ClientCredentials,
+                    OAuth2Grant::AuthorizationCode => OAuth2GrantView::AuthorizationCode,
+                },
                 token_url: oauth.token_url.clone(),
+                auth_url: oauth.auth_url.clone(),
+                redirect_url: oauth.redirect_url.clone(),
                 client_id: oauth.client_id.clone(),
                 client_secret: oauth.client_secret.clone(),
                 scope: oauth.scope.clone(),
@@ -151,12 +175,21 @@ impl AuthDraft {
                 token: token.clone(),
             },
             Self::OAuth2 {
+                grant,
                 token_url,
+                auth_url,
+                redirect_url,
                 client_id,
                 client_secret,
                 scope,
             } => Auth::OAuth2(OAuth2 {
+                grant: match grant {
+                    OAuth2GrantView::ClientCredentials => OAuth2Grant::ClientCredentials,
+                    OAuth2GrantView::AuthorizationCode => OAuth2Grant::AuthorizationCode,
+                },
                 token_url: token_url.clone(),
+                auth_url: auth_url.clone(),
+                redirect_url: redirect_url.clone(),
                 client_id: client_id.clone(),
                 client_secret: client_secret.clone(),
                 scope: scope.clone(),

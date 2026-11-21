@@ -47,6 +47,9 @@ pub enum AppError {
     /// Encrypting or decrypting secrets failed.
     #[error(transparent)]
     Secret(#[from] SecretError),
+    /// The OAuth 2 redirect URL is no `http` URL on the loopback address.
+    #[error("redirect URL {0:?} is not on the loopback address")]
+    RedirectNotLoopback(String),
     /// A relative file path in a request that belongs to no collection
     /// (relative paths are relative to the collection folder).
     #[error("relative file path {0:?} without a collection")]
@@ -114,6 +117,9 @@ impl AppError {
             Self::SecretUnavailable { reason, .. }
             | Self::NotReencrypted { reason, .. }
             | Self::Secret(reason) => reason.user_text(),
+            Self::RedirectNotLoopback(url) => {
+                UserText::new(keys::OAUTH_REDIRECT).with("url", url.clone())
+            }
             Self::RelativeFile(path) => {
                 UserText::new(keys::FILE_RELATIVE).with("path", path.clone())
             }

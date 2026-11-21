@@ -2,6 +2,13 @@
 //!
 //! One [`ReqwestSender`] per application; it shares connections between all
 //! requests. Redirects are followed (up to 10), TLS certificates are verified.
+//!
+//! [`login`]: receiving the redirect of an OAuth 2 sign-in in the browser
+//! ([`LoopbackLogin`]).
+
+pub mod login;
+
+pub use login::{LoopbackLogin, SystemBrowser};
 
 use std::path::Path;
 use std::time::{Duration, Instant};
