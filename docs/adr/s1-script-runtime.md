@@ -1,6 +1,6 @@
 # ADR S1: Script runtime
 
-Status: proposed (2026-11-21). Issue #9.
+Status: accepted (2026-11-21). Issue #9.
 
 ## Context
 
@@ -54,7 +54,7 @@ checker's job, S2).
 library, and it would add tens of MB and a second async runtime for
 scripts that QuickJS runs in a fraction of a millisecond.
 
-## Decision (proposed)
+## Decision
 
 1. **QuickJS through `rquickjs`** runs the scripts. It is the only candidate
    that can stop any script by wall-clock time (also inside the regex

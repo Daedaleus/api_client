@@ -298,11 +298,11 @@ language only determines how they are implemented idiomatically.
   Not final until a prototype has been evaluated.
 - **License:** MIT OR Apache-2.0 (dual). Dependencies must be compatible
   (checked by `cargo-deny`, `deny.toml`).
-- **Open decisions** *(open)*: final UI framework, project name, the
-  embedded JavaScript engine (e.g. QuickJS via `rquickjs`, Boa in pure Rust,
-  V8 via `deno_core` – trade-off: size, start time and sandboxing vs.
-  language coverage) with TypeScript type stripping (e.g. `oxc` or `swc`),
-  and the tooling for checker/completion (e.g. the TypeScript language
+- **Script runtime (decided):** QuickJS via `rquickjs`, TypeScript stripped
+  with `oxc`; a fresh runtime per run with time and memory limits
+  ([ADR S1](docs/adr/s1-script-runtime.md)).
+- **Open decisions** *(open)*: final UI framework, project name and the
+  tooling for checker/completion (e.g. the TypeScript language
   service, which runs in JavaScript, vs. own checks from the `.d.ts` in
   Rust – keeping in mind that checker and completion belong below the
   replaceable UI).
