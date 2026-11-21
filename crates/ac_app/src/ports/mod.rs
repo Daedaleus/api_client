@@ -11,4 +11,6 @@ pub mod store;
 
 pub use http::{HttpSender, TransportError};
 pub use secrets::{SecretError, SecretValues, SecretVault};
-pub use store::{CollectionStore, Location, OpenedCollection, StoreError, StoreErrorKind};
+pub use store::{
+    CollectionStore, Location, OpenedCollection, StoreError, StoreErrorKind, TextFile,
+};

@@ -3,8 +3,9 @@
 
 use std::path::Path;
 
+use ac_interchange::bruno::{self, BrunoFile};
 use ac_interchange::curl::{from_curl, to_curl};
-use ac_interchange::{Skipped, SkippedKind, import_collection};
+use ac_interchange::{Imported, Skipped, SkippedKind, import_collection};
 
 use super::App;
 use crate::command::{CommandAck, QueryResult};
@@ -15,19 +16,40 @@ use crate::view::{CollectionView, OutgoingRequest, RequestDraft};
 
 impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
     /// Converts another tool's file into a new collection in `path` and
-    /// opens it; what has no counterpart is listed for the user.
+    /// opens it; what has no counterpart is listed for the user. A Bruno
+    /// collection is a folder: it is chosen by its `bruno.json`.
     pub(super) fn import_collection(&self, file: &str, path: &str) -> Result<CommandAck, AppError> {
-        let text = self.inner.store.read_text(Path::new(file))?;
-        let imported = import_collection(&text)?;
-        let opened = self
-            .inner
-            .store
-            .import_collection(Path::new(path), &imported.collection)?;
+        let file = Path::new(file);
+        let imported = if file.file_name().is_some_and(|name| name == bruno::MARKER) {
+            self.read_bruno(file.parent().unwrap_or(file))?
+        } else {
+            import_collection(&self.inner.store.read_text(file)?)?
+        };
+        let opened = self.inner.store.import_collection(
+            Path::new(path),
+            &imported.collection,
+            &imported.environments,
+        )?;
         self.remember(&opened);
         Ok(CommandAck::CollectionImported {
             collection: Box::new(CollectionView::from_opened(&opened)),
             skipped: imported.skipped.iter().map(skipped_text).collect(),
         })
+    }
+
+    /// The Bruno collection in `dir`.
+    fn read_bruno(&self, dir: &Path) -> Result<Imported, AppError> {
+        let files: Vec<BrunoFile> = self
+            .inner
+            .store
+            .read_tree(dir, &[bruno::EXTENSION, "json"])?
+            .into_iter()
+            .map(|file| BrunoFile {
+                path: file.path,
+                text: file.text,
+            })
+            .collect();
+        Ok(bruno::from_files(dir, &files))
     }
 
     /// The cURL command that sends exactly what sending `request` would:
@@ -59,6 +81,7 @@ fn skipped_text(skipped: &Skipped) -> UserText {
         SkippedKind::Auth(kind) => {
             UserText::new(keys::IMPORT_SKIPPED_AUTH).with("kind", kind.clone())
         }
+        SkippedKind::Headers => UserText::new(keys::IMPORT_SKIPPED_HEADERS),
         SkippedKind::Body(mode) => {
             UserText::new(keys::IMPORT_SKIPPED_BODY).with("mode", mode.clone())
         }

@@ -94,6 +94,7 @@ pub(crate) fn from_value(root: &Value) -> Option<Imported> {
             certificate_check: CertificateCheck::Inherit,
             name,
         },
+        environments: Vec::new(),
         skipped,
     })
 }

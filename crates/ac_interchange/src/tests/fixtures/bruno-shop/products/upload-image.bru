@@ -1,0 +1,22 @@
+meta {
+  name: Upload image
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/products/1/image
+  body: multipartForm
+  auth: basic
+}
+
+auth:basic {
+  username: admin
+  password: {{adminPassword}}
+}
+
+body:multipart-form {
+  title: Teapot
+  image: @file(files/teapot.png)
+  ~note: x
+}

@@ -23,8 +23,8 @@
 //  11. switching the certificate check off shows a warning and is saved,
 //  12. a pasted cURL command opens as a new tab and is sent; a request is
 //      copied as a cURL command,
-//  13. a Postman export and an OpenAPI description are imported as new
-//      collections on disk (through the real IPC command: native file
+//  13. a Postman export, an OpenAPI description and a Bruno collection are
+//      imported as new collections on disk (through the real IPC command: native file
 //      dialogs cannot be driven from here),
 // and the program is still running after each send.
 //
@@ -778,6 +778,26 @@ const openapiSettings = readFileSync(path.join(fromOpenapi, 'collection.toml'), 
 check(
   openapiSettings.includes('value = "https://eu.api.example.com/v1"'),
   'OpenAPI server written as baseUrl',
+);
+const brunoFile = path.join(ROOT, 'crates/ac_interchange/src/tests/fixtures/bruno-shop/bruno.json');
+const fromBruno = path.join(collections, 'imported-from-bruno');
+const brunoAck = await evaluate(`window.__TAURI_INTERNALS__.invoke('execute', {
+  command: {
+    type: 'importCollection',
+    file: ${JSON.stringify(brunoFile)},
+    path: ${JSON.stringify(fromBruno)},
+  },
+})`);
+check(
+  brunoAck?.type === 'collectionImported' &&
+    brunoAck.collection.name === 'Shop (Bruno)' &&
+    brunoAck.collection.environments.length === 1,
+  'Bruno collection imported with its environment',
+);
+const brunoEnvironment = readFileSync(path.join(fromBruno, 'environments', 'local.toml'), 'utf8');
+check(
+  brunoEnvironment.includes('baseUrl') && brunoEnvironment.includes('secret = true'),
+  'Bruno environment written, secrets marked',
 );
 check(exitCode === null, 'program still running after importing');
 

@@ -93,8 +93,8 @@ pub trait CollectionStore: Send + Sync + 'static {
         defaults: &RequestDefaults,
     ) -> Result<(), StoreError>;
 
-    /// Writes `collection` as a new collection into `root` (imports) and
-    /// loads it.
+    /// Writes `collection` (and its `environments`) as a new collection
+    /// into `root` (imports) and loads it.
     ///
     /// # Errors
     /// If `root` already holds a collection or cannot be written.
@@ -102,7 +102,15 @@ pub trait CollectionStore: Send + Sync + 'static {
         &self,
         root: &Path,
         collection: &Collection,
+        environments: &[Environment],
     ) -> Result<OpenedCollection, StoreError>;
+
+    /// The text files below `dir` with one of `extensions` (hidden folders
+    /// and `node_modules` left out), for importing a folder-based collection.
+    ///
+    /// # Errors
+    /// If the folder or a file cannot be read.
+    fn read_tree(&self, dir: &Path, extensions: &[&str]) -> Result<Vec<TextFile>, StoreError>;
 
     /// The text of a file the user picked to import.
     ///
@@ -188,8 +196,12 @@ impl<T: CollectionStore> CollectionStore for Arc<T> {
         &self,
         root: &Path,
         collection: &Collection,
+        environments: &[Environment],
     ) -> Result<OpenedCollection, StoreError> {
-        T::import_collection(self, root, collection)
+        T::import_collection(self, root, collection, environments)
+    }
+    fn read_tree(&self, dir: &Path, extensions: &[&str]) -> Result<Vec<TextFile>, StoreError> {
+        T::read_tree(self, dir, extensions)
     }
     fn read_text(&self, file: &Path) -> Result<String, StoreError> {
         T::read_text(self, file)
@@ -210,6 +222,16 @@ impl<T: CollectionStore> CollectionStore for Arc<T> {
     fn write_recipients(&self, root: &Path, recipients: &[String]) -> Result<(), StoreError> {
         T::write_recipients(self, root, recipients)
     }
+}
+
+/// A text file below a folder, by its path relative to that folder (with
+/// `/` as separator on every platform).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TextFile {
+    /// Relative path.
+    pub path: String,
+    /// Its text.
+    pub text: String,
 }
 
 /// A loaded collection with the place of every item.

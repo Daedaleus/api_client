@@ -156,7 +156,12 @@ fn whole_collections_are_written_with_folders_requests_and_settings() {
         },
         certificate_check: CertificateCheck::Inherit,
     };
-    let loaded = write_collection(&root, &collection).unwrap();
+    let mut dev = ac_domain::environment::Environment::new("Dev");
+    dev.variables
+        .push(Variable::plain("baseUrl", "http://localhost"));
+    let loaded = write_collection(&root, &collection, &[dev]).unwrap();
+    assert_eq!(loaded.environments.len(), 1);
+    assert_eq!(loaded.environments[0].name, "Dev");
     assert_eq!(loaded.collection.name, "Imported");
     assert_eq!(loaded.collection.variables, collection.variables);
     assert_eq!(loaded.collection.auth, collection.auth);
@@ -170,7 +175,7 @@ fn whole_collections_are_written_with_folders_requests_and_settings() {
     assert_eq!(auth.certificate_check, CertificateCheck::Off);
     assert_eq!(auth.items[0].id(), login.id);
 
-    let error = write_collection(&root, &collection).unwrap_err();
+    let error = write_collection(&root, &collection, &[]).unwrap_err();
     assert!(
         matches!(error, StorageError::AlreadyExists { .. }),
         "{error}"

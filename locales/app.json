@@ -1,4 +1,8 @@
 {
+  "import.skipped_headers": {
+    "de": "„{item}“: Header von Ordner oder Collection (nur Requests haben Header)",
+    "en": "“{item}”: headers of a folder or the collection (only requests have headers)"
+  },
   "error.import_invalid": {
     "de": "Diese Datei lässt sich nicht importieren: {detail}",
     "en": "This file cannot be imported: {detail}"

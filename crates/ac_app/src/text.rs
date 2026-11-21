@@ -83,6 +83,9 @@ pub mod keys {
     pub const IMPORT_SKIPPED_SCRIPTS: &str = "import.skipped_scripts";
     /// An import left out an auth type. Arguments: `item`, `kind`.
     pub const IMPORT_SKIPPED_AUTH: &str = "import.skipped_auth";
+    /// An import left out headers of a folder or the collection. Argument:
+    /// `item`.
+    pub const IMPORT_SKIPPED_HEADERS: &str = "import.skipped_headers";
     /// An import left out a body. Arguments: `item`, `mode`.
     pub const IMPORT_SKIPPED_BODY: &str = "import.skipped_body";
     /// Any other transport failure. Argument: `detail`.
@@ -109,7 +112,7 @@ pub mod keys {
 
     /// All keys with the names of their placeholders, checked against the
     /// translation file by a test.
-    pub const ALL: [(&str, &[&str]); 32] = [
+    pub const ALL: [(&str, &[&str]); 33] = [
         (URL_EMPTY, &[]),
         (URL_INVALID, &["reason"]),
         (URL_SCHEME, &["scheme"]),
@@ -132,6 +135,7 @@ pub mod keys {
         (IMPORT_SKIPPED_SCRIPTS, &["item"]),
         (IMPORT_SKIPPED_AUTH, &["item", "kind"]),
         (IMPORT_SKIPPED_BODY, &["item", "mode"]),
+        (IMPORT_SKIPPED_HEADERS, &["item"]),
         (REQUEST, &["detail"]),
         (STORE_IO, &["path", "detail"]),
         (STORE_DAMAGED, &["path", "detail"]),
