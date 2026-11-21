@@ -8,8 +8,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::view::{
-    AuthDraft, BodyDraft, CertificateCheckView, CollectionView, EnvironmentDraft, HeaderDraft,
-    RecipientsView, RequestDraft, SendContext, VariableDraft,
+    AuthDraft, CertificateCheckView, CollectionView, EnvironmentDraft, OutgoingRequest,
+    RecipientsView, RequestDraft, VariableDraft,
 };
 
 /// Something the user wants the application to do.
@@ -23,31 +23,9 @@ use crate::view::{
 pub enum Command {
     /// Send a request; the result arrives as [`crate::AppEvent::RunFinished`].
     SendRequest {
-        /// Method as entered, e.g. `GET`.
-        method: String,
-        /// URL as entered; `http://` is assumed when no scheme is given.
-        url: String,
-        /// Header rows; disabled rows and rows without a name are not sent.
-        #[serde(default)]
-        headers: Vec<HeaderDraft>,
-        /// Body; JSON and text get a `Content-Type` unless a header sets one.
-        #[serde(default)]
-        body: BodyDraft,
-        /// The request's own variables, as in the editor (strongest).
-        #[serde(default)]
-        variables: Vec<VariableDraft>,
-        /// The request's own authentication, as in the editor; `inherit`
-        /// takes that of its folders and collection (see `context`).
-        #[serde(default)]
-        auth: AuthDraft,
-        /// The request's own certificate check; `inherit` takes that of its
-        /// folders and collection.
-        #[serde(default)]
-        certificate_check: CertificateCheckView,
-        /// Where further `{{variables}}` come from: collection, folders and
-        /// environment. Without it only the request's own variables count.
-        #[serde(default)]
-        context: Option<SendContext>,
+        /// The request as entered.
+        #[serde(flatten)]
+        request: OutgoingRequest,
     },
     /// Open the collection in a folder.
     OpenCollection {
@@ -201,6 +179,18 @@ pub enum Query {
         /// The request.
         request_id: String,
     },
+    /// The cURL command for a request as entered (variables and inherited
+    /// auth applied, as when sending).
+    Curl {
+        /// The request as entered.
+        #[serde(flatten)]
+        request: Box<OutgoingRequest>,
+    },
+    /// A pasted cURL command as a new, unsaved request.
+    ParseCurl {
+        /// The command.
+        text: String,
+    },
     /// Who the collection's secrets are encrypted for, and the user's own
     /// public key (created on first use).
     Recipients {
@@ -227,6 +217,18 @@ pub enum QueryResult {
     Request {
         /// The request.
         request: RequestDraft,
+    },
+    /// The cURL command.
+    Curl {
+        /// For a POSIX shell, one option per line.
+        command: String,
+    },
+    /// The request a cURL command describes.
+    ParsedCurl {
+        /// The request (not saved, no id).
+        request: RequestDraft,
+        /// Options that were not taken over, as written.
+        ignored: Vec<String>,
     },
     /// The recipients.
     Recipients {

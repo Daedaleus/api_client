@@ -11,18 +11,20 @@ use crate::view::{BodyDraft, EnvironmentDraft, VariableDraft};
 
 fn send(fixture: &Fixture, url: &str, environment: Option<&str>) -> Result<CommandAck, AppError> {
     fixture.app.execute(Command::SendRequest {
-        certificate_check: crate::view::CertificateCheckView::Inherit,
-        method: "GET".into(),
-        url: url.into(),
-        headers: Vec::new(),
-        body: BodyDraft::None,
-        variables: Vec::new(),
-        auth: crate::view::AuthDraft::Inherit,
-        context: Some(SendContext {
-            collection_id: fixture.collection.clone(),
-            request_id: None,
-            environment_id: environment.map(Into::into),
-        }),
+        request: crate::view::OutgoingRequest {
+            certificate_check: crate::view::CertificateCheckView::Inherit,
+            method: "GET".into(),
+            url: url.into(),
+            headers: Vec::new(),
+            body: BodyDraft::None,
+            variables: Vec::new(),
+            auth: crate::view::AuthDraft::Inherit,
+            context: Some(SendContext {
+                collection_id: fixture.collection.clone(),
+                request_id: None,
+                environment_id: environment.map(Into::into),
+            }),
+        },
     })
 }
 

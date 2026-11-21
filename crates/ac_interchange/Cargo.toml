@@ -1,0 +1,17 @@
+[package]
+name = "ac_interchange"
+description = "Import and export: cURL commands (later Postman, Bruno, OpenAPI)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+ac_domain.workspace = true
+shell-words.workspace = true
+thiserror.workspace = true
+url.workspace = true
+
+[lints]
+workspace = true

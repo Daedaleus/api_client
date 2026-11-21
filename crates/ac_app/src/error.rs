@@ -51,6 +51,9 @@ pub enum AppError {
     /// (relative paths are relative to the collection folder).
     #[error("relative file path {0:?} without a collection")]
     RelativeFile(String),
+    /// A pasted text is no usable cURL command.
+    #[error(transparent)]
+    Curl(#[from] ac_interchange::curl::CurlError),
     /// The collection is not open.
     #[error("collection is not open")]
     UnknownCollection,
@@ -104,6 +107,9 @@ impl AppError {
             | Self::Secret(reason) => reason.user_text(),
             Self::RelativeFile(path) => {
                 UserText::new(keys::FILE_RELATIVE).with("path", path.clone())
+            }
+            Self::Curl(error) => {
+                UserText::new(keys::CURL_INVALID).with("detail", error.to_string())
             }
             Self::UnknownCollection => UserText::new(keys::UNKNOWN_COLLECTION),
             Self::UnknownItem => UserText::new(keys::UNKNOWN_ITEM),

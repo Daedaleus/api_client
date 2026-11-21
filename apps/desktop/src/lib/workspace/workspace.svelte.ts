@@ -21,6 +21,7 @@ import { RecipientsState } from './recipients.svelte';
 import type { RequestTab } from './request-tab.svelte';
 import { TabsState } from './tabs.svelte';
 import { baseName, foldersAround } from './tree';
+import { CurlState } from './curl.svelte';
 import { DefaultsState } from './defaults.svelte';
 
 /** An environment open in the editor: a copy, so cancelling changes nothing. */
@@ -38,6 +39,8 @@ export class Workspace {
   readonly recipients: RecipientsState;
   /** Variables and authentication of a collection or folder (dialog). */
   readonly defaults: DefaultsState;
+  /** cURL export and import. */
+  readonly curl: CurlState;
   /** The environment being edited, if the editor is open. */
   editing = $state<EnvironmentEdit | null>(null);
   readonly #api: Api;
@@ -49,6 +52,7 @@ export class Workspace {
     this.environments = new EnvironmentChoice(storage);
     this.recipients = new RecipientsState(api, this.collections);
     this.defaults = new DefaultsState(api, this.collections);
+    this.curl = new CurlState(api, this.tabs);
   }
 
   /** The collection a tab's request belongs to (none for scratch tabs). */
@@ -143,6 +147,11 @@ export class Workspace {
       itemId: item.id,
     });
     if (changed) this.tabs.closeMissing(changed.collection);
+  }
+
+  /** A tab's request as a cURL command, exactly as it would be sent. */
+  curlFor(tab: RequestTab): Promise<string | null> {
+    return this.curl.command(tab, this.tabs.outgoing(tab, this.#context(tab)));
   }
 
   /** Sends a tab's request in its collection with the chosen environment. */

@@ -15,6 +15,7 @@
     <span class="sidebar__title">{i18n.t('sidebar.title')}</span>
     <Button onclick={() => workspace.openCollection()}>{i18n.t('sidebar.open')}</Button>
     <Button onclick={() => workspace.createCollection()}>{i18n.t('sidebar.create')}</Button>
+    <Button onclick={() => workspace.curl.openImport()}>{i18n.t('curl.import')}</Button>
   </div>
 
   {#if workspace.collections.error}

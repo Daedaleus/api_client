@@ -16,6 +16,7 @@ publish = false
 ac_app = { path = "crates/ac_app" }
 ac_domain = { path = "crates/ac_domain" }
 ac_http = { path = "crates/ac_http" }
+ac_interchange = { path = "crates/ac_interchange" }
 ac_secrets = { path = "crates/ac_secrets" }
 ac_storage = { path = "crates/ac_storage" }
 # age: secrets for several recipients (ADR S4); armor for text files in git,
@@ -25,6 +26,8 @@ age = { version = "0.12", features = ["armor", "ssh"] }
 base64 = "0.22"
 reqwest = "0.13"
 serde = { version = "1", features = ["derive"] }
+# shell-words: splitting pasted cURL commands like a POSIX shell.
+shell-words = "1"
 serde_json = "1"
 # Specta and tauri-specta are release candidates: pin exact versions, as their
 # docs require, and upgrade them together.

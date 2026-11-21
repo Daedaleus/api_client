@@ -10,6 +10,7 @@ use crate::command::Command;
 use crate::ports::TransportError;
 use crate::testing::{FakeHttpSender, FakeVault, MemoryStore, response};
 use crate::text::{UserText, keys};
+use crate::view::BodyDraft;
 
 type TestApp = App<Arc<FakeHttpSender>, MemoryStore, FakeVault>;
 
@@ -35,14 +36,16 @@ fn run_id(ack: &CommandAck) -> RunId {
 
 fn send(method: &str, url: &str) -> Command {
     Command::SendRequest {
-        certificate_check: crate::view::CertificateCheckView::Inherit,
-        method: method.into(),
-        url: url.into(),
-        headers: Vec::new(),
-        body: BodyDraft::None,
-        variables: Vec::new(),
-        auth: crate::view::AuthDraft::Inherit,
-        context: None,
+        request: crate::view::OutgoingRequest {
+            certificate_check: crate::view::CertificateCheckView::Inherit,
+            method: method.into(),
+            url: url.into(),
+            headers: Vec::new(),
+            body: BodyDraft::None,
+            variables: Vec::new(),
+            auth: crate::view::AuthDraft::Inherit,
+            context: None,
+        },
     }
 }
 
@@ -50,20 +53,22 @@ fn send(method: &str, url: &str) -> Command {
 async fn headers_and_body_are_sent() {
     let (app, fake) = app(FakeHttpSender::new().reply(Ok(response(201, "text/plain", ""))));
     app.execute(Command::SendRequest {
-        certificate_check: crate::view::CertificateCheckView::Inherit,
-        method: "POST".into(),
-        url: "example.com/items".into(),
-        headers: vec![HeaderDraft {
-            name: "X-Test".into(),
-            value: "yes".into(),
-            enabled: true,
-        }],
-        body: BodyDraft::Json {
-            content: "{\"a\":1}".into(),
+        request: crate::view::OutgoingRequest {
+            certificate_check: crate::view::CertificateCheckView::Inherit,
+            method: "POST".into(),
+            url: "example.com/items".into(),
+            headers: vec![HeaderDraft {
+                name: "X-Test".into(),
+                value: "yes".into(),
+                enabled: true,
+            }],
+            body: BodyDraft::Json {
+                content: "{\"a\":1}".into(),
+            },
+            variables: Vec::new(),
+            auth: crate::view::AuthDraft::Inherit,
+            context: None,
         },
-        variables: Vec::new(),
-        auth: crate::view::AuthDraft::Inherit,
-        context: None,
     })
     .unwrap();
     tokio::task::yield_now().await;

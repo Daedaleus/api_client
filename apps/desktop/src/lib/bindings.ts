@@ -11,7 +11,7 @@ export const commands = {
 	/**  Carries out a command from the UI. */
 	execute: (command: Command_Deserialize, options?: InvokeOptions) => __TAURI_INVOKE<CommandAck_Serialize>("execute", { command }, options),
 	/**  Answers a query from the UI. */
-	query: (query: Query, options?: InvokeOptions) => __TAURI_INVOKE<QueryResult_Serialize>("query", { query }, options),
+	query: (query: Query_Deserialize, options?: InvokeOptions) => __TAURI_INVOKE<QueryResult_Serialize>("query", { query }, options),
 };
 
 /** Events */
@@ -239,99 +239,76 @@ collectionId: string };
 /**  Something the user wants the application to do. */
 export type Command_Deserialize = 
 /**  Send a request; the result arrives as [`crate::AppEvent::RunFinished`]. */
-{ type: "sendRequest"; 
-/**  Method as entered, e.g. `GET`. */
-method: string; 
-/**  URL as entered; `http://` is assumed when no scheme is given. */
-url: string; 
-/**  Header rows; disabled rows and rows without a name are not sent. */
-headers?: HeaderDraft[]; 
-/**  Body; JSON and text get a `Content-Type` unless a header sets one. */
-body?: BodyDraft_Deserialize; 
-/**  The request's own variables, as in the editor (strongest). */
-variables?: VariableDraft_Deserialize[]; 
-/**
- *  The request's own authentication, as in the editor; `inherit`
- *  takes that of its folders and collection (see `context`).
- */
-auth?: AuthDraft; 
-/**
- *  The request's own certificate check; `inherit` takes that of its
- *  folders and collection.
- */
-certificateCheck?: CertificateCheckView; 
-/**
- *  Where further `{{variables}}` come from: collection, folders and
- *  environment. Without it only the request's own variables count.
- */
-context?: SendContext_Deserialize | null } | 
+{
+	type: "sendRequest",
+} & OutgoingRequest_Deserialize | 
 /**  Open the collection in a folder. */
-{ type: "openCollection"; 
+({ type: "openCollection"; 
 /**  The collection folder. */
-path: string } | 
+path: string }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; itemId?: never; name?: never; parentId?: never; recipients?: never; request?: never; variables?: never } | 
 /**  Create a new collection in a folder and open it. */
-{ type: "createCollection"; 
+({ type: "createCollection"; 
 /**  The folder (created if needed). */
 path: string; 
 /**  Display name. */
-name: string } | 
+name: string }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; itemId?: never; parentId?: never; recipients?: never; request?: never; variables?: never } | 
 /**  Close an open collection (nothing is written). */
-{ type: "closeCollection"; 
+({ type: "closeCollection"; 
 /**  The collection. */
-collectionId: string } | 
+collectionId: string }) & { auth?: never; certificateCheck?: never; environment?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; variables?: never } | 
 /**  Save a request edited in the editor. */
-{ type: "saveRequest"; 
+({ type: "saveRequest"; 
 /**  The collection it belongs to. */
 collectionId: string; 
 /**  The edited request (identified by its id). */
-request: RequestDraft_Deserialize } | 
+request: RequestDraft_Deserialize }) & { auth?: never; certificateCheck?: never; environment?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; variables?: never } | 
 /**  Create a new, empty request. */
-{ type: "createRequest"; 
+({ type: "createRequest"; 
 /**  The collection. */
 collectionId: string; 
 /**  The collection itself or a folder in it. */
 parentId: string; 
 /**  Display name. */
-name: string } | 
+name: string }) & { auth?: never; certificateCheck?: never; environment?: never; itemId?: never; path?: never; recipients?: never; request?: never; variables?: never } | 
 /**  Create a new folder. */
-{ type: "createFolder"; 
+({ type: "createFolder"; 
 /**  The collection. */
 collectionId: string; 
 /**  The collection itself or a folder in it. */
 parentId: string; 
 /**  Display name. */
-name: string } | 
+name: string }) & { auth?: never; certificateCheck?: never; environment?: never; itemId?: never; path?: never; recipients?: never; request?: never; variables?: never } | 
 /**  Rename a folder or request (its file keeps its name). */
-{ type: "renameItem"; 
+({ type: "renameItem"; 
 /**  The collection. */
 collectionId: string; 
 /**  The folder or request. */
 itemId: string; 
 /**  New display name. */
-name: string } | 
+name: string }) & { auth?: never; certificateCheck?: never; environment?: never; parentId?: never; path?: never; recipients?: never; request?: never; variables?: never } | 
 /**  Move a folder, request or environment to the trash. */
-{ type: "deleteItem"; 
+({ type: "deleteItem"; 
 /**  The collection. */
 collectionId: string; 
 /**  The folder, request or environment. */
-itemId: string } | 
+itemId: string }) & { auth?: never; certificateCheck?: never; environment?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; variables?: never } | 
 /**  Create a new, empty environment. */
-{ type: "createEnvironment"; 
+({ type: "createEnvironment"; 
 /**  The collection. */
 collectionId: string; 
 /**  Display name. */
-name: string } | 
+name: string }) & { auth?: never; certificateCheck?: never; environment?: never; itemId?: never; parentId?: never; path?: never; recipients?: never; request?: never; variables?: never } | 
 /**  Save an environment edited in the editor (name and variables). */
-{ type: "saveEnvironment"; 
+({ type: "saveEnvironment"; 
 /**  The collection. */
 collectionId: string; 
 /**  The edited environment (identified by its id). */
-environment: EnvironmentDraft_Deserialize } | 
+environment: EnvironmentDraft_Deserialize }) & { auth?: never; certificateCheck?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; variables?: never } | 
 /**
  *  Save what the collection or one of its folders passes on to its
  *  requests: variables and authentication.
  */
-{ type: "saveDefaults"; 
+({ type: "saveDefaults"; 
 /**  The collection. */
 collectionId: string; 
 /**  The collection itself or a folder in it. */
@@ -341,114 +318,91 @@ variables: VariableDraft_Deserialize[];
 /**  The authentication (`inherit` on the collection means none). */
 auth: AuthDraft; 
 /**  The certificate check (`inherit` on the collection means on). */
-certificateCheck: CertificateCheckView } | 
+certificateCheck: CertificateCheckView }) & { environment?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never } | 
 /**
  *  Set who the collection's secrets are encrypted for and re-encrypt
  *  the secrets of every environment. Nothing changes if any of them
  *  cannot be decrypted.
  */
-{ type: "setRecipients"; 
+({ type: "setRecipients"; 
 /**  The collection. */
 collectionId: string; 
 /**  Public keys (`age1…`, `ssh-ed25519 …`, `ssh-rsa …`). */
-recipients: string[] };
+recipients: string[] }) & { auth?: never; certificateCheck?: never; environment?: never; itemId?: never; name?: never; parentId?: never; path?: never; request?: never; variables?: never };
 
 /**  Something the user wants the application to do. */
 export type Command_Serialize = 
 /**  Send a request; the result arrives as [`crate::AppEvent::RunFinished`]. */
-{ type: "sendRequest"; 
-/**  Method as entered, e.g. `GET`. */
-method: string; 
-/**  URL as entered; `http://` is assumed when no scheme is given. */
-url: string; 
-/**  Header rows; disabled rows and rows without a name are not sent. */
-headers: HeaderDraft[]; 
-/**  Body; JSON and text get a `Content-Type` unless a header sets one. */
-body: BodyDraft_Serialize; 
-/**  The request's own variables, as in the editor (strongest). */
-variables: VariableDraft_Serialize[]; 
-/**
- *  The request's own authentication, as in the editor; `inherit`
- *  takes that of its folders and collection (see `context`).
- */
-auth: AuthDraft; 
-/**
- *  The request's own certificate check; `inherit` takes that of its
- *  folders and collection.
- */
-certificateCheck: CertificateCheckView; 
-/**
- *  Where further `{{variables}}` come from: collection, folders and
- *  environment. Without it only the request's own variables count.
- */
-context: SendContext_Serialize | null } | 
+{
+	type: "sendRequest",
+} & OutgoingRequest_Serialize | 
 /**  Open the collection in a folder. */
-{ type: "openCollection"; 
+({ type: "openCollection"; 
 /**  The collection folder. */
-path: string } | 
+path: string }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; itemId?: never; name?: never; parentId?: never; recipients?: never; request?: never; variables?: never } | 
 /**  Create a new collection in a folder and open it. */
-{ type: "createCollection"; 
+({ type: "createCollection"; 
 /**  The folder (created if needed). */
 path: string; 
 /**  Display name. */
-name: string } | 
+name: string }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; itemId?: never; parentId?: never; recipients?: never; request?: never; variables?: never } | 
 /**  Close an open collection (nothing is written). */
-{ type: "closeCollection"; 
+({ type: "closeCollection"; 
 /**  The collection. */
-collectionId: string } | 
+collectionId: string }) & { auth?: never; certificateCheck?: never; environment?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; variables?: never } | 
 /**  Save a request edited in the editor. */
-{ type: "saveRequest"; 
+({ type: "saveRequest"; 
 /**  The collection it belongs to. */
 collectionId: string; 
 /**  The edited request (identified by its id). */
-request: RequestDraft_Serialize } | 
+request: RequestDraft_Serialize }) & { auth?: never; certificateCheck?: never; environment?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; variables?: never } | 
 /**  Create a new, empty request. */
-{ type: "createRequest"; 
+({ type: "createRequest"; 
 /**  The collection. */
 collectionId: string; 
 /**  The collection itself or a folder in it. */
 parentId: string; 
 /**  Display name. */
-name: string } | 
+name: string }) & { auth?: never; certificateCheck?: never; environment?: never; itemId?: never; path?: never; recipients?: never; request?: never; variables?: never } | 
 /**  Create a new folder. */
-{ type: "createFolder"; 
+({ type: "createFolder"; 
 /**  The collection. */
 collectionId: string; 
 /**  The collection itself or a folder in it. */
 parentId: string; 
 /**  Display name. */
-name: string } | 
+name: string }) & { auth?: never; certificateCheck?: never; environment?: never; itemId?: never; path?: never; recipients?: never; request?: never; variables?: never } | 
 /**  Rename a folder or request (its file keeps its name). */
-{ type: "renameItem"; 
+({ type: "renameItem"; 
 /**  The collection. */
 collectionId: string; 
 /**  The folder or request. */
 itemId: string; 
 /**  New display name. */
-name: string } | 
+name: string }) & { auth?: never; certificateCheck?: never; environment?: never; parentId?: never; path?: never; recipients?: never; request?: never; variables?: never } | 
 /**  Move a folder, request or environment to the trash. */
-{ type: "deleteItem"; 
+({ type: "deleteItem"; 
 /**  The collection. */
 collectionId: string; 
 /**  The folder, request or environment. */
-itemId: string } | 
+itemId: string }) & { auth?: never; certificateCheck?: never; environment?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; variables?: never } | 
 /**  Create a new, empty environment. */
-{ type: "createEnvironment"; 
+({ type: "createEnvironment"; 
 /**  The collection. */
 collectionId: string; 
 /**  Display name. */
-name: string } | 
+name: string }) & { auth?: never; certificateCheck?: never; environment?: never; itemId?: never; parentId?: never; path?: never; recipients?: never; request?: never; variables?: never } | 
 /**  Save an environment edited in the editor (name and variables). */
-{ type: "saveEnvironment"; 
+({ type: "saveEnvironment"; 
 /**  The collection. */
 collectionId: string; 
 /**  The edited environment (identified by its id). */
-environment: EnvironmentDraft_Serialize } | 
+environment: EnvironmentDraft_Serialize }) & { auth?: never; certificateCheck?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; variables?: never } | 
 /**
  *  Save what the collection or one of its folders passes on to its
  *  requests: variables and authentication.
  */
-{ type: "saveDefaults"; 
+({ type: "saveDefaults"; 
 /**  The collection. */
 collectionId: string; 
 /**  The collection itself or a folder in it. */
@@ -458,17 +412,17 @@ variables: VariableDraft_Serialize[];
 /**  The authentication (`inherit` on the collection means none). */
 auth: AuthDraft; 
 /**  The certificate check (`inherit` on the collection means on). */
-certificateCheck: CertificateCheckView } | 
+certificateCheck: CertificateCheckView }) & { environment?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never } | 
 /**
  *  Set who the collection's secrets are encrypted for and re-encrypt
  *  the secrets of every environment. Nothing changes if any of them
  *  cannot be decrypted.
  */
-{ type: "setRecipients"; 
+({ type: "setRecipients"; 
 /**  The collection. */
 collectionId: string; 
 /**  Public keys (`age1…`, `ssh-ed25519 …`, `ssh-rsa …`). */
-recipients: string[] };
+recipients: string[] }) & { auth?: never; certificateCheck?: never; environment?: never; itemId?: never; name?: never; parentId?: never; path?: never; request?: never; variables?: never };
 
 /**  An environment with its variables. */
 export type EnvironmentDraft = EnvironmentDraft_Serialize | EnvironmentDraft_Deserialize;
@@ -559,25 +513,69 @@ export type MultipartFieldDraft_Serialize = {
 	file: boolean,
 };
 
+/**  A request as entered in the editor, with where its variables come from. */
+export type OutgoingRequest = OutgoingRequest_Serialize | OutgoingRequest_Deserialize;
+
+/**  A request as entered in the editor, with where its variables come from. */
+export type OutgoingRequest_Deserialize = {
+	/**  Method as entered, e.g. `GET`. */
+	method: string,
+	/**  URL as entered; `http://` is assumed when no scheme is given. */
+	url: string,
+	/**  Header rows; disabled rows and rows without a name are not sent. */
+	headers?: HeaderDraft[],
+	/**  Body; JSON and text get a `Content-Type` unless a header sets one. */
+	body?: BodyDraft_Deserialize,
+	/**  The request's own variables, as in the editor (strongest). */
+	variables?: VariableDraft_Deserialize[],
+	/**
+	 *  The request's own authentication; `inherit` takes that of its
+	 *  folders and collection (see `context`).
+	 */
+	auth?: AuthDraft,
+	/**
+	 *  The request's own certificate check; `inherit` takes that of its
+	 *  folders and collection.
+	 */
+	certificateCheck?: CertificateCheckView,
+	/**
+	 *  Where further `{{variables}}` come from: collection, folders and
+	 *  environment. Without it only the request's own variables count.
+	 */
+	context?: SendContext_Deserialize | null,
+};
+
+/**  A request as entered in the editor, with where its variables come from. */
+export type OutgoingRequest_Serialize = {
+	/**  Method as entered, e.g. `GET`. */
+	method: string,
+	/**  URL as entered; `http://` is assumed when no scheme is given. */
+	url: string,
+	/**  Header rows; disabled rows and rows without a name are not sent. */
+	headers: HeaderDraft[],
+	/**  Body; JSON and text get a `Content-Type` unless a header sets one. */
+	body: BodyDraft_Serialize,
+	/**  The request's own variables, as in the editor (strongest). */
+	variables: VariableDraft_Serialize[],
+	/**
+	 *  The request's own authentication; `inherit` takes that of its
+	 *  folders and collection (see `context`).
+	 */
+	auth: AuthDraft,
+	/**
+	 *  The request's own certificate check; `inherit` takes that of its
+	 *  folders and collection.
+	 */
+	certificateCheck: CertificateCheckView,
+	/**
+	 *  Where further `{{variables}}` come from: collection, folders and
+	 *  environment. Without it only the request's own variables count.
+	 */
+	context: SendContext_Serialize | null,
+};
+
 /**  Something the UI wants to read. */
-export type Query = 
-/**  The current tree of an open collection, read anew from disk. */
-{ type: "collection"; 
-/**  The collection. */
-collectionId: string } | 
-/**  A saved request for the editor. */
-{ type: "request"; 
-/**  The collection. */
-collectionId: string; 
-/**  The request. */
-requestId: string } | 
-/**
- *  Who the collection's secrets are encrypted for, and the user's own
- *  public key (created on first use).
- */
-{ type: "recipients"; 
-/**  The collection. */
-collectionId: string };
+export type Query = Query_Serialize | Query_Deserialize;
 
 /**  Answer to a [`Query`]. */
 export type QueryResult = QueryResult_Serialize | QueryResult_Deserialize;
@@ -592,6 +590,16 @@ collection: CollectionView_Deserialize } |
 { type: "request"; 
 /**  The request. */
 request: RequestDraft_Deserialize } | 
+/**  The cURL command. */
+{ type: "curl"; 
+/**  For a POSIX shell, one option per line. */
+command: string } | 
+/**  The request a cURL command describes. */
+{ type: "parsedCurl"; 
+/**  The request (not saved, no id). */
+request: RequestDraft_Deserialize; 
+/**  Options that were not taken over, as written. */
+ignored: string[] } | 
 /**  The recipients. */
 { type: "recipients"; 
 /**  The recipients and the user's own key. */
@@ -607,10 +615,82 @@ collection: CollectionView_Serialize } |
 { type: "request"; 
 /**  The request. */
 request: RequestDraft_Serialize } | 
+/**  The cURL command. */
+{ type: "curl"; 
+/**  For a POSIX shell, one option per line. */
+command: string } | 
+/**  The request a cURL command describes. */
+{ type: "parsedCurl"; 
+/**  The request (not saved, no id). */
+request: RequestDraft_Serialize; 
+/**  Options that were not taken over, as written. */
+ignored: string[] } | 
 /**  The recipients. */
 { type: "recipients"; 
 /**  The recipients and the user's own key. */
 recipients: RecipientsView };
+
+/**  Something the UI wants to read. */
+export type Query_Deserialize = 
+/**  The current tree of an open collection, read anew from disk. */
+({ type: "collection"; 
+/**  The collection. */
+collectionId: string }) & { requestId?: never; text?: never } | 
+/**  A saved request for the editor. */
+({ type: "request"; 
+/**  The collection. */
+collectionId: string; 
+/**  The request. */
+requestId: string }) & { text?: never } | 
+/**
+ *  The cURL command for a request as entered (variables and inherited
+ *  auth applied, as when sending).
+ */
+{
+	type: "curl",
+} & OutgoingRequest_Deserialize | 
+/**  A pasted cURL command as a new, unsaved request. */
+({ type: "parseCurl"; 
+/**  The command. */
+text: string }) & { collectionId?: never; requestId?: never } | 
+/**
+ *  Who the collection's secrets are encrypted for, and the user's own
+ *  public key (created on first use).
+ */
+({ type: "recipients"; 
+/**  The collection. */
+collectionId: string }) & { requestId?: never; text?: never };
+
+/**  Something the UI wants to read. */
+export type Query_Serialize = 
+/**  The current tree of an open collection, read anew from disk. */
+({ type: "collection"; 
+/**  The collection. */
+collectionId: string }) & { requestId?: never; text?: never } | 
+/**  A saved request for the editor. */
+({ type: "request"; 
+/**  The collection. */
+collectionId: string; 
+/**  The request. */
+requestId: string }) & { text?: never } | 
+/**
+ *  The cURL command for a request as entered (variables and inherited
+ *  auth applied, as when sending).
+ */
+{
+	type: "curl",
+} & OutgoingRequest_Serialize | 
+/**  A pasted cURL command as a new, unsaved request. */
+({ type: "parseCurl"; 
+/**  The command. */
+text: string }) & { collectionId?: never; requestId?: never } | 
+/**
+ *  Who the collection's secrets are encrypted for, and the user's own
+ *  public key (created on first use).
+ */
+({ type: "recipients"; 
+/**  The collection. */
+collectionId: string }) & { requestId?: never; text?: never };
 
 /**  The recipients of a collection and the user's own public key. */
 export type RecipientsView = {

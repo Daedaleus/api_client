@@ -30,6 +30,7 @@ export type {
   SendContext,
   HeaderDraft,
   HeaderView,
+  OutgoingRequest,
   Query,
   RecipientsView,
   StatusClassView as StatusClass,

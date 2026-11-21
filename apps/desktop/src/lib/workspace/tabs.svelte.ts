@@ -3,7 +3,7 @@
 
 import type { Api } from '../api';
 import { toUserText } from '../errors';
-import type { AppEvent, CollectionView, RunOutcome, SendContext } from '../types';
+import type { AppEvent, CollectionView, OutgoingRequest, RunOutcome, SendContext } from '../types';
 import { RequestTab } from './request-tab.svelte';
 import { requestIds } from './tree';
 
@@ -82,24 +82,35 @@ export class TabsState {
     this.tabs.find((tab) => tab.isFor(collectionId, requestId))?.renamed(name);
   }
 
+  /** Opens `tab` (e.g. an imported request) and makes it the active one. */
+  add(tab: RequestTab): void {
+    this.tabs.push(tab);
+    this.activeKey = tab.key;
+  }
+
   /**
-   * Sends a tab's request. `{{variables}}` come from its own variables and,
-   * with a `context`, from its collection, folders and environment.
+   * A tab's request as it is sent. `{{variables}}` come from its own
+   * variables and, with a `context`, from its collection, folders and
+   * environment.
    */
+  outgoing(tab: RequestTab, context: SendContext | null = null): OutgoingRequest {
+    return {
+      method: tab.draft.method,
+      url: tab.draft.url,
+      headers: tab.draft.headers,
+      body: tab.draft.body,
+      variables: tab.draft.variables,
+      auth: tab.draft.auth,
+      certificateCheck: tab.draft.certificateCheck,
+      context,
+    };
+  }
+
+  /** Sends a tab's request (see `outgoing`). */
   async send(tab: RequestTab, context: SendContext | null = null): Promise<void> {
     tab.error = null;
     try {
-      const ack = await this.#api.execute({
-        type: 'sendRequest',
-        method: tab.draft.method,
-        url: tab.draft.url,
-        headers: tab.draft.headers,
-        body: tab.draft.body,
-        variables: tab.draft.variables,
-        auth: tab.draft.auth,
-        certificateCheck: tab.draft.certificateCheck,
-        context,
-      });
+      const ack = await this.#api.execute({ type: 'sendRequest', ...this.outgoing(tab, context) });
       if (ack.type !== 'runStarted') {
         throw new Error(`unexpected answer ${ack.type}`);
       }
