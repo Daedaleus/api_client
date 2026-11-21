@@ -147,6 +147,8 @@ result is an ADR, spike code is never merged into the crates.
 2. **S2 Checker and completion:** the TypeScript language service (in the
    web view, or in the script engine behind a port) vs. own checks from the
    `.d.ts` declarations in Rust (e.g. `oxc` parser and semantic analysis).
+   Proposed: the language service in QuickJS –
+   [`docs/adr/s2-script-assist.md`](adr/s2-script-assist.md).
 3. **S3 Tauri reality check:** Linux WebKitGTK, large responses, bundling –
    go/no-go for Tauri vs. egui. Proposed: stay with Tauri; Linux and macOS
    still to be confirmed at runtime – [`docs/adr/s3-tauri.md`](adr/s3-tauri.md).
