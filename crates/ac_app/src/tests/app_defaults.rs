@@ -5,7 +5,7 @@ use crate::error::AppError;
 use crate::ports::StoreErrorKind;
 use crate::test_support::Fixture;
 use crate::testing::{FakeHttpSender, response};
-use crate::view::{BodyDraft, SendContext, TreeItemView, VariableDraft};
+use crate::view::{AuthDraft, BodyDraft, SendContext, TreeItemView, VariableDraft};
 
 fn plain(name: &str, value: &str) -> VariableDraft {
     VariableDraft {
@@ -21,10 +21,11 @@ fn save(
     item_id: &str,
     variables: Vec<VariableDraft>,
 ) -> Result<CommandAck, AppError> {
-    fixture.app.execute(Command::SaveVariables {
+    fixture.app.execute(Command::SaveDefaults {
         collection_id: fixture.collection.clone(),
         item_id: item_id.into(),
         variables,
+        auth: AuthDraft::Inherit,
     })
 }
 
@@ -45,6 +46,7 @@ async fn sent_url(
             headers: Vec::new(),
             body: BodyDraft::None,
             variables: own,
+            auth: AuthDraft::Inherit,
             context: Some(SendContext {
                 collection_id: fixture.collection.clone(),
                 request_id: request_id.map(Into::into),
@@ -125,6 +127,7 @@ async fn without_context_only_the_own_variables_count() {
             headers: Vec::new(),
             body: BodyDraft::None,
             variables: vec![plain("host", "own.example.com")],
+            auth: AuthDraft::Inherit,
             context: None,
         })
         .unwrap();
@@ -180,4 +183,67 @@ async fn variables_go_only_to_the_collection_and_its_folders() {
         error,
         AppError::Store(ref store) if store.kind == StoreErrorKind::ReadOnly
     ));
+}
+
+#[tokio::test]
+async fn requests_inherit_auth_from_folders_and_the_collection() {
+    let fixture = Fixture::with_http(replies(3));
+    let bearer = AuthDraft::Bearer {
+        token: "{{baseUrl}}".into(),
+    };
+    let basic = AuthDraft::Basic {
+        username: "a".into(),
+        password: "b".into(),
+    };
+    let save_auth = |item: &str, auth: AuthDraft| {
+        fixture
+            .app
+            .execute(Command::SaveDefaults {
+                collection_id: fixture.collection.clone(),
+                item_id: item.into(),
+                variables: Vec::new(),
+                auth,
+            })
+            .unwrap();
+    };
+    save_auth(&fixture.collection, bearer.clone());
+    save_auth(&fixture.auth, basic);
+    assert_eq!(fixture.tree().auth, bearer);
+
+    let send = |request: &str, auth: AuthDraft| {
+        let mut events = fixture.app.subscribe();
+        fixture
+            .app
+            .execute(Command::SendRequest {
+                method: "GET".into(),
+                url: "x.example".into(),
+                headers: Vec::new(),
+                body: BodyDraft::None,
+                variables: Vec::new(),
+                auth,
+                context: Some(SendContext {
+                    collection_id: fixture.collection.clone(),
+                    request_id: Some(request.into()),
+                    environment_id: Some(fixture.dev.clone()),
+                }),
+            })
+            .unwrap();
+        async move { events.recv().await.unwrap() }
+    };
+    send(&fixture.login.clone(), AuthDraft::Inherit).await;
+    send(&fixture.health.clone(), AuthDraft::Inherit).await;
+    send(&fixture.health.clone(), AuthDraft::None).await;
+    let authorization = |index: usize| {
+        fixture.http.sent()[index]
+            .headers
+            .iter()
+            .find(|header| header.name == "authorization")
+            .map(|header| header.value.clone())
+    };
+    assert_eq!(authorization(0).as_deref(), Some("Basic YTpi"));
+    assert_eq!(
+        authorization(1).as_deref(),
+        Some("Bearer https://dev.example.com")
+    );
+    assert_eq!(authorization(2), None);
 }

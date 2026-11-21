@@ -3,6 +3,7 @@
 
 use std::sync::Arc;
 
+use ac_domain::auth::effective;
 use ac_domain::scope::Scope;
 use std::sync::atomic::Ordering;
 
@@ -12,9 +13,9 @@ use crate::command::{CommandAck, RunId};
 use crate::error::AppError;
 use crate::event::AppEvent;
 use crate::ports::{CollectionStore, HttpSender, SecretVault};
-use crate::resolve::resolve_request;
+use crate::resolve::{Entered, resolve_request};
 use crate::view::{
-    BodyDraft, HeaderDraft, ResponseView, RunOutcomeView, SendContext, VariableDraft,
+    AuthDraft, BodyDraft, HeaderDraft, ResponseView, RunOutcomeView, SendContext, VariableDraft,
 };
 
 /// A request as the editor sends it.
@@ -25,6 +26,8 @@ pub(super) struct Outgoing<'a> {
     pub body: &'a BodyDraft,
     /// The request's own variables.
     pub variables: &'a [VariableDraft],
+    /// The request's own authentication.
+    pub auth: &'a AuthDraft,
 }
 
 impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
@@ -41,8 +44,19 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
         };
         let headers: Vec<_> = outgoing.headers.iter().map(HeaderDraft::to_entry).collect();
         let body = outgoing.body.to_body();
-        let request = resolve_request(outgoing.method, outgoing.url, &headers, &body, &variables)
-            .map_err(|error| {
+        let own_auth = outgoing.auth.to_auth();
+        let auth = match &context {
+            Some(context) => context.auth(&own_auth),
+            None => effective([&own_auth]).clone(),
+        };
+        let entered = Entered {
+            method: outgoing.method,
+            url: outgoing.url,
+            headers: &headers,
+            body: &body,
+            auth: &auth,
+        };
+        let request = resolve_request(&entered, &variables).map_err(|error| {
             let unlocked = context
                 .as_ref()
                 .and_then(|context| context.unlocked.as_ref());

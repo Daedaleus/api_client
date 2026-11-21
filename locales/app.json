@@ -1,4 +1,37 @@
 {
+  "editor.auth": { "de": "Auth", "en": "Auth" },
+  "defaults.title": {
+    "de": "„{name}“: Variablen und Auth",
+    "en": "“{name}”: variables and auth"
+  },
+  "defaults.variables": { "de": "Variablen", "en": "Variables" },
+  "defaults.auth": { "de": "Auth", "en": "Auth" },
+  "auth.kind": { "de": "Art", "en": "Type" },
+  "auth.kind_inherit": { "de": "Erben", "en": "Inherit" },
+  "auth.kind_none": { "de": "Keine", "en": "None" },
+  "auth.kind_basic": { "de": "Basic", "en": "Basic" },
+  "auth.kind_bearer": { "de": "Bearer-Token", "en": "Bearer token" },
+  "auth.kind_apiKey": { "de": "API-Key", "en": "API key" },
+  "auth.badge_none": { "de": "aus", "en": "off" },
+  "auth.badge_basic": { "de": "Basic", "en": "Basic" },
+  "auth.badge_bearer": { "de": "Bearer", "en": "Bearer" },
+  "auth.badge_apiKey": { "de": "Key", "en": "Key" },
+  "auth.inherit_note": {
+    "de": "Nimmt die Auth des umgebenden Ordners oder der Collection.",
+    "en": "Uses the auth of the folder or collection around it."
+  },
+  "auth.username": { "de": "Benutzername", "en": "Username" },
+  "auth.password": { "de": "Passwort", "en": "Password" },
+  "auth.token": { "de": "Token", "en": "Token" },
+  "auth.key_name": { "de": "Name", "en": "Name" },
+  "auth.key_value": { "de": "Wert", "en": "Value" },
+  "auth.key_placement": { "de": "Senden als", "en": "Send as" },
+  "auth.placement_header": { "de": "Header", "en": "Header" },
+  "auth.placement_query": { "de": "Query-Parameter", "en": "Query parameter" },
+  "auth.plain_warning": {
+    "de": "Zugangsdaten stehen so im Klartext in der Datei. Besser eine {{variable}} aus einer Umgebung mit Secret verwenden.",
+    "en": "Credentials are stored in plain text in the file this way. Better use a {{variable}} from an environment with a secret."
+  },
   "editor.variables": { "de": "Variablen", "en": "Variables" },
   "editor.no_variables": {
     "de": "Keine eigenen Variablen.",
@@ -9,16 +42,12 @@
     "en": "Apply to this request only and override folders, environment and collection."
   },
   "collection.variables": {
-    "de": "Variablen der Collection",
-    "en": "Collection variables"
+    "de": "Variablen & Auth der Collection",
+    "en": "Collection variables & auth"
   },
   "collection.folder_variables": {
-    "de": "Variablen des Ordners",
-    "en": "Folder variables"
-  },
-  "variables.title": {
-    "de": "Variablen von „{name}“",
-    "en": "Variables of “{name}”"
+    "de": "Variablen & Auth des Ordners",
+    "en": "Folder variables & auth"
   },
   "variables.hint_collection": {
     "de": "Gelten für alle Requests der Collection. Umgebung, Ordner und Request überschreiben sie.",

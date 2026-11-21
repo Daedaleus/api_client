@@ -192,6 +192,8 @@ impl fmt::Display for StatusCode {
 pub mod header {
     /// `Content-Type`
     pub const CONTENT_TYPE: &str = "content-type";
+    /// `Authorization` (lower case: header names compare case-insensitively).
+    pub const AUTHORIZATION: &str = "authorization";
 
     /// Whether `value` can be sent as a header value: no line breaks or NUL,
     /// which would split or end the header (RFC 9110, section 5.5).
@@ -207,6 +209,14 @@ pub mod media_type {
     pub const JSON: &str = "application/json";
     /// Text bodies.
     pub const TEXT: &str = "text/plain; charset=utf-8";
+}
+
+/// Schemes of the `Authorization` header (RFC 7617, RFC 6750).
+pub mod auth_scheme {
+    /// HTTP Basic.
+    pub const BASIC: &str = "Basic";
+    /// Bearer token.
+    pub const BEARER: &str = "Bearer";
 }
 
 #[cfg(test)]

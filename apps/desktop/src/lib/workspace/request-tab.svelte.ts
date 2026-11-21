@@ -44,6 +44,7 @@ export class RequestTab {
       headers: [],
       body: { kind: 'none' },
       variables: [],
+      auth: { kind: 'inherit' },
       readOnly: false,
     };
   }

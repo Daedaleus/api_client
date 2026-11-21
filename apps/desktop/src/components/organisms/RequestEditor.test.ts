@@ -96,6 +96,16 @@ describe('RequestEditor', () => {
     expect(screen.getByText('Unknown variables: baseUrl')).toBeInTheDocument();
   });
 
+  it('edits the request auth', async () => {
+    const { tab } = setup();
+    await userEvent.click(screen.getByRole('tab', { name: /Auth/ }));
+    expect(screen.getByText(/Uses the auth of the folder/)).toBeInTheDocument();
+    await userEvent.selectOptions(screen.getByLabelText('Type'), 'Basic');
+    await userEvent.type(screen.getByLabelText('Username'), 'alice');
+    expect(tab.draft.auth).toEqual({ kind: 'basic', username: 'alice', password: '' });
+    expect(screen.getByRole('tab', { name: /Auth/ })).toHaveTextContent('Basic');
+  });
+
   it('edits the request variables', async () => {
     const { tab } = setup();
     await userEvent.click(screen.getByRole('tab', { name: /Variables/ }));

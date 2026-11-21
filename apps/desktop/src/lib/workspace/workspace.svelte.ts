@@ -20,7 +20,7 @@ import { RecipientsState } from './recipients.svelte';
 import type { RequestTab } from './request-tab.svelte';
 import { TabsState } from './tabs.svelte';
 import { baseName, foldersAround } from './tree';
-import { VariablesState } from './variables.svelte';
+import { DefaultsState } from './defaults.svelte';
 
 /** An environment open in the editor: a copy, so cancelling changes nothing. */
 export interface EnvironmentEdit {
@@ -35,8 +35,8 @@ export class Workspace {
   readonly environments: EnvironmentChoice;
   /** Who secrets are encrypted for (dialog). */
   readonly recipients: RecipientsState;
-  /** Variables of a collection or folder (dialog). */
-  readonly variables: VariablesState;
+  /** Variables and authentication of a collection or folder (dialog). */
+  readonly defaults: DefaultsState;
   /** The environment being edited, if the editor is open. */
   editing = $state<EnvironmentEdit | null>(null);
   readonly #api: Api;
@@ -47,7 +47,7 @@ export class Workspace {
     this.tabs = new TabsState(api);
     this.environments = new EnvironmentChoice(storage);
     this.recipients = new RecipientsState(api, this.collections);
-    this.variables = new VariablesState(api, this.collections);
+    this.defaults = new DefaultsState(api, this.collections);
   }
 
   /** The collection a tab's request belongs to (none for scratch tabs). */

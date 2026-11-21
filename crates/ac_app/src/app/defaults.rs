@@ -1,30 +1,34 @@
-//! Variables of a collection and of its folders (request variables are
-//! saved with the request).
+//! What a collection and its folders pass on to their requests: variables
+//! and authentication (a request's own are saved with the request).
 
-use ac_domain::collection::Item;
+use ac_domain::collection::{Item, RequestDefaults};
 
 use super::App;
 use super::collections::{item_id_from, writable};
 use crate::command::CommandAck;
 use crate::error::AppError;
 use crate::ports::{CollectionStore, HttpSender, SecretVault};
-use crate::view::VariableDraft;
+use crate::view::{AuthDraft, VariableDraft};
 
 impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
-    pub(super) fn save_variables(
+    pub(super) fn save_defaults(
         &self,
         collection_id: &str,
         item_id: &str,
-        drafts: &[VariableDraft],
+        variables: &[VariableDraft],
+        auth: &AuthDraft,
     ) -> Result<CommandAck, AppError> {
         let opened = self.current(collection_id)?;
         let id = item_id_from(item_id)?;
-        let variables = VariableDraft::to_plain_variables(drafts);
+        let defaults = RequestDefaults {
+            variables: VariableDraft::to_plain_variables(variables),
+            auth: auth.to_auth(),
+        };
         if id == opened.collection.id {
             writable(&opened, id)?;
             self.inner
                 .store
-                .save_collection_variables(&opened.root, &variables)?;
+                .save_collection_defaults(&opened.root, &defaults)?;
         } else {
             let folder = match opened.collection.find(id) {
                 Some(Item::Folder(folder)) => folder,
@@ -34,12 +38,12 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
             let dir = writable(&opened, id)?;
             self.inner
                 .store
-                .save_folder_variables(dir, folder.id, &folder.name, &variables)?;
+                .save_folder_defaults(dir, folder.id, &folder.name, &defaults)?;
         }
         self.reload(&opened.root, None)
     }
 }
 
 #[cfg(test)]
-#[path = "../tests/app_variables.rs"]
+#[path = "../tests/app_defaults.rs"]
 mod tests;

@@ -1,6 +1,7 @@
 use crate::load_collection;
 use crate::test_support::{read, shop_api};
 
+use ac_domain::collection::RequestDefaults;
 use ac_domain::environment::Variable;
 
 use super::*;
@@ -53,11 +54,23 @@ fn missing_folders_are_io_errors() {
     assert!(matches!(error, StorageError::Io { .. }), "{error}");
 }
 
+/// Variables only, authentication inherited.
+fn with_variables(variables: &[Variable]) -> RequestDefaults {
+    RequestDefaults {
+        variables: variables.to_vec(),
+        auth: ac_domain::auth::Auth::Inherit,
+    }
+}
+
 #[test]
 fn collection_and_folder_variables_are_written_in_place() {
     let (_temp, root) = shop_api();
     let collection_before = read(&root.join("collection.toml"));
-    save_collection_variables(&root, &[Variable::plain("host", "api.test")]).unwrap();
+    save_collection_defaults(
+        &root,
+        &with_variables(&[Variable::plain("host", "api.test")]),
+    )
+    .unwrap();
     let text = read(&root.join("collection.toml"));
     assert!(text.starts_with(&collection_before), "{text}");
     assert!(text.contains("[[variables]]\nname = \"host\""), "{text}");
@@ -70,19 +83,19 @@ fn collection_and_folder_variables_are_written_in_place() {
         .map(|(id, _)| *id)
         .unwrap();
     // No folder.toml yet: it is created with the folder's id and name.
-    save_folder_variables(
+    save_folder_defaults(
         &root.join("auth"),
         auth,
         "auth",
-        &[Variable::plain("v", "2")],
+        &with_variables(&[Variable::plain("v", "2")]),
     )
     .unwrap();
     let products: ItemId = "0193a8f2-7c1e-7b40-9d3a-5f2c8e1b4a71".parse().unwrap();
-    save_folder_variables(
+    save_folder_defaults(
         &root.join("products"),
         products,
         "Products",
-        &[Variable::plain("page", "1")],
+        &with_variables(&[Variable::plain("page", "1")]),
     )
     .unwrap();
 
@@ -104,7 +117,7 @@ fn collection_and_folder_variables_are_written_in_place() {
 #[test]
 fn collection_variables_need_a_writable_collection_file() {
     let (_temp, root) = shop_api();
-    let error = save_collection_variables(&root.join("nope"), &[]).unwrap_err();
+    let error = save_collection_defaults(&root.join("nope"), &with_variables(&[])).unwrap_err();
     assert!(matches!(error, StorageError::Io { .. }), "{error}");
     let settings = root.join("collection.toml");
     std::fs::write(
@@ -112,6 +125,6 @@ fn collection_variables_need_a_writable_collection_file() {
         "format = \"api-client/collection\"\nversion = 7\n",
     )
     .unwrap();
-    let error = save_collection_variables(&root, &[]).unwrap_err();
+    let error = save_collection_defaults(&root, &with_variables(&[])).unwrap_err();
     assert!(matches!(error, StorageError::ReadOnly { .. }), "{error}");
 }

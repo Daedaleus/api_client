@@ -42,7 +42,7 @@
         <IconButton
           icon="braces"
           label={i18n.t('collection.variables')}
-          onclick={() => workspace.variables.open(collection.id, collection.id)}
+          onclick={() => workspace.defaults.open(collection.id, collection.id)}
         />
         <IconButton
           icon="close"

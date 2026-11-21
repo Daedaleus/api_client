@@ -6,6 +6,8 @@
 //! Modules:
 //! - [`protocol`]: values from the HTTP protocol (methods, status codes,
 //!   header names) as types.
+//! - [`auth`]: how requests authenticate, inherited from folders and the
+//!   collection.
 //! - [`collection`]: collections, folders and saved requests as the user
 //!   edits them.
 //! - [`environment`]: environments, variables and `{{name}}` placeholders.
@@ -14,6 +16,7 @@
 //! - [`exchange`]: one HTTP exchange – the request as sent and the response
 //!   as received.
 
+pub mod auth;
 pub mod collection;
 pub mod environment;
 pub mod exchange;

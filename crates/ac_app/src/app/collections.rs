@@ -192,7 +192,7 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault> App<H, S, V> {
 
 fn changed(opened: &OpenedCollection, created: Option<ItemId>) -> CommandAck {
     CommandAck::CollectionChanged {
-        collection: CollectionView::from_opened(opened),
+        collection: Box::new(CollectionView::from_opened(opened)),
         created_id: created.map(|id| id.to_string()),
     }
 }

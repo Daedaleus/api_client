@@ -21,6 +21,7 @@ import type {
 } from './bindings';
 
 export type {
+  AuthDraft,
   BodyDraft,
   BodyView,
   SendContext,

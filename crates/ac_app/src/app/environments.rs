@@ -1,6 +1,7 @@
 //! Environments of open collections: creating and saving them, and their
 //! variables for sending. Deleting goes through `delete_item`.
 
+use ac_domain::auth::{Auth, effective};
 use ac_domain::collection::ItemId;
 use ac_domain::environment::{Environment, Variable};
 use ac_domain::scope::Scope;
@@ -85,6 +86,16 @@ pub(super) struct Context {
 }
 
 impl Context {
+    /// The authentication that applies: `own`, or inherited from the
+    /// folders around the request and the collection.
+    pub fn auth(&self, own: &Auth) -> Auth {
+        let collection = &self.opened.collection;
+        match self.request {
+            Some(request) => collection.auth_for(request, own),
+            None => effective([own, &collection.auth]).clone(),
+        }
+    }
+
     /// The variable lists for the request, weakest first; `own` are the
     /// request's own variables as edited (see [`ac_domain::scope`]).
     pub fn scope<'a>(&'a self, own: &'a [Variable]) -> Scope<'a> {

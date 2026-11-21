@@ -1,5 +1,6 @@
 //! View models: plain data for the UI, serialized as camelCase JSON.
 //!
+//! - [`auth`]: authentication of requests, folders and the collection.
 //! - [`response`]: results of request runs.
 //! - [`body`]: the body preview of a response.
 //! - [`collection`]: the request tree and saved requests for editing.
@@ -7,6 +8,7 @@
 //! - [`recipients`]: who secrets are encrypted for.
 //! - [`variable`]: variable rows and where variables come from when sending.
 
+pub mod auth;
 pub mod body;
 pub mod collection;
 pub mod environment;
@@ -14,6 +16,7 @@ pub mod recipients;
 pub mod response;
 pub mod variable;
 
+pub use auth::{AuthDraft, KeyPlacementView};
 pub use body::BodyView;
 pub use collection::{BodyDraft, CollectionView, HeaderDraft, RequestDraft, TreeItemView};
 pub use environment::EnvironmentDraft;

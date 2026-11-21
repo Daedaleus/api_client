@@ -1,14 +1,15 @@
-// Variables of a collection or one of its folders, edited in a dialog.
-// (Request variables are part of the request and saved with it.)
+// What a collection or one of its folders passes on to its requests –
+// variables and authentication – edited in a dialog. (A request's own are
+// part of the request and saved with it.)
 
 import type { Api } from '../api';
 import { toUserText } from '../errors';
-import type { TreeItemView, UserText, VariableDraft } from '../types';
+import type { AuthDraft, TreeItemView, UserText, VariableDraft } from '../types';
 import type { CollectionsState } from './collections.svelte';
 import type { FolderView } from './tree';
 
 /** What the dialog edits. */
-export interface VariablesEdit {
+export interface DefaultsEdit {
   collectionId: string;
   /** The collection itself or a folder in it. */
   itemId: string;
@@ -18,10 +19,12 @@ export interface VariablesEdit {
   isCollection: boolean;
   /** A copy of the variables, edited in place. */
   variables: VariableDraft[];
+  /** A copy of the authentication. */
+  auth: AuthDraft;
 }
 
-export class VariablesState {
-  editing = $state<VariablesEdit | null>(null);
+export class DefaultsState {
+  editing = $state<DefaultsEdit | null>(null);
   error = $state<UserText | null>(null);
   saving = $state(false);
 
@@ -33,7 +36,7 @@ export class VariablesState {
     this.#collections = collections;
   }
 
-  /** Opens the variables of the collection (`itemId` = its id) or a folder. */
+  /** Opens the collection (`itemId` = its id) or a folder. */
   open(collectionId: string, itemId: string): void {
     const collection = this.#collections.find(collectionId);
     if (!collection) return;
@@ -46,6 +49,7 @@ export class VariablesState {
       name: target.name,
       isCollection: itemId === collection.id,
       variables: $state.snapshot(target.variables),
+      auth: $state.snapshot(target.auth),
     };
   }
 
@@ -54,7 +58,7 @@ export class VariablesState {
     this.error = null;
   }
 
-  /** Saves the variables; the dialog stays open if that fails. */
+  /** Saves; the dialog stays open if that fails. */
   async save(): Promise<void> {
     const editing = this.editing;
     if (!editing) return;
@@ -62,10 +66,11 @@ export class VariablesState {
     this.saving = true;
     try {
       const ack = await this.#api.execute({
-        type: 'saveVariables',
+        type: 'saveDefaults',
         collectionId: editing.collectionId,
         itemId: editing.itemId,
         variables: $state.snapshot(editing.variables),
+        auth: $state.snapshot(editing.auth),
       });
       if (ack.type !== 'collectionChanged') throw new Error(`unexpected answer ${ack.type}`);
       this.#collections.apply(ack.collection);

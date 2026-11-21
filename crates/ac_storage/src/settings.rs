@@ -4,8 +4,7 @@
 
 use std::path::Path;
 
-use ac_domain::collection::ItemId;
-use ac_domain::environment::Variable;
+use ac_domain::collection::{ItemId, RequestDefaults};
 use toml_edit::DocumentMut;
 
 use crate::document;
@@ -13,7 +12,7 @@ use crate::error::StorageError;
 use crate::format::{
     COLLECTION_FILE, COLLECTION_FORMAT, CURRENT_VERSION, FOLDER_FILE, FOLDER_FORMAT,
 };
-use crate::variables;
+use crate::{auth, variables};
 
 /// Writes name and id of the folder `dir` into its `folder.toml`, creating
 /// the file if needed.
@@ -25,32 +24,33 @@ pub fn save_folder_settings(dir: &Path, id: ItemId, name: &str) -> Result<(), St
     edit_folder(dir, id, name, |_| Ok(()))
 }
 
-/// Writes the variables of the folder `dir` (with its name and id, so a new
-/// `folder.toml` keeps the folder's identity).
+/// Writes what the folder `dir` passes on to its requests (with its name
+/// and id, so a new `folder.toml` keeps the folder's identity).
 ///
 /// # Errors
 /// As [`save_folder_settings`].
-pub fn save_folder_variables(
+pub fn save_folder_defaults(
     dir: &Path,
     id: ItemId,
     name: &str,
-    new: &[Variable],
+    defaults: &RequestDefaults,
 ) -> Result<(), StorageError> {
     let settings = dir.join(FOLDER_FILE);
     edit_folder(dir, id, name, |doc| {
-        let before = variables::read(doc.get(variables::KEY), &settings, variables::KEY)?;
-        variables::write(doc.as_table_mut(), &before, new);
-        Ok(())
+        write_defaults(doc, &settings, defaults)
     })
 }
 
-/// Writes the variables of the collection in `root` into its
+/// Writes what the collection in `root` passes on to its requests into its
 /// `collection.toml` (which must exist).
 ///
 /// # Errors
 /// If the file is missing, damaged, from a newer version or cannot be
 /// written.
-pub fn save_collection_variables(root: &Path, new: &[Variable]) -> Result<(), StorageError> {
+pub fn save_collection_defaults(
+    root: &Path,
+    defaults: &RequestDefaults,
+) -> Result<(), StorageError> {
     let settings = root.join(COLLECTION_FILE);
     let text =
         std::fs::read_to_string(&settings).map_err(|error| StorageError::io(&settings, error))?;
@@ -62,9 +62,22 @@ pub fn save_collection_variables(root: &Path, new: &[Variable]) -> Result<(), St
         });
     }
     let mut doc = parsed.doc;
-    let before = variables::read(doc.get(variables::KEY), &settings, variables::KEY)?;
-    variables::write(doc.as_table_mut(), &before, new);
+    write_defaults(&mut doc, &settings, defaults)?;
     document::write_atomically(&settings, &doc.to_string())
+}
+
+/// Updates variables and authentication in a settings document.
+fn write_defaults(
+    doc: &mut DocumentMut,
+    settings: &Path,
+    defaults: &RequestDefaults,
+) -> Result<(), StorageError> {
+    let before_variables = variables::read(doc.get(variables::KEY), settings, variables::KEY)?;
+    let before_auth = auth::read(doc.get(auth::KEY), settings, auth::KEY)?;
+    let root = doc.as_table_mut();
+    variables::write(root, &before_variables, &defaults.variables);
+    auth::write(root, &before_auth, &defaults.auth);
+    Ok(())
 }
 
 fn edit_folder(

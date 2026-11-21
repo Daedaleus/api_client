@@ -4,7 +4,7 @@
   import DialogHost from '../components/organisms/DialogHost.svelte';
   import EnvironmentEditor from '../components/organisms/EnvironmentEditor.svelte';
   import RecipientsDialog from '../components/organisms/RecipientsDialog.svelte';
-  import VariablesDialog from '../components/organisms/VariablesDialog.svelte';
+  import DefaultsDialog from '../components/organisms/DefaultsDialog.svelte';
   import RequestEditor from '../components/organisms/RequestEditor.svelte';
   import ResponseViewer from '../components/organisms/ResponseViewer.svelte';
   import Sidebar from '../components/organisms/Sidebar.svelte';
@@ -93,8 +93,8 @@
       ondelete={() => workspace.deleteEnvironment()}
     />
   {/if}
-  {#if workspace.variables.editing}
-    <VariablesDialog variables={workspace.variables} />
+  {#if workspace.defaults.editing}
+    <DefaultsDialog defaults={workspace.defaults} />
   {/if}
   {#if workspace.recipients.editing}
     <RecipientsDialog recipients={workspace.recipients} />

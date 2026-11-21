@@ -62,6 +62,7 @@ fn send(fixture: &Fixture, url: &str) -> Result<CommandAck, AppError> {
         headers: Vec::new(),
         body: BodyDraft::None,
         variables: Vec::new(),
+        auth: crate::view::AuthDraft::Inherit,
         context: Some(SendContext {
             collection_id: fixture.collection.clone(),
             request_id: None,

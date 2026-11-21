@@ -8,8 +8,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::view::{
-    BodyDraft, CollectionView, EnvironmentDraft, HeaderDraft, RecipientsView, RequestDraft,
-    SendContext, VariableDraft,
+    AuthDraft, BodyDraft, CollectionView, EnvironmentDraft, HeaderDraft, RecipientsView,
+    RequestDraft, SendContext, VariableDraft,
 };
 
 /// Something the user wants the application to do.
@@ -36,6 +36,10 @@ pub enum Command {
         /// The request's own variables, as in the editor (strongest).
         #[serde(default)]
         variables: Vec<VariableDraft>,
+        /// The request's own authentication, as in the editor; `inherit`
+        /// takes that of its folders and collection (see `context`).
+        #[serde(default)]
+        auth: AuthDraft,
         /// Where further `{{variables}}` come from: collection, folders and
         /// environment. Without it only the request's own variables count.
         #[serde(default)]
@@ -113,14 +117,17 @@ pub enum Command {
         /// The edited environment (identified by its id).
         environment: EnvironmentDraft,
     },
-    /// Save the variables of the collection or of one of its folders.
-    SaveVariables {
+    /// Save what the collection or one of its folders passes on to its
+    /// requests: variables and authentication.
+    SaveDefaults {
         /// The collection.
         collection_id: String,
         /// The collection itself or a folder in it.
         item_id: String,
         /// The variables in display order (no secrets).
         variables: Vec<VariableDraft>,
+        /// The authentication (`inherit` on the collection means none).
+        auth: AuthDraft,
     },
     /// Set who the collection's secrets are encrypted for and re-encrypt
     /// the secrets of every environment. Nothing changes if any of them
@@ -156,7 +163,7 @@ pub enum CommandAck {
     /// A collection was opened or changed; here is its current tree.
     CollectionChanged {
         /// The collection as it is now on disk.
-        collection: CollectionView,
+        collection: Box<CollectionView>,
         /// The item a create command made, if any.
         created_id: Option<String>,
     },

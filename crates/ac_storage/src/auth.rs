@@ -1,0 +1,131 @@
+//! Authentication tables in request, folder and collection files:
+//!
+//! ```toml
+//! [request.auth]            # [auth] in folder.toml and collection.toml
+//! type = "bearer"           # none | basic | bearer | api-key
+//! token = "{{token}}"
+//! ```
+//!
+//! No table means "inherit". `basic` has `username` and `password`,
+//! `bearer` has `token`, `api-key` has `name`, `value` and
+//! `in` (`header` or `query`).
+
+use std::path::Path;
+
+use ac_domain::auth::{Auth, KeyPlacement};
+use toml_edit::{Item, Table, TableLike};
+
+use crate::document;
+use crate::error::StorageError;
+
+/// Key of the table.
+pub(crate) const KEY: &str = "auth";
+
+const TYPE: &str = "type";
+const NONE: &str = "none";
+const BASIC: &str = "basic";
+const BEARER: &str = "bearer";
+const API_KEY: &str = "api-key";
+const IN: &str = "in";
+const HEADER: &str = "header";
+const QUERY: &str = "query";
+
+/// Reads the authentication in `item` (missing = inherit); `field` names the
+/// table in error messages.
+pub(crate) fn read(
+    item: Option<&Item>,
+    path: &Path,
+    field: &'static str,
+) -> Result<Auth, StorageError> {
+    let Some(item) = item else {
+        return Ok(Auth::Inherit);
+    };
+    let table = item
+        .as_table_like()
+        .ok_or_else(|| StorageError::invalid(path, field, "must be a table"))?;
+    let text = |key| -> Result<String, StorageError> {
+        Ok(document::opt_str(table, key, path)?.unwrap_or_default())
+    };
+    match document::opt_str(table, TYPE, path)?.as_deref() {
+        Some(NONE) => Ok(Auth::None),
+        Some(BASIC) => Ok(Auth::Basic {
+            username: text("username")?,
+            password: text("password")?,
+        }),
+        Some(BEARER) => Ok(Auth::Bearer {
+            token: text("token")?,
+        }),
+        Some(API_KEY) => Ok(Auth::ApiKey {
+            name: text("name")?,
+            value: text("value")?,
+            placement: match document::opt_str(table, IN, path)?.as_deref() {
+                None | Some(HEADER) => KeyPlacement::Header,
+                Some(QUERY) => KeyPlacement::Query,
+                Some(other) => {
+                    return Err(StorageError::invalid(
+                        path,
+                        field,
+                        format!("`in` must be \"header\" or \"query\", found {other:?}"),
+                    ));
+                }
+            },
+        }),
+        other => Err(StorageError::invalid(
+            path,
+            field,
+            format!("type must be none, basic, bearer or api-key, found {other:?}"),
+        )),
+    }
+}
+
+/// Replaces the authentication table under [`KEY`] in `table` if it changed.
+pub(crate) fn write(table: &mut dyn TableLike, before: &Auth, after: &Auth) {
+    if before == after {
+        return;
+    }
+    table.remove(KEY);
+    if let Some(new) = to_table(after) {
+        table.insert(KEY, Item::Table(new));
+    }
+}
+
+fn to_table(auth: &Auth) -> Option<Table> {
+    let mut table = Table::new();
+    let mut set = |key: &str, value: &str| {
+        table.insert(key, toml_edit::value(value));
+    };
+    match auth {
+        Auth::Inherit => return None,
+        Auth::None => set(TYPE, NONE),
+        Auth::Basic { username, password } => {
+            set(TYPE, BASIC);
+            set("username", username);
+            set("password", password);
+        }
+        Auth::Bearer { token } => {
+            set(TYPE, BEARER);
+            set("token", token);
+        }
+        Auth::ApiKey {
+            name,
+            value,
+            placement,
+        } => {
+            set(TYPE, API_KEY);
+            set("name", name);
+            set("value", value);
+            set(
+                IN,
+                match placement {
+                    KeyPlacement::Header => HEADER,
+                    KeyPlacement::Query => QUERY,
+                },
+            );
+        }
+    }
+    Some(table)
+}
+
+#[cfg(test)]
+#[path = "tests/auth.rs"]
+mod tests;

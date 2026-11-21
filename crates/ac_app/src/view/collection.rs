@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::error::AppError;
 use crate::ports::{Location, OpenedCollection, StoreError};
 use crate::text::UserText;
-use crate::view::{EnvironmentDraft, VariableDraft};
+use crate::view::{AuthDraft, EnvironmentDraft, VariableDraft};
 
 /// An open collection.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -26,6 +26,8 @@ pub struct CollectionView {
     pub environments: Vec<EnvironmentDraft>,
     /// Variables for every request of the collection.
     pub variables: Vec<VariableDraft>,
+    /// Authentication for its requests.
+    pub auth: AuthDraft,
     /// Files that could not be loaded.
     pub problems: Vec<UserText>,
 }
@@ -51,6 +53,8 @@ pub enum TreeItemView {
         items: Vec<TreeItemView>,
         /// Variables for the requests in the folder.
         variables: Vec<VariableDraft>,
+        /// Authentication for the requests in the folder.
+        auth: AuthDraft,
     },
     /// A request.
     Request {
@@ -87,6 +91,7 @@ impl CollectionView {
                 })
                 .collect(),
             variables: VariableDraft::list(&collection.variables),
+            auth: AuthDraft::from_auth(&collection.auth),
             problems: opened.problems.iter().map(StoreError::user_text).collect(),
         }
     }
@@ -108,6 +113,7 @@ fn tree(items: &[Item], opened: &OpenedCollection) -> Vec<TreeItemView> {
                 read_only: read_only(folder.id),
                 items: tree(&folder.items, opened),
                 variables: VariableDraft::list(&folder.variables),
+                auth: AuthDraft::from_auth(&folder.auth),
             },
             Item::Request(request) => TreeItemView::Request {
                 id: request.id.to_string(),
@@ -139,6 +145,9 @@ pub struct RequestDraft {
     /// Variables of this request only.
     #[serde(default)]
     pub variables: Vec<VariableDraft>,
+    /// Authentication, or inherited.
+    #[serde(default)]
+    pub auth: AuthDraft,
     /// The file is never written (set by the app, ignored when saving).
     #[serde(default)]
     pub read_only: bool,
@@ -244,6 +253,7 @@ impl RequestDraft {
                 .collect(),
             body: BodyDraft::from_body(&request.body),
             variables: VariableDraft::list(&request.variables),
+            auth: AuthDraft::from_auth(&request.auth),
             read_only,
         }
     }
@@ -255,6 +265,7 @@ impl RequestDraft {
     pub fn to_request(&self) -> Result<Request, AppError> {
         Ok(Request {
             variables: VariableDraft::to_plain_variables(&self.variables),
+            auth: self.auth.to_auth(),
             id: self.id.parse().map_err(|_| AppError::UnknownItem)?,
             name: non_empty(&self.name)?.to_owned(),
             method: self.method.trim().parse()?,

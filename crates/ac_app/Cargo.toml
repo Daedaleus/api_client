@@ -16,6 +16,7 @@ specta = ["dep:specta"]
 
 [dependencies]
 ac_domain.workspace = true
+base64.workspace = true
 serde.workspace = true
 specta = { workspace = true, optional = true }
 serde_json.workspace = true

@@ -65,7 +65,7 @@
         <IconButton
           icon="braces"
           label={i18n.t('collection.folder_variables')}
-          onclick={() => workspace.variables.open(collectionId, item.id)}
+          onclick={() => workspace.defaults.open(collectionId, item.id)}
         />
       {/if}
       <IconButton

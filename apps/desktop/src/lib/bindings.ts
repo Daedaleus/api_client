@@ -50,6 +50,31 @@ runId: RunId;
 /**  What happened. */
 outcome: RunOutcomeView_Serialize };
 
+/**  The authentication of a request, folder or collection. */
+export type AuthDraft = 
+/**  Use that of the folder or collection around it. */
+{ kind: "inherit" } | 
+/**  None. */
+{ kind: "none" } | 
+/**  HTTP Basic. */
+{ kind: "basic"; 
+/**  User name. */
+username: string; 
+/**  Password. */
+password: string } | 
+/**  Bearer token. */
+{ kind: "bearer"; 
+/**  The token. */
+token: string } | 
+/**  API key. */
+{ kind: "apiKey"; 
+/**  Header or parameter name. */
+name: string; 
+/**  The key. */
+value: string; 
+/**  Where it goes. */
+placement: KeyPlacementView };
+
 /**  The body of a [`RequestDraft`]. */
 export type BodyDraft = 
 /**  No body. */
@@ -92,6 +117,8 @@ export type CollectionView_Deserialize = {
 	environments: EnvironmentDraft_Deserialize[],
 	/**  Variables for every request of the collection. */
 	variables: VariableDraft_Deserialize[],
+	/**  Authentication for its requests. */
+	auth: AuthDraft,
 	/**  Files that could not be loaded. */
 	problems: UserText[],
 };
@@ -110,6 +137,8 @@ export type CollectionView_Serialize = {
 	environments: EnvironmentDraft_Serialize[],
 	/**  Variables for every request of the collection. */
 	variables: VariableDraft_Serialize[],
+	/**  Authentication for its requests. */
+	auth: AuthDraft,
 	/**  Files that could not be loaded. */
 	problems: UserText[],
 };
@@ -168,6 +197,11 @@ headers?: HeaderDraft[];
 body?: BodyDraft; 
 /**  The request's own variables, as in the editor (strongest). */
 variables?: VariableDraft_Deserialize[]; 
+/**
+ *  The request's own authentication, as in the editor; `inherit`
+ *  takes that of its folders and collection (see `context`).
+ */
+auth?: AuthDraft; 
 /**
  *  Where further `{{variables}}` come from: collection, folders and
  *  environment. Without it only the request's own variables count.
@@ -235,14 +269,19 @@ name: string } |
 collectionId: string; 
 /**  The edited environment (identified by its id). */
 environment: EnvironmentDraft_Deserialize } | 
-/**  Save the variables of the collection or of one of its folders. */
-{ type: "saveVariables"; 
+/**
+ *  Save what the collection or one of its folders passes on to its
+ *  requests: variables and authentication.
+ */
+{ type: "saveDefaults"; 
 /**  The collection. */
 collectionId: string; 
 /**  The collection itself or a folder in it. */
 itemId: string; 
 /**  The variables in display order (no secrets). */
-variables: VariableDraft_Deserialize[] } | 
+variables: VariableDraft_Deserialize[]; 
+/**  The authentication (`inherit` on the collection means none). */
+auth: AuthDraft } | 
 /**
  *  Set who the collection's secrets are encrypted for and re-encrypt
  *  the secrets of every environment. Nothing changes if any of them
@@ -268,6 +307,11 @@ headers: HeaderDraft[];
 body: BodyDraft; 
 /**  The request's own variables, as in the editor (strongest). */
 variables: VariableDraft_Serialize[]; 
+/**
+ *  The request's own authentication, as in the editor; `inherit`
+ *  takes that of its folders and collection (see `context`).
+ */
+auth: AuthDraft; 
 /**
  *  Where further `{{variables}}` come from: collection, folders and
  *  environment. Without it only the request's own variables count.
@@ -335,14 +379,19 @@ name: string } |
 collectionId: string; 
 /**  The edited environment (identified by its id). */
 environment: EnvironmentDraft_Serialize } | 
-/**  Save the variables of the collection or of one of its folders. */
-{ type: "saveVariables"; 
+/**
+ *  Save what the collection or one of its folders passes on to its
+ *  requests: variables and authentication.
+ */
+{ type: "saveDefaults"; 
 /**  The collection. */
 collectionId: string; 
 /**  The collection itself or a folder in it. */
 itemId: string; 
 /**  The variables in display order (no secrets). */
-variables: VariableDraft_Serialize[] } | 
+variables: VariableDraft_Serialize[]; 
+/**  The authentication (`inherit` on the collection means none). */
+auth: AuthDraft } | 
 /**
  *  Set who the collection's secrets are encrypted for and re-encrypt
  *  the secrets of every environment. Nothing changes if any of them
@@ -398,6 +447,13 @@ export type HeaderView = {
 	/**  Value. */
 	value: string,
 };
+
+/**  Where an API key goes. */
+export type KeyPlacementView = 
+/**  As a header. */
+"header" | 
+/**  As a query parameter. */
+"query";
 
 /**  Something the UI wants to read. */
 export type Query = 
@@ -479,6 +535,8 @@ export type RequestDraft_Deserialize = {
 	body: BodyDraft,
 	/**  Variables of this request only. */
 	variables?: VariableDraft_Deserialize[],
+	/**  Authentication, or inherited. */
+	auth?: AuthDraft,
 	/**  The file is never written (set by the app, ignored when saving). */
 	readOnly?: boolean,
 };
@@ -499,6 +557,8 @@ export type RequestDraft_Serialize = {
 	body: BodyDraft,
 	/**  Variables of this request only. */
 	variables: VariableDraft_Serialize[],
+	/**  Authentication, or inherited. */
+	auth: AuthDraft,
 	/**  The file is never written (set by the app, ignored when saving). */
 	readOnly: boolean,
 };
@@ -633,7 +693,9 @@ readOnly: boolean;
 /**  Contents in display order. */
 items: TreeItemView_Deserialize[]; 
 /**  Variables for the requests in the folder. */
-variables: VariableDraft_Deserialize[] } | 
+variables: VariableDraft_Deserialize[]; 
+/**  Authentication for the requests in the folder. */
+auth: AuthDraft } | 
 /**  A request. */
 { kind: "request"; 
 /**  Request id. */
@@ -658,7 +720,9 @@ readOnly: boolean;
 /**  Contents in display order. */
 items: TreeItemView_Serialize[]; 
 /**  Variables for the requests in the folder. */
-variables: VariableDraft_Serialize[] } | 
+variables: VariableDraft_Serialize[]; 
+/**  Authentication for the requests in the folder. */
+auth: AuthDraft } | 
 /**  A request. */
 { kind: "request"; 
 /**  Request id. */

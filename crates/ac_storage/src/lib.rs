@@ -21,6 +21,7 @@
 //! - `rows`: name/value/enabled lists (headers, variables).
 //! - `variables`: variable lists in collection, folder, environment and
 //!   request files.
+//! - `auth`: authentication tables in request, folder and collection files.
 //! - [`create`]: creating collections, folders and requests.
 //! - [`remove`]: removing requests and folders.
 //! - [`store`]: [`FileStore`], the `CollectionStore` port of `ac_app`.
@@ -28,6 +29,7 @@
 //! - `order`: keeping `order` lists in step with their folder.
 //! - `document`: reading and updating TOML values in place, atomic writes.
 
+mod auth;
 pub mod create;
 mod document;
 pub mod environment_file;

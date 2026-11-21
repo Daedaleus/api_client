@@ -16,6 +16,8 @@
 //      re-encrypted and still work for the user,
 //   8. a collection variable is saved and used; a request variable of the
 //      same name overrides it,
+//   9. bearer auth with the secret as token is sent; set on the collection,
+//      the request inherits it,
 // and the program is still running after each send.
 //
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
@@ -136,6 +138,7 @@ server = http.createServer((request, response) => {
         url: request.url,
         contentType: request.headers['content-type'] ?? null,
         xClient: request.headers['x-client'] ?? null,
+        authorization: request.headers.authorization ?? null,
         body: received,
       }),
     );
@@ -527,21 +530,21 @@ const echoWith = (part, what) =>
 
 // Collection variable `path`, through the dialog of the collection header.
 await evaluate(`document.querySelectorAll('.sidebar__collection-header .icon-button')[2].click()`);
-await waitFor(`!!document.querySelector('.variables-dialog')`, 'collection variables dialog');
-await evaluate(`document.querySelector('.variables-dialog .rows-editor .button').click()`);
+await waitFor(`!!document.querySelector('.defaults-dialog')`, 'collection variables dialog');
+await evaluate(`document.querySelector('.defaults-dialog .rows-editor .button').click()`);
 await waitFor(
-  `document.querySelectorAll('.variables-dialog .rows-editor__input').length === 2`,
+  `document.querySelectorAll('.defaults-dialog .rows-editor__input').length === 2`,
   'collection variable row',
 );
 await evaluate(`(() => {
-  const [name, value] = document.querySelectorAll('.variables-dialog .rows-editor__input');
+  const [name, value] = document.querySelectorAll('.defaults-dialog .rows-editor__input');
   name.value = 'path';
   name.dispatchEvent(new Event('input', { bubbles: true }));
   value.value = 'from-collection';
   value.dispatchEvent(new Event('input', { bubbles: true }));
-  document.querySelector('.variables-dialog [type=submit]').click();
+  document.querySelector('.defaults-dialog [type=submit]').click();
 })()`);
-await waitFor(`!document.querySelector('.variables-dialog')`, 'collection variables saved');
+await waitFor(`!document.querySelector('.defaults-dialog')`, 'collection variables saved');
 const collectionText = readFileSync(path.join(collectionDir, 'collection.toml'), 'utf8');
 check(
   collectionText.includes('[[variables]]') && collectionText.includes('from-collection'),
@@ -554,7 +557,7 @@ await echoWith('scope=from-collection', 'echo with the collection variable');
 steps.push('collection variable used when sending');
 
 // A request variable of the same name is stronger.
-await evaluate(`document.querySelectorAll('.request-editor__section')[2].click()`);
+await evaluate(`document.querySelectorAll('.request-editor__section')[3].click()`);
 await waitFor(`!!document.querySelector('.request-editor__panel .rows-editor')`, 'variables tab');
 await evaluate(`document.querySelector('.request-editor__panel .rows-editor .button').click()`);
 await waitFor(
@@ -584,5 +587,34 @@ for (let attempt = 0; attempt < 40 && !saved.includes('from-request'); attempt++
 }
 check(saved.includes('[[request.variables]]'), 'request variable saved to health.toml');
 check(exitCode === null, 'program still running after sending with layered variables');
+
+// --- 9. Authentication ----------------------------------------------------------
+
+// Bearer auth on the collection, the token being the secret of step 6.
+await evaluate(`document.querySelectorAll('.sidebar__collection-header .icon-button')[2].click()`);
+await waitFor(`!!document.querySelector('.defaults-dialog')`, 'collection settings dialog');
+await evaluate(`document.querySelectorAll('.defaults-dialog__section')[1].click()`);
+await waitFor(`!!document.querySelector('.defaults-dialog .auth-editor__select')`, 'auth section');
+await evaluate(setValue('.defaults-dialog .auth-editor__select', 'bearer', 'change'));
+await waitFor(`!!document.querySelector('.defaults-dialog .auth-editor__input')`, 'token field');
+await evaluate(setValue('.defaults-dialog .auth-editor__input', '{{token}}'));
+await evaluate(`document.querySelector('.defaults-dialog [type=submit]').click()`);
+await waitFor(`!document.querySelector('.defaults-dialog')`, 'collection auth saved');
+const withAuth = readFileSync(path.join(collectionDir, 'collection.toml'), 'utf8');
+check(
+  withAuth.includes('type = "bearer"') &&
+    withAuth.includes('{{token}}') &&
+    !withAuth.includes(secretValue),
+  'collection auth saved with the variable, not the secret',
+);
+
+await evaluate(setValue('.url-bar__input', '{{baseUrl}}/echo?auth=1'));
+await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);
+const authorized = await echoWith('auth=1', 'echo with inherited auth');
+check(
+  authorized.includes(`"authorization": "Bearer ${secretValue}"`),
+  'request inherits bearer auth with the decrypted secret',
+);
+check(exitCode === null, 'program still running after sending with auth');
 
 finish(null);
