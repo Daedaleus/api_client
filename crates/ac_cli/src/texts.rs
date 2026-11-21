@@ -22,14 +22,17 @@ pub(crate) mod keys {
     pub const SUMMARY: &str = "cli.summary";
     /// An error before the run. Argument: `message`.
     pub const ERROR: &str = "cli.error";
+    /// Summary of the tests. Arguments: `total`, `passed`, `failed`.
+    pub const TESTS: &str = "cli.tests";
 
     /// All of them with their placeholders (checked by a test).
     #[cfg(test)]
-    pub const ALL: [(&str, &[&str]); 4] = [
+    pub const ALL: [(&str, &[&str]); 5] = [
         (HEADING, &["collection"]),
         (HEADING_ENVIRONMENT, &["collection", "environment"]),
         (SUMMARY, &["total", "passed", "failed"]),
         (ERROR, &["message"]),
+        (TESTS, &["total", "passed", "failed"]),
     ];
 }
 

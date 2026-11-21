@@ -2,6 +2,7 @@
   import { formatBytes, formatDuration } from '../../lib/format';
   import { i18n } from '../../lib/i18n/i18n.svelte';
   import type { RunOutcome } from '../../lib/types';
+  import TestResults from '../molecules/TestResults.svelte';
 
   interface Props {
     outcome: RunOutcome | null;
@@ -10,11 +11,18 @@
 
   let { outcome, sending }: Props = $props();
 
-  type Tab = 'body' | 'headers' | 'logs';
+  type Tab = 'body' | 'headers' | 'tests' | 'logs';
   let tab = $state<Tab>('body');
   let logs = $derived(outcome?.logs ?? []);
-  /** The log tab only when a script logged something. */
-  let tabs = $derived<Tab[]>(logs.length > 0 ? ['body', 'headers', 'logs'] : ['body', 'headers']);
+  let tests = $derived(outcome?.tests ?? []);
+  let passedTests = $derived(tests.filter((test) => test.passed).length);
+  /** The test and log tabs only when scripts ran tests or logged. */
+  let tabs = $derived<Tab[]>([
+    'body',
+    'headers',
+    ...(tests.length > 0 ? (['tests'] as const) : []),
+    ...(logs.length > 0 ? (['logs'] as const) : []),
+  ]);
   let shown = $derived<Tab>(tabs.includes(tab) ? tab : 'body');
 </script>
 
@@ -26,6 +34,9 @@
       <strong>{i18n.t('response.failed')}</strong>
       <span>{i18n.text(outcome.error)}</span>
     </div>
+    {#if tests.length > 0}
+      <TestResults {tests} />
+    {/if}
     {#if logs.length > 0}
       <pre class="response__logs" aria-label={i18n.t('response.logs')}>{logs.join('\n')}</pre>
     {/if}
@@ -60,6 +71,15 @@
           {i18n.t(`response.${name}`)}
           {#if name === 'headers'}<span class="response__count">{outcome.headers.length}</span>{/if}
           {#if name === 'logs'}<span class="response__count">{logs.length}</span>{/if}
+          {#if name === 'tests'}
+            <span
+              class="response__count"
+              class:response__count--failed={passedTests < tests.length}
+              class:response__count--passed={passedTests === tests.length}
+            >
+              {passedTests}/{tests.length}
+            </span>
+          {/if}
         </button>
       {/each}
     </div>
@@ -67,6 +87,8 @@
     <div class="response__panel" role="tabpanel">
       {#if shown === 'logs'}
         <pre class="response__logs">{logs.join('\n')}</pre>
+      {:else if shown === 'tests'}
+        <TestResults {tests} />
       {:else if shown === 'body'}
         {#if outcome.body.binary}
           <p class="response__note">
@@ -210,6 +232,14 @@
     border-radius: 9px;
     background: var(--color-raised);
     font-size: var(--font-size-s);
+  }
+
+  .response__count--passed {
+    color: var(--color-success);
+  }
+
+  .response__count--failed {
+    color: var(--color-error);
   }
 
   .response__panel {

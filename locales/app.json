@@ -3,6 +3,7 @@
   "cli.heading_environment": {"de": "{collection} · Umgebung {environment}", "en": "{collection} · environment {environment}"},
   "cli.summary": {"de": "{total} Requests: {passed} bestanden, {failed} fehlgeschlagen", "en": "{total} requests: {passed} passed, {failed} failed"},
   "cli.error": {"de": "Fehler: {message}", "en": "Error: {message}"},
+  "cli.tests": {"de": "{total} Tests: {passed} bestanden, {failed} fehlgeschlagen", "en": "{total} tests: {passed} passed, {failed} failed"},
   "error.unknown_environment": {"de": "Keine Umgebung namens „{name}“.", "en": "No environment named “{name}”."},
   "error.nothing_to_run": {"de": "Kein Ordner oder Request unter „{path}“.", "en": "No folder or request at “{path}”."},
   "import.skipped_headers": {
@@ -200,6 +201,9 @@
   "response.size": { "de": "Größe", "en": "Size" },
   "response.body": { "de": "Body", "en": "Body" },
   "response.logs": { "de": "Log", "en": "Log" },
+  "response.tests": { "de": "Tests", "en": "Tests" },
+  "tests.passed": { "de": "bestanden", "en": "passed" },
+  "tests.failed": { "de": "fehlgeschlagen", "en": "failed" },
   "response.headers": { "de": "Headers", "en": "Headers" },
   "response.body.none": { "de": "Kein Inhalt.", "en": "No content." },
   "response.body.binary": {
@@ -281,8 +285,8 @@
   "editor.sections": { "de": "Request-Bereiche", "en": "Request sections" },
   "editor.scripts": { "de": "Skripte", "en": "Scripts" },
   "scripts.hint": {
-    "de": "TypeScript oder JavaScript. Verfügbar sind req, res (nach der Response), env und log. Mit env.set gesetzte Variablen gelten für die folgenden Requests der Collection, bis sie geschlossen wird, und werden nie gespeichert.",
-    "en": "TypeScript or JavaScript. Available are req, res (after the response), env and log. Variables set with env.set apply to the following requests of the collection until it is closed, and are never saved."
+    "de": "TypeScript oder JavaScript. Verfügbar sind req, res (nach der Response), env, log sowie test und expect für Tests. Mit env.set gesetzte Variablen gelten für die folgenden Requests der Collection, bis sie geschlossen wird, und werden nie gespeichert.",
+    "en": "TypeScript or JavaScript. Available are req, res (after the response), env, log, and test and expect for tests. Variables set with env.set apply to the following requests of the collection until it is closed, and are never saved."
   },
   "scripts.pre_request": { "de": "Vor dem Request", "en": "Before the request" },
   "scripts.post_response": { "de": "Nach der Response", "en": "After the response" },

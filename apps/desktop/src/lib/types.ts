@@ -35,6 +35,7 @@ export type {
   Query,
   RecipientsView,
   StatusClassView as StatusClass,
+  TestResultView,
   UserText,
 } from './bindings';
 

@@ -150,6 +150,7 @@ async fn transport_errors_are_a_normal_outcome() {
         RunOutcomeView::Failed {
             error: UserText::new(keys::TIMEOUT),
             logs: Vec::new(),
+            tests: Vec::new(),
         }
     );
 }
@@ -206,6 +207,7 @@ fn commands_and_events_match_the_ui_contract() {
         outcome: RunOutcomeView::Failed {
             error: UserText::new(keys::TIMEOUT),
             logs: Vec::new(),
+            tests: Vec::new(),
         },
     };
     assert_eq!(

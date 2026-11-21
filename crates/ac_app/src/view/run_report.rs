@@ -3,6 +3,7 @@
 use serde::Serialize;
 
 use crate::text::UserText;
+use crate::view::TestResultView;
 
 /// What a run did, request by request, in order.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -22,6 +23,8 @@ pub struct RunResult {
     pub method: String,
     /// What happened.
     pub outcome: RunResultOutcome,
+    /// Tests of its scripts, in order.
+    pub tests: Vec<TestResultView>,
 }
 
 /// What happened to one request.
@@ -50,10 +53,17 @@ pub enum RunResultOutcome {
 const FIRST_ERROR_STATUS: u16 = 400;
 
 impl RunResult {
-    /// Whether the request passed: it got a response, and – if
-    /// `error_status_fails` – one with a status below 400.
+    /// Whether the request passed: it got a response – if
+    /// `error_status_fails`, one with a status below 400 – and all its
+    /// tests passed.
     #[must_use]
     pub fn passed(&self, error_status_fails: bool) -> bool {
+        self.responded(error_status_fails) && self.tests.iter().all(|test| test.passed)
+    }
+
+    /// Whether the request itself passed, its tests aside.
+    #[must_use]
+    pub fn responded(&self, error_status_fails: bool) -> bool {
         match self.outcome {
             RunResultOutcome::Response { status, .. } => {
                 !error_status_fails || status < FIRST_ERROR_STATUS

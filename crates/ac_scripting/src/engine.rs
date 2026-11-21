@@ -6,7 +6,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
-use ac_app::ports::{ScriptError, ScriptJob, ScriptOutcome, ScriptRequest};
+use ac_app::ports::{ScriptError, ScriptJob, ScriptOutcome, ScriptRequest, TestResult};
 use rquickjs::{Context, Ctx, Function, Promise, Runtime, Value};
 use serde::Deserialize;
 use serde_json::json;
@@ -41,6 +41,14 @@ struct Output {
     request: OutputRequest,
     variables: Vec<(String, String)>,
     logs: Vec<String>,
+    tests: Vec<OutputTest>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OutputTest {
+    name: String,
+    passed: bool,
+    message: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -110,9 +118,8 @@ fn execute(ctx: &Ctx<'_>, job: &ScriptJob, javascript: &str) -> Result<ScriptOut
         .set("__input", input.to_string())
         .map_err(thrown)?;
     ctx.eval::<(), _>(PRELUDE).map_err(thrown)?;
-    // An async function, so scripts can `await` (later API calls return
-    // promises); its jobs run until it settles.
-    let wrapped = format!("(async () => {{\n{javascript}\n}})()");
+    // An async function, so scripts can `await`; then async tests settle.
+    let wrapped = format!("(async () => {{\n{javascript}\n}})().then(() => __settle())");
     let promise: Promise = ctx
         .eval::<Value, _>(wrapped)
         .map_err(thrown)?
@@ -132,6 +139,15 @@ fn execute(ctx: &Ctx<'_>, job: &ScriptJob, javascript: &str) -> Result<ScriptOut
         },
         variables: output.variables,
         logs: output.logs,
+        tests: output
+            .tests
+            .into_iter()
+            .map(|test| TestResult {
+                name: test.name,
+                passed: test.passed,
+                message: test.message,
+            })
+            .collect(),
     })
 }
 

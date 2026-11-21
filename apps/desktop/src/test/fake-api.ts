@@ -28,6 +28,7 @@ export const OK: RunOutcome = {
   body: { text: 'ok', pretty: false, truncated: false, binary: false },
   logs: [],
   scriptError: null,
+  tests: [],
 };
 
 /** `Shop` with folder `Auth` (request `Login`) and request `Health`. */

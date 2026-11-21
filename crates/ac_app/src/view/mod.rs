@@ -30,7 +30,7 @@ pub use environment::EnvironmentDraft;
 pub use outgoing::OutgoingRequest;
 pub use recipients::RecipientsView;
 pub use request_body::{BodyDraft, FormFieldDraft, MultipartFieldDraft};
-pub use response::{HeaderView, ResponseView, RunOutcomeView, StatusClassView};
+pub use response::{HeaderView, ResponseView, RunOutcomeView, StatusClassView, TestResultView};
 pub use run_report::{RunReport, RunResult, RunResultOutcome};
 pub use scripts::ScriptsDraft;
 pub use variable::{SendContext, VariableDraft};

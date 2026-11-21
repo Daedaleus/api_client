@@ -837,6 +837,8 @@ export type ResponseView_Deserialize = {
 	logs: string[],
 	/**  Why the post-response script failed, if it did. */
 	scriptError?: UserText | null,
+	/**  Tests of both scripts, in order. */
+	tests: TestResultView_Deserialize[],
 };
 
 /**  A response prepared for display. */
@@ -859,6 +861,8 @@ export type ResponseView_Serialize = {
 	logs: string[],
 	/**  Why the post-response script failed, if it did. */
 	scriptError: UserText | null,
+	/**  Tests of both scripts, in order. */
+	tests: TestResultView_Serialize[],
 };
 
 /**  Identifies one sending of a request, so the UI can match the result. */
@@ -878,7 +882,9 @@ export type RunOutcomeView_Deserialize =
 /**  Why. */
 error: UserText; 
 /**  Lines the pre-request script logged before. */
-logs: string[] };
+logs: string[]; 
+/**  Tests the pre-request script ran before. */
+tests: TestResultView_Deserialize[] };
 
 /**  Result of one request run. */
 export type RunOutcomeView_Serialize = 
@@ -891,7 +897,9 @@ export type RunOutcomeView_Serialize =
 /**  Why. */
 error: UserText; 
 /**  Lines the pre-request script logged before. */
-logs: string[] };
+logs: string[]; 
+/**  Tests the pre-request script ran before. */
+tests: TestResultView_Serialize[] };
 
 /**  Scripts before sending and after the response; empty = none. */
 export type ScriptsDraft = ScriptsDraft_Serialize | ScriptsDraft_Deserialize;
@@ -958,6 +966,29 @@ export type StatusClassView =
 "serverError" | 
 /**  `6xx`–`9xx` */
 "nonstandard";
+
+/**  The result of one `test(…)` of a script. */
+export type TestResultView = TestResultView_Serialize | TestResultView_Deserialize;
+
+/**  The result of one `test(…)` of a script. */
+export type TestResultView_Deserialize = {
+	/**  The test's name. */
+	name: string,
+	/**  Whether every check in it held. */
+	passed: boolean,
+	/**  Why it failed (technical, from the script). */
+	message?: string | null,
+};
+
+/**  The result of one `test(…)` of a script. */
+export type TestResultView_Serialize = {
+	/**  The test's name. */
+	name: string,
+	/**  Whether every check in it held. */
+	passed: boolean,
+	/**  Why it failed (technical, from the script). */
+	message: string | null,
+};
 
 /**  An entry of the request tree. */
 export type TreeItemView = TreeItemView_Serialize | TreeItemView_Deserialize;
