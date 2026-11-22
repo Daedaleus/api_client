@@ -8,6 +8,7 @@ use ac_domain::exchange::{Header, ResolvedRequest};
 use ac_domain::protocol::{HttpMethod, StatusClass, header};
 use ac_interchange::bruno::{self, BrunoFile};
 use ac_interchange::curl::{from_curl, to_curl};
+use ac_interchange::snippet::to_snippet;
 use ac_interchange::{
     ImportError, Imported, Skipped, SkippedKind, import_collection, import_collection_from,
 };
@@ -20,7 +21,7 @@ use crate::ports::{BrowserLogin, CollectionStore, HttpSender, ScriptRunner, Secr
 use crate::ports::{HistoryStore, ScriptAssist, SettingsStore};
 use crate::resolve::resolve_url;
 use crate::text::{UserText, keys};
-use crate::view::{OutgoingRequest, RequestDraft};
+use crate::view::{OutgoingRequest, RequestDraft, SnippetLanguageView};
 
 /// What an import from a URL asks for: the formats it reads, JSON first.
 const IMPORT_ACCEPT: &str = "application/json, application/yaml;q=0.9, */*;q=0.5";
@@ -137,14 +138,30 @@ impl<
     /// variables (also secrets) filled in, inherited auth applied. An OAuth 2
     /// token is fetched only when sending, so a placeholder stands in.
     pub(super) fn query_curl(&self, request: &OutgoingRequest) -> Result<QueryResult, AppError> {
+        Ok(QueryResult::Curl {
+            command: to_curl(&self.resolved_for_export(request)?),
+        })
+    }
+
+    pub(super) fn query_snippet(
+        &self,
+        request: &OutgoingRequest,
+        language: SnippetLanguageView,
+    ) -> Result<QueryResult, AppError> {
+        Ok(QueryResult::Snippet {
+            code: to_snippet(&self.resolved_for_export(request)?, language.to_language()),
+        })
+    }
+
+    /// The request as it would be sent, an OAuth 2 token as a placeholder
+    /// (exports never fetch tokens).
+    fn resolved_for_export(&self, request: &OutgoingRequest) -> Result<ResolvedRequest, AppError> {
         let prepared = self.prepare(request)?;
         let mut resolved = prepared.request;
         if prepared.oauth.is_some() {
             authorize(&mut resolved, TOKEN_PLACEHOLDER);
         }
-        Ok(QueryResult::Curl {
-            command: to_curl(&resolved),
-        })
+        Ok(resolved)
     }
 }
 

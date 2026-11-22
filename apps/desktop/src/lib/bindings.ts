@@ -952,6 +952,10 @@ request: RequestDraft_Deserialize } |
 { type: "curl"; 
 /**  For a POSIX shell, one option per line. */
 command: string } | 
+/**  Code that sends the request. */
+{ type: "snippet"; 
+/**  The code. */
+code: string } | 
 /**  The app's settings. */
 { type: "settings"; 
 /**  The settings. */
@@ -993,6 +997,10 @@ request: RequestDraft_Serialize } |
 { type: "curl"; 
 /**  For a POSIX shell, one option per line. */
 command: string } | 
+/**  Code that sends the request. */
+{ type: "snippet"; 
+/**  The code. */
+code: string } | 
 /**  The app's settings. */
 { type: "settings"; 
 /**  The settings. */
@@ -1039,6 +1047,16 @@ requestId: string }) & { id?: never; text?: never } |
 {
 	type: "curl",
 } & OutgoingRequest_Deserialize | 
+/**
+ *  Code that sends a request as entered, in `language` (variables and
+ *  inherited auth applied, as when sending).
+ */
+{
+	type: "snippet",
+} & {
+	/**  The language. */
+	language: SnippetLanguageView,
+} & OutgoingRequest_Deserialize | 
 /**  The request history, newest first. */
 ({ type: "history" }) & { collectionId?: never; id?: never; requestId?: never; text?: never } | 
 /**  The app's settings. */
@@ -1077,6 +1095,16 @@ requestId: string }) & { id?: never; text?: never } |
  */
 {
 	type: "curl",
+} & OutgoingRequest_Serialize | 
+/**
+ *  Code that sends a request as entered, in `language` (variables and
+ *  inherited auth applied, as when sending).
+ */
+{
+	type: "snippet",
+} & {
+	/**  The language. */
+	language: SnippetLanguageView,
 } & OutgoingRequest_Serialize | 
 /**  The request history, newest first. */
 ({ type: "history" }) & { collectionId?: never; id?: never; requestId?: never; text?: never } | 
@@ -1347,6 +1375,21 @@ export type SeverityView =
 "warning" | 
 /**  A suggestion. */
 "info";
+
+/**  A language for "copy as code" (serialized in camelCase). */
+export type SnippetLanguageView = 
+/**  cURL. */
+"curl" | 
+/**  JavaScript `fetch`. */
+"fetch" | 
+/**  JavaScript axios. */
+"axios" | 
+/**  Python `requests`. */
+"python" | 
+/**  Go `net/http`. */
+"go" | 
+/**  `HTTPie`. */
+"httpie";
 
 /**  Class of a status code as the UI sees it (serialized in camelCase). */
 export type StatusClassView = 

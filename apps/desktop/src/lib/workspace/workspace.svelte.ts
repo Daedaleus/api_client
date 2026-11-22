@@ -12,6 +12,7 @@ import type {
   CommandAck,
   EnvironmentDraft,
   SendContext,
+  SnippetLanguage,
   TreeItemView,
   VariableDraft,
 } from '../types';
@@ -326,6 +327,11 @@ export class Workspace {
       itemId: item.id,
     });
     if (changed) this.tabs.closeMissing(changed.collection);
+  }
+
+  /** A tab's request as code in `language`, exactly as it would be sent. */
+  snippetFor(tab: RequestTab, language: SnippetLanguage): Promise<string | null> {
+    return this.curl.snippet(tab, this.tabs.outgoing(tab, this.#context(tab)), language);
   }
 
   /** A tab's request as a cURL command, exactly as it would be sent. */

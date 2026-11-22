@@ -81,7 +81,12 @@ collection, else the default. Folders and the collection set them in their
 TypeScript or JavaScript before the request and after the response, with
 tests: see [Scripts and tests](../scripting.md).
 
-## Copy as cURL
+## Copy as cURL or code
 
 *Copy as cURL* puts the request – variables filled in, inherited auth
-applied – on the clipboard as a cURL command.
+applied – on the clipboard as a cURL command. *As code …* next to it copies
+the same request as code: JavaScript (`fetch` or axios), Python
+(`requests`), Go (`net/http`) or HTTPie. Redirects, the time limit and a
+switched-off certificate check carry over; files are referenced by their
+path. An OAuth 2 token is never fetched for this – the code contains a
+placeholder instead.

@@ -106,6 +106,7 @@
             onpickfile={() => workspace.pickFile()}
             checksCertificates={workspace.checksCertificates(tab)}
             oncopycurl={() => workspace.curlFor(tab)}
+            oncopysnippet={(language) => workspace.snippetFor(tab, language)}
           >
             {#snippet environment()}
               {#if collection}

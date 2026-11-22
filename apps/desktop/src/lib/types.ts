@@ -35,6 +35,7 @@ export type {
   FormFieldDraft,
   MultipartFieldDraft,
   SendContext,
+  SnippetLanguageView as SnippetLanguage,
   HeaderDraft,
   HeaderView,
   OutgoingRequest,

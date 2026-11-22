@@ -3,7 +3,7 @@
 
 import type { Api } from '../api';
 import { toUserText } from '../errors';
-import type { OutgoingRequest, UserText } from '../types';
+import type { OutgoingRequest, SnippetLanguage, UserText } from '../types';
 import { RequestTab } from './request-tab.svelte';
 import type { TabsState } from './tabs.svelte';
 
@@ -32,6 +32,23 @@ export class CurlState {
       const result = await this.#api.query({ type: 'curl', ...request });
       if (result.type !== 'curl') throw new Error(`unexpected answer ${result.type}`);
       return result.command;
+    } catch (error) {
+      tab.error = toUserText(error);
+      return null;
+    }
+  }
+
+  /** Code that sends `request` in `language`; `null` (and the tab's error set) on failure. */
+  async snippet(
+    tab: RequestTab,
+    request: OutgoingRequest,
+    language: SnippetLanguage,
+  ): Promise<string | null> {
+    tab.error = null;
+    try {
+      const result = await this.#api.query({ type: 'snippet', language, ...request });
+      if (result.type !== 'snippet') throw new Error(`unexpected answer ${result.type}`);
+      return result.code;
     } catch (error) {
       tab.error = toUserText(error);
       return null;

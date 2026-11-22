@@ -25,6 +25,7 @@ pub mod response;
 pub mod run_report;
 pub mod scripts;
 pub mod settings;
+pub mod snippet;
 pub mod transport;
 pub mod variable;
 
@@ -44,5 +45,6 @@ pub use response::{HeaderView, ResponseView, RunOutcomeView, StatusClassView, Te
 pub use run_report::{RunReport, RunResult, RunResultOutcome};
 pub use scripts::ScriptsDraft;
 pub use settings::{ProxyView, SettingsView};
+pub use snippet::SnippetLanguageView;
 pub use transport::{RedirectsView, TransportDraft};
 pub use variable::{SendContext, VariableDraft};

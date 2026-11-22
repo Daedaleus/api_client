@@ -6,12 +6,15 @@
   import BodyEditor from '../molecules/BodyEditor.svelte';
   import RowsEditor, { type RowLabels } from '../molecules/RowsEditor.svelte';
   import ParamsEditor from '../molecules/ParamsEditor.svelte';
+  import MenuButton from '../molecules/MenuButton.svelte';
   import ScriptsEditor from '../molecules/ScriptsEditor.svelte';
+  import { entry } from '../../lib/menu';
   import TransportFields from '../molecules/TransportFields.svelte';
   import { fillPathParams, pathParamNames, queryParams } from '../../lib/params';
   import UrlBar from '../molecules/UrlBar.svelte';
   import { i18n } from '../../lib/i18n/i18n.svelte';
   import type { ScriptAssist } from '../../lib/script-assist';
+  import type { SnippetLanguage } from '../../lib/types';
   import { hasPlaceholders, preview, type VariableInfo } from '../../lib/variables';
   import type { RequestTab } from '../../lib/workspace/request-tab.svelte';
 
@@ -29,6 +32,8 @@
     checksCertificates?: boolean;
     /** The request as a cURL command (`null` if it cannot be built). */
     oncopycurl?: (() => Promise<string | null>) | undefined;
+    /** Code that sends the request in another language (for the clipboard). */
+    oncopysnippet?: ((language: SnippetLanguage) => Promise<string | null>) | undefined;
     /** Lets the user pick a file for the body. */
     onpickfile?: () => Promise<string | null>;
     /** Checker and completion for the scripts. */
@@ -45,10 +50,33 @@
     onpickfile,
     checksCertificates = true,
     oncopycurl,
+    oncopysnippet,
     assist,
   }: Props = $props();
 
   let copied = $state(false);
+  let snippetCopied = $state(false);
+
+  /** Languages offered besides cURL, with their menu labels. */
+  const SNIPPETS: SnippetLanguage[] = ['fetch', 'axios', 'python', 'go', 'httpie'];
+
+  async function copySnippet(language: SnippetLanguage) {
+    const code = await oncopysnippet?.(language);
+    if (code === null || code === undefined) return;
+    try {
+      await navigator.clipboard.writeText(code);
+      snippetCopied = true;
+      setTimeout(() => (snippetCopied = false), 2000);
+    } catch {
+      // No clipboard access: nothing to report beyond the unchanged button.
+    }
+  }
+
+  let snippetMenu = $derived(
+    SNIPPETS.map((language) =>
+      entry(`snippet-${language}`, i18n.t(`snippet.${language}`), () => void copySnippet(language)),
+    ),
+  );
 
   async function copyCurl() {
     const command = await oncopycurl?.();
@@ -184,9 +212,18 @@
         {/if}
       </button>
     {/each}
-    {#if oncopycurl}
+    {#if oncopycurl || oncopysnippet}
       <span class="request-editor__tools">
-        <Button onclick={copyCurl}>{copied ? i18n.t('curl.copied') : i18n.t('curl.copy')}</Button>
+        {#if oncopycurl}
+          <Button onclick={copyCurl}>{copied ? i18n.t('curl.copied') : i18n.t('curl.copy')}</Button>
+        {/if}
+        {#if oncopysnippet}
+          <MenuButton
+            text={snippetCopied ? i18n.t('snippet.copied') : i18n.t('snippet.more')}
+            label={i18n.t('snippet.title')}
+            items={snippetMenu}
+          />
+        {/if}
       </span>
     {/if}
   </div>
