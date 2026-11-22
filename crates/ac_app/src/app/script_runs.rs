@@ -17,8 +17,8 @@ use super::App;
 use super::runs::scope;
 use crate::error::AppError;
 use crate::ports::{
-    BrowserLogin, CollectionStore, HttpSender, ScriptJob, ScriptRequest, ScriptResponse,
-    ScriptRunner, SecretVault, TestResult,
+    BrowserLogin, CollectionStore, HttpSender, ScriptAssist, ScriptJob, ScriptRequest,
+    ScriptResponse, ScriptRunner, SecretVault, TestResult,
 };
 use crate::resolve::Prepared;
 use crate::text::UserText;
@@ -73,13 +73,14 @@ impl Execution {
     }
 }
 
-impl<H, S, V, B, R> App<H, S, V, B, R>
+impl<H, S, V, B, R, A> App<H, S, V, B, R, A>
 where
     H: HttpSender,
     S: CollectionStore,
     V: SecretVault,
     B: BrowserLogin,
     R: ScriptRunner,
+    A: ScriptAssist,
 {
     /// Runs `outgoing` with its scripts. `prepared` is the request already
     /// checked when there is no pre-request script.

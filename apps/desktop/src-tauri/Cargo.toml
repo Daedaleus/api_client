@@ -17,6 +17,8 @@ path = "src/bin/bindings.rs"
 test = false
 
 [build-dependencies]
+# miniz_oxide: packs the TypeScript compiler for the script checker (build.rs).
+miniz_oxide.workspace = true
 tauri-build.workspace = true
 
 [dependencies]

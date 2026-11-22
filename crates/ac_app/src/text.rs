@@ -100,6 +100,8 @@ pub mod keys {
     pub const SCRIPT_PRE_REQUEST: &str = "error.script_pre_request";
     /// The post-response script failed. Placeholder: `detail`.
     pub const SCRIPT_POST_RESPONSE: &str = "error.script_post_response";
+    /// Checking or completing a script failed. Placeholder: `detail`.
+    pub const SCRIPT_ASSIST: &str = "error.script_assist";
 
     /// A file or folder cannot be read or written. Arguments: `path`, `detail`.
     pub const STORE_IO: &str = "error.store_io";
@@ -126,7 +128,7 @@ pub mod keys {
 
     /// All keys with the names of their placeholders, checked against the
     /// translation file by a test.
-    pub const ALL: [(&str, &[&str]); 40] = [
+    pub const ALL: [(&str, &[&str]); 41] = [
         (URL_EMPTY, &[]),
         (URL_INVALID, &["reason"]),
         (URL_SCHEME, &["scheme"]),
@@ -156,6 +158,7 @@ pub mod keys {
         (OAUTH_REDIRECT, &["url"]),
         (SCRIPT_PRE_REQUEST, &["detail"]),
         (SCRIPT_POST_RESPONSE, &["detail"]),
+        (SCRIPT_ASSIST, &["detail"]),
         (STORE_IO, &["path", "detail"]),
         (STORE_DAMAGED, &["path", "detail"]),
         (STORE_READ_ONLY, &["path"]),

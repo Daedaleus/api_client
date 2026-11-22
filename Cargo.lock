@@ -51,6 +51,7 @@ dependencies = [
  "ac_scripting",
  "ac_secrets",
  "ac_storage",
+ "miniz_oxide 0.8.9",
  "serde",
  "specta",
  "specta-typescript",
@@ -102,6 +103,7 @@ version = "0.1.0"
 dependencies = [
  "ac_app",
  "ac_domain",
+ "miniz_oxide 0.8.9",
  "oxc_allocator",
  "oxc_codegen",
  "oxc_parser",

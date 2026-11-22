@@ -10,6 +10,7 @@ publish.workspace = true
 [dependencies]
 ac_app.workspace = true
 ac_domain.workspace = true
+miniz_oxide.workspace = true
 oxc_allocator.workspace = true
 oxc_codegen.workspace = true
 oxc_parser.workspace = true
@@ -20,7 +21,7 @@ rquickjs.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 # rt: scripts run on Tokio's blocking pool (a QuickJS runtime is not Send).
-tokio = { workspace = true, features = ["rt"] }
+tokio = { workspace = true, features = ["rt", "sync"] }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt"] }

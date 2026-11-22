@@ -6,13 +6,19 @@
 //! - [`secrets`]: encrypting secret values ([`SecretVault`]).
 //! - [`login`]: signing in in the browser ([`BrowserLogin`]).
 //! - [`script`]: running request scripts ([`ScriptRunner`]).
+//! - [`assist`]: checking and completing scripts ([`ScriptAssist`]).
 
+pub mod assist;
 pub mod http;
 pub mod login;
 pub mod script;
 pub mod secrets;
 pub mod store;
 
+pub use assist::{
+    AssistError, CompletionKind, NoAssist, ScriptAssist, ScriptCompletion, ScriptDiagnostic,
+    Severity,
+};
 pub use http::{HttpSender, TransportError};
 pub use login::{BrowserLogin, LoginError, PendingLogin};
 pub use script::{

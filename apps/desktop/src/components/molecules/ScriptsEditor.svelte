@@ -1,30 +1,38 @@
 <script lang="ts">
   import { i18n } from '../../lib/i18n/i18n.svelte';
+  import type { ScriptAssist } from '../../lib/script-assist';
   import type { ScriptsDraft } from '../../lib/types';
+  import ScriptEditor from './ScriptEditor.svelte';
 
-  let { scripts = $bindable() }: { scripts: ScriptsDraft } = $props();
+  interface Props {
+    scripts: ScriptsDraft;
+    /** Checker and completion for both scripts. */
+    assist?: ScriptAssist | undefined;
+  }
+
+  let { scripts = $bindable(), assist }: Props = $props();
 </script>
 
 <div class="scripts-editor">
   <p class="scripts-editor__hint">{i18n.t('scripts.hint')}</p>
-  <label class="scripts-editor__field">
+  <div class="scripts-editor__field">
     <span class="scripts-editor__label">{i18n.t('scripts.pre_request')}</span>
-    <textarea
-      class="scripts-editor__input"
-      spellcheck="false"
-      rows="6"
+    <ScriptEditor
+      bind:value={scripts.preRequest}
+      label={i18n.t('scripts.pre_request')}
       placeholder={i18n.t('scripts.placeholder_pre_request')}
-      bind:value={scripts.preRequest}></textarea>
-  </label>
-  <label class="scripts-editor__field">
+      {assist}
+    />
+  </div>
+  <div class="scripts-editor__field">
     <span class="scripts-editor__label">{i18n.t('scripts.post_response')}</span>
-    <textarea
-      class="scripts-editor__input"
-      spellcheck="false"
-      rows="6"
+    <ScriptEditor
+      bind:value={scripts.postResponse}
+      label={i18n.t('scripts.post_response')}
       placeholder={i18n.t('scripts.placeholder_post_response')}
-      bind:value={scripts.postResponse}></textarea>
-  </label>
+      {assist}
+    />
+  </div>
 </div>
 
 <style>
@@ -51,18 +59,5 @@
     color: var(--color-muted);
     font-size: var(--font-size-s);
     font-weight: 600;
-  }
-
-  .scripts-editor__input {
-    padding: var(--space-s);
-    border: 1px solid var(--color-border);
-    border-radius: 6px;
-    background: var(--color-code-bg);
-    color: var(--color-text);
-    font-family: var(--font-mono);
-    font-size: var(--font-size-s);
-    line-height: 1.5;
-    resize: vertical;
-    tab-size: 2;
   }
 </style>

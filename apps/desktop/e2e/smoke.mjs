@@ -1033,11 +1033,15 @@ check(exitCode === null, 'program still running after large responses');
 
 // --- 15. Scripts -------------------------------------------------------------------
 
-/** Sets the value of the `index`-th element matching `selector`. */
-const setNth = (selector, index, value) => `(() => {
-  const element = document.querySelectorAll(${JSON.stringify(selector)})[${index}];
-  element.value = ${JSON.stringify(value)};
-  element.dispatchEvent(new Event('input', { bubbles: true }));
+/**
+ * Replaces the text of the `index`-th script editor (CodeMirror) the way
+ * typing would: focus, select all, insert.
+ */
+const setScript = (index, text) => `(() => {
+  const content = document.querySelectorAll('.scripts-editor .cm-content')[${index}];
+  content.focus();
+  document.execCommand('selectAll');
+  document.execCommand('insertText', false, ${JSON.stringify(text)});
   return true;
 })()`;
 
@@ -1046,17 +1050,34 @@ await evaluate(
   `[...document.querySelectorAll('.response__tab')].find((tab) => tab.textContent.includes('Body')).click()`,
 );
 await evaluate(`document.querySelectorAll('.request-editor__section')[5].click()`);
-await waitFor(`document.querySelectorAll('.scripts-editor__input').length === 2`, 'script editors');
+await waitFor(
+  `document.querySelectorAll('.scripts-editor .cm-content').length === 2`,
+  'script editors',
+);
+
+// The checker marks a wrong member (the TypeScript service starts first)…
+await evaluate(setScript(0, 'req.methd;'));
+await waitFor(`!!document.querySelector('.scripts-editor .cm-lintRange-error')`, 'checker mark');
+check(true, 'checker marks an unknown member of req');
+// … and completion offers the API.
+await evaluate(setScript(0, 'req.'));
+const offered = await waitFor(
+  `document.querySelector('.cm-tooltip-autocomplete')?.textContent ?? null`,
+  'completion list',
+);
+check(
+  offered.includes('setHeader') && offered.includes('method'),
+  'completion offers the members of req',
+);
+
 await evaluate(
-  setNth(
-    '.scripts-editor__input',
+  setScript(
     0,
     "const client: string = 'from-script';\nreq.setHeader('X-Client', client);\nenv.set('fromPre', 'v1');\nlog('pre ran');",
   ),
 );
 await evaluate(
-  setNth(
-    '.scripts-editor__input',
+  setScript(
     1,
     "const echoed = res.json<{ xClient: string; method: string }>();\nlog('status ' + res.status + ' ' + echoed.xClient);\nenv.set('echoed', echoed.method);\ntest('status is 200', () => expect(res.status).toBe(200));\ntest('fails on purpose', () => expect(echoed).toHaveProperty('missing'));",
   ),
@@ -1114,7 +1135,7 @@ await echoWith('second=GET', 'echo with the variable from the post-response scri
 check(true, 'post-response script set a variable for the next request');
 
 // A broken script stops the request and says where.
-await evaluate(setNth('.scripts-editor__input', 0, 'log(1);\nconst = ;'));
+await evaluate(setScript(0, 'log(1);\nconst = ;'));
 await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);
 const scriptFailure = await waitFor(
   `document.querySelector('.response__failure')?.textContent ?? null`,

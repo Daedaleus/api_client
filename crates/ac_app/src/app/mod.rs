@@ -11,7 +11,9 @@
 //! - `runner`: running a collection's requests one after another (CLI).
 //! - `interchange`: cURL export and import.
 //! - `defaults`: what the collection and its folders pass on to requests.
+//! - `assist`: checking and completing scripts in the editor.
 
+mod assist;
 mod collections;
 mod defaults;
 mod environments;
@@ -36,6 +38,7 @@ use crate::command::{Command, CommandAck, Query, QueryResult};
 use crate::error::AppError;
 use crate::event::AppEvent;
 use crate::oauth::TokenCache;
+use crate::ports::ScriptAssist;
 use crate::ports::{BrowserLogin, CollectionStore, HttpSender, ScriptRunner, SecretVault};
 use script_runs::RuntimeVariables;
 
@@ -43,7 +46,7 @@ use script_runs::RuntimeVariables;
 const EVENT_CAPACITY: usize = 64;
 
 /// The adapters the application works with.
-pub struct Ports<H, S, V, B, R> {
+pub struct Ports<H, S, V, B, R, A> {
     /// Sends HTTP requests.
     pub http: H,
     /// Reads and writes collections.
@@ -54,22 +57,25 @@ pub struct Ports<H, S, V, B, R> {
     pub login: B,
     /// Runs request scripts.
     pub scripts: R,
+    /// Checks and completes scripts in the editor.
+    pub assist: A,
 }
 
 /// The application: send [`Command`]s and [`Query`]s, receive
 /// [`AppEvent`]s.
 ///
 /// Cheap to clone; clones share state.
-pub struct App<H, S, V, B, R> {
-    inner: Arc<Inner<H, S, V, B, R>>,
+pub struct App<H, S, V, B, R, A> {
+    inner: Arc<Inner<H, S, V, B, R, A>>,
 }
 
-struct Inner<H, S, V, B, R> {
+struct Inner<H, S, V, B, R, A> {
     http: H,
     store: S,
     vault: V,
     login: B,
     scripts: R,
+    assist: A,
     /// Variables set by scripts, in memory only.
     runtime_variables: Mutex<RuntimeVariables>,
     /// Background work runs here, whichever thread calls `execute` – UIs
@@ -85,7 +91,7 @@ struct Inner<H, S, V, B, R> {
     open: Mutex<Vec<(ItemId, PathBuf)>>,
 }
 
-impl<H, S, V, B, R> Clone for App<H, S, V, B, R> {
+impl<H, S, V, B, R, A> Clone for App<H, S, V, B, R, A> {
     fn clone(&self) -> Self {
         Self {
             inner: Arc::clone(&self.inner),
@@ -93,13 +99,19 @@ impl<H, S, V, B, R> Clone for App<H, S, V, B, R> {
     }
 }
 
-impl<H: HttpSender, S: CollectionStore, V: SecretVault, B: BrowserLogin, R: ScriptRunner>
-    App<H, S, V, B, R>
+impl<
+    H: HttpSender,
+    S: CollectionStore,
+    V: SecretVault,
+    B: BrowserLogin,
+    R: ScriptRunner,
+    A: ScriptAssist,
+> App<H, S, V, B, R, A>
 {
     /// Creates the application with its adapters; background work runs on
     /// `runtime`.
     #[must_use]
-    pub fn new(ports: Ports<H, S, V, B, R>, runtime: Handle) -> Self {
+    pub fn new(ports: Ports<H, S, V, B, R, A>, runtime: Handle) -> Self {
         let (events, _) = broadcast::channel(EVENT_CAPACITY);
         Self {
             inner: Arc::new(Inner {
@@ -108,6 +120,7 @@ impl<H: HttpSender, S: CollectionStore, V: SecretVault, B: BrowserLogin, R: Scri
                 vault: ports.vault,
                 login: ports.login,
                 scripts: ports.scripts,
+                assist: ports.assist,
                 runtime_variables: Mutex::default(),
                 runtime,
                 events,

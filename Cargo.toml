@@ -25,6 +25,8 @@ ac_storage = { path = "crates/ac_storage" }
 age = { version = "0.12", features = ["armor", "ssh"] }
 # base64: the credentials of HTTP Basic authentication.
 base64 = "0.22"
+# miniz_oxide: the TypeScript compiler embedded compressed in the desktop app (ADR S2).
+miniz_oxide = "0.8"
 # oxc: TypeScript to JavaScript for request scripts (ADR S1), one version for all parts.
 oxc_allocator = "0.159"
 oxc_codegen = "0.159"

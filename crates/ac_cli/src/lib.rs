@@ -136,6 +136,8 @@ pub fn run(
             vault: AgeVault::new(keys),
             login: LoopbackLogin::new(),
             scripts: QuickJsRunner::default(),
+            // No editor, nothing to check.
+            assist: ac_app::ports::NoAssist,
         },
         runtime.handle().clone(),
     );

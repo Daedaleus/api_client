@@ -5,13 +5,16 @@
 //! - [`secrets`]: [`FakeVault`], readable "encryption" with fake keys.
 //! - [`login`]: [`FakeBrowserLogin`], sign-ins with queued answers.
 //! - [`script`]: [`FakeScriptRunner`], scripts with queued results.
+//! - [`assist`]: [`FakeScriptAssist`], checks and completions with queued answers.
 
+pub mod assist;
 pub mod http;
 pub mod login;
 pub mod script;
 pub mod secrets;
 pub mod store;
 
+pub use assist::FakeScriptAssist;
 pub use http::{FakeHttpSender, response};
 pub use login::{FAKE_PORT, FakeBrowserLogin, LoginAnswer};
 pub use script::FakeScriptRunner;

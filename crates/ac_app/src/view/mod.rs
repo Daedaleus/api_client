@@ -11,6 +11,7 @@
 //! - [`run_report`]: results of running requests one after another.
 //! - [`variable`]: variable rows and where variables come from when sending.
 
+pub mod assist;
 pub mod auth;
 pub mod body;
 pub mod collection;
@@ -23,6 +24,9 @@ pub mod run_report;
 pub mod scripts;
 pub mod variable;
 
+pub use assist::{
+    AssistRequest, AssistResult, CompletionKindView, CompletionView, DiagnosticView, SeverityView,
+};
 pub use auth::{AuthDraft, CertificateCheckView, KeyPlacementView, OAuth2GrantView};
 pub use body::BodyView;
 pub use collection::{CollectionView, HeaderDraft, RequestDraft, TreeItemView};

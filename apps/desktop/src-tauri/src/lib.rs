@@ -1,7 +1,7 @@
 //! Desktop app: composition root and thin Tauri adapter.
 //!
-//! Wires the adapters into [`ac_app::App`], exposes two Tauri commands
-//! (`execute`, `query`) and forwards every [`AppEvent`] to the window as
+//! Wires the adapters into [`ac_app::App`], exposes three Tauri commands
+//! (`execute`, `query`, `assist`) and forwards every [`AppEvent`] to the window as
 //! [`AppEventMessage`]. No logic lives here – it belongs in `ac_app`.
 //!
 //! The TypeScript side of this interface (`apps/desktop/src/lib/bindings.ts`)
@@ -15,9 +15,10 @@
 
 use std::path::Path;
 
+use ac_app::view::{AssistRequest, AssistResult};
 use ac_app::{App, AppEvent, Command, CommandAck, Ports, Query, QueryResult, UserText};
 use ac_http::{DEFAULT_TIMEOUT, LoopbackLogin, ReqwestSender};
-use ac_scripting::QuickJsRunner;
+use ac_scripting::{QuickJsRunner, TsAssist, TypeScriptFiles};
 use ac_secrets::{AgeVault, KeyConfig};
 use ac_storage::FileStore;
 use serde::Serialize;
@@ -26,7 +27,11 @@ use tauri::{AppHandle, Manager, State};
 use tauri_specta::{Event, collect_commands, collect_events};
 use tokio::sync::broadcast::{Receiver, error::RecvError};
 
-type DesktopApp = App<ReqwestSender, FileStore, AgeVault, LoopbackLogin, QuickJsRunner>;
+type DesktopApp = App<ReqwestSender, FileStore, AgeVault, LoopbackLogin, QuickJsRunner, TsAssist>;
+
+/// The TypeScript compiler and libraries for the script checker, packed by
+/// `build.rs`; unpacked when the first script editor asks.
+const TYPESCRIPT: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/typescript.deflate"));
 
 /// The user's own key for secrets, in the app's config folder (ADR S4).
 const IDENTITY_FILE: &str = "identity.txt";
@@ -59,11 +64,22 @@ fn query(app: State<'_, DesktopApp>, query: Query) -> Result<QueryResult, UserTe
     app.query(query).map_err(|error| error.user_text())
 }
 
+/// Checks or completes a script for the editor. Async: the checker needs
+/// about a second to start, which must not block the window.
+#[tauri::command]
+#[specta::specta]
+async fn assist(
+    app: State<'_, DesktopApp>,
+    request: AssistRequest,
+) -> Result<AssistResult, UserText> {
+    app.assist(request).await.map_err(|error| error.user_text())
+}
+
 /// Commands and events of the app, the single source for both the Tauri
 /// handlers and the TypeScript bindings.
 fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
     tauri_specta::Builder::<tauri::Wry>::new()
-        .commands(collect_commands![execute, query])
+        .commands(collect_commands![execute, query, assist])
         .events(collect_events![AppEventMessage])
         // Run ids, milliseconds and byte counts stay far below 2^53.
         .dangerously_cast_bigints_to_number()
@@ -101,6 +117,7 @@ pub fn run() {
                     vault: AgeVault::new(KeyConfig::from_environment(identity)),
                     login: LoopbackLogin::new(),
                     scripts: QuickJsRunner::default(),
+                    assist: TsAssist::new(|| TypeScriptFiles::from_archive(TYPESCRIPT)),
                 },
                 runtime,
             );

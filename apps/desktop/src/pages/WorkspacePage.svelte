@@ -68,6 +68,7 @@
         <div class="workspace-page__editor">
           <RequestEditor
             {tab}
+            assist={workspace.scriptAssist}
             onsend={() => workspace.send(tab)}
             onsave={() => workspace.save(tab)}
             variables={workspace.variablesFor(tab)}
