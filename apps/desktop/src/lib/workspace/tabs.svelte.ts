@@ -5,6 +5,7 @@ import type { Api } from '../api';
 import { toUserText } from '../errors';
 import type { AppEvent, CollectionView, OutgoingRequest, RunOutcome, SendContext } from '../types';
 import { RequestTab } from './request-tab.svelte';
+import type { StoredSession } from './session';
 import { requestIds } from './tree';
 
 export class TabsState {
@@ -80,6 +81,37 @@ export class TabsState {
 
   renamed(collectionId: string, requestId: string, name: string): void {
     this.tabs.find((tab) => tab.isFor(collectionId, requestId))?.renamed(name);
+  }
+
+  /**
+   * Opens the tabs of the last session (see `session.ts`): saved requests
+   * that still exist, with their unsaved draft, and scratch requests. The
+   * empty starting tab goes if anything was restored.
+   */
+  async restore(session: StoredSession, isOpen: (collectionId: string) => boolean): Promise<void> {
+    const restored: RequestTab[] = [];
+    for (const stored of session.tabs) {
+      if (stored.saved === null) {
+        if (stored.draft) restored.push(new RequestTab(stored.draft, null));
+        continue;
+      }
+      const { collectionId, requestId } = stored.saved;
+      if (!isOpen(collectionId)) continue;
+      try {
+        const result = await this.#api.query({ type: 'request', collectionId, requestId });
+        if (result.type !== 'request') continue;
+        const tab = new RequestTab(result.request, { collectionId, requestId });
+        // Unsaved changes come back as unsaved changes.
+        if (stored.draft) tab.draft = { ...stored.draft, readOnly: result.request.readOnly };
+        restored.push(tab);
+      } catch {
+        // Gone since (deleted, moved out): not restored.
+      }
+    }
+    if (restored.length === 0) return;
+    const untouched = this.tabs.filter((tab) => !tab.saved && tab.draft.url === '');
+    this.tabs = [...this.tabs.filter((tab) => !untouched.includes(tab)), ...restored];
+    this.activeKey = (restored[session.active] ?? restored[0])!.key;
   }
 
   /** Opens `tab` (e.g. an imported request) and makes it the active one. */

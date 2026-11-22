@@ -46,6 +46,7 @@
 //  19. a path variable is filled in from the params table and a query
 //      parameter switched off there is not sent,
 //  20. a request is duplicated and the copy moved into a folder,
+//  21. the open tabs are remembered for the next start (without secrets),
 // and the program is still running after each send.
 //
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
@@ -1429,5 +1430,23 @@ check(
   readFileSync(path.join(productsDir, 'folder.toml'), 'utf8').includes(`"${movedFile}"`),
   'folder order lists the moved request',
 );
+
+// --- 21. Open tabs are remembered ---------------------------------------------
+
+// The open tabs land in the web view's storage for the next start (restoring
+// them is covered by the unit tests; the program is not restarted here).
+const remembered = await waitFor(
+  `(() => {
+    const session = JSON.parse(localStorage.getItem('openTabs') ?? 'null');
+    return session && session.tabs.length >= 2 ? JSON.stringify(session) : null;
+  })()`,
+  'remembered tabs',
+);
+const session = JSON.parse(remembered);
+check(
+  session.version === 1 && session.tabs.some((tab) => tab.saved !== null),
+  `open tabs remembered (${session.tabs.length})`,
+);
+check(!remembered.includes(secretValue), 'no secret in the remembered tabs');
 
 finish(null);
