@@ -16,8 +16,8 @@ use super::App;
 use crate::command::{CommandAck, QueryResult};
 use crate::error::AppError;
 use crate::oauth::{TOKEN_PLACEHOLDER, authorize};
-use crate::ports::ScriptAssist;
 use crate::ports::{BrowserLogin, CollectionStore, HttpSender, ScriptRunner, SecretVault};
+use crate::ports::{HistoryStore, ScriptAssist};
 use crate::resolve::resolve_url;
 use crate::text::{UserText, keys};
 use crate::view::{OutgoingRequest, RequestDraft};
@@ -32,7 +32,8 @@ impl<
     B: BrowserLogin,
     R: ScriptRunner,
     A: ScriptAssist,
-> App<H, S, V, B, R, A>
+    Y: HistoryStore,
+> App<H, S, V, B, R, A, Y>
 {
     /// Converts another tool's file into a new collection in `path` – or,
     /// without one, an unsaved collection in a temporary folder – and opens

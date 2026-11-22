@@ -9,10 +9,10 @@ use ac_domain::environment::{Environment, UnresolvedVariable};
 
 use super::App;
 use crate::error::AppError;
-use crate::ports::ScriptAssist;
 use crate::ports::{
     BrowserLogin, CollectionStore, HttpSender, ScriptRunner, SecretError, SecretValues, SecretVault,
 };
+use crate::ports::{HistoryStore, ScriptAssist};
 
 /// An environment for sending, with the secret values that could be
 /// decrypted.
@@ -29,7 +29,8 @@ impl<
     B: BrowserLogin,
     R: ScriptRunner,
     A: ScriptAssist,
-> App<H, S, V, B, R, A>
+    Y: HistoryStore,
+> App<H, S, V, B, R, A, Y>
 {
     /// Fills in the secret values of `environment`, whose file is `file`.
     pub(super) fn unlock(

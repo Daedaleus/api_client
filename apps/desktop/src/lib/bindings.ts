@@ -49,7 +49,14 @@ export type AppEvent_Deserialize =
 /**  The run from [`crate::CommandAck::RunStarted`]. */
 runId: RunId; 
 /**  What happened. */
-outcome: RunOutcomeView_Deserialize };
+outcome: RunOutcomeView_Deserialize } | 
+/**
+ *  The request history changed (an entry was added or it was
+ *  cleared).
+ */
+{ type: "historyChanged"; 
+/**  Why the newest request could not be recorded, if so. */
+error?: UserText | null };
 
 /**  Something happened that a UI may want to show. */
 export type AppEvent_Serialize = 
@@ -58,7 +65,14 @@ export type AppEvent_Serialize =
 /**  The run from [`crate::CommandAck::RunStarted`]. */
 runId: RunId; 
 /**  What happened. */
-outcome: RunOutcomeView_Serialize };
+outcome: RunOutcomeView_Serialize } | 
+/**
+ *  The request history changed (an entry was added or it was
+ *  cleared).
+ */
+{ type: "historyChanged"; 
+/**  Why the newest request could not be recorded, if so. */
+error: UserText | null };
 
 /**  A question of the script editor. */
 export type AssistRequest = 
@@ -292,7 +306,9 @@ skipped: UserText[] } |
 /**  A collection was closed. */
 { type: "collectionClosed"; 
 /**  The collection. */
-collectionId: string };
+collectionId: string } | 
+/**  The request history was cleared. */
+{ type: "historyCleared" };
 
 /**  Immediate answer to a [`Command`]. */
 export type CommandAck_Serialize = 
@@ -315,7 +331,9 @@ skipped: UserText[] } |
 /**  A collection was closed. */
 { type: "collectionClosed"; 
 /**  The collection. */
-collectionId: string };
+collectionId: string } | 
+/**  The request history was cleared. */
+{ type: "historyCleared" };
 
 /**  Something the user wants the application to do. */
 export type Command_Deserialize = 
@@ -433,7 +451,9 @@ path: string }) & { auth?: never; certificateCheck?: never; environment?: never;
 /**  The collection. */
 collectionId: string; 
 /**  Public keys (`age1…`, `ssh-ed25519 …`, `ssh-rsa …`). */
-recipients: string[] }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; itemId?: never; name?: never; parentId?: never; path?: never; request?: never; scripts?: never; variables?: never };
+recipients: string[] }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; itemId?: never; name?: never; parentId?: never; path?: never; request?: never; scripts?: never; variables?: never } | 
+/**  Remove every entry of the request history. */
+({ type: "clearHistory" }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; file?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; variables?: never };
 
 /**  Something the user wants the application to do. */
 export type Command_Serialize = 
@@ -551,7 +571,9 @@ path: string }) & { auth?: never; certificateCheck?: never; environment?: never;
 /**  The collection. */
 collectionId: string; 
 /**  Public keys (`age1…`, `ssh-ed25519 …`, `ssh-rsa …`). */
-recipients: string[] }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; itemId?: never; name?: never; parentId?: never; path?: never; request?: never; scripts?: never; variables?: never };
+recipients: string[] }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; itemId?: never; name?: never; parentId?: never; path?: never; request?: never; scripts?: never; variables?: never } | 
+/**  Remove every entry of the request history. */
+({ type: "clearHistory" }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; file?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; variables?: never };
 
 /**  What a suggestion is (`CodeMirror`'s completion types). */
 export type CompletionKindView = 
@@ -641,6 +663,49 @@ export type HeaderView = {
 	name: string,
 	/**  Value. */
 	value: string,
+};
+
+/**  One entry of the history list. */
+export type HistoryItemView = HistoryItemView_Serialize | HistoryItemView_Deserialize;
+
+/**  One entry of the history list. */
+export type HistoryItemView_Deserialize = {
+	/**  Entry id, to open it. */
+	id: string,
+	/**  When it was sent, in milliseconds since 1970. */
+	atMs: number,
+	/**  Method, e.g. `GET`. */
+	method: string,
+	/**  The URL as sent (secrets masked). */
+	url: string,
+	/**  Name of its collection, if any. */
+	collection?: string | null,
+	/**  Status code of the response. */
+	status?: number | null,
+	/**  Time until the response arrived. */
+	elapsedMs?: number | null,
+	/**  Why there was no response. */
+	error?: UserText | null,
+};
+
+/**  One entry of the history list. */
+export type HistoryItemView_Serialize = {
+	/**  Entry id, to open it. */
+	id: string,
+	/**  When it was sent, in milliseconds since 1970. */
+	atMs: number,
+	/**  Method, e.g. `GET`. */
+	method: string,
+	/**  The URL as sent (secrets masked). */
+	url: string,
+	/**  Name of its collection, if any. */
+	collection: string | null,
+	/**  Status code of the response. */
+	status: number | null,
+	/**  Time until the response arrived. */
+	elapsedMs: number | null,
+	/**  Why there was no response. */
+	error: UserText | null,
 };
 
 /**  Where an API key goes. */
@@ -769,6 +834,16 @@ request: RequestDraft_Deserialize } |
 { type: "curl"; 
 /**  For a POSIX shell, one option per line. */
 command: string } | 
+/**  The request history, newest first. */
+{ type: "history"; 
+/**  The entries. */
+entries: HistoryItemView_Deserialize[] } | 
+/**  One entry of the history, to open as a new tab. */
+{ type: "historyEntry"; 
+/**  Its request (not saved, no id). */
+request: RequestDraft_Deserialize; 
+/**  Its response or error. */
+outcome: RunOutcomeView_Deserialize } | 
 /**  The request a cURL command describes. */
 { type: "parsedCurl"; 
 /**  The request (not saved, no id). */
@@ -794,6 +869,16 @@ request: RequestDraft_Serialize } |
 { type: "curl"; 
 /**  For a POSIX shell, one option per line. */
 command: string } | 
+/**  The request history, newest first. */
+{ type: "history"; 
+/**  The entries. */
+entries: HistoryItemView_Serialize[] } | 
+/**  One entry of the history, to open as a new tab. */
+{ type: "historyEntry"; 
+/**  Its request (not saved, no id). */
+request: RequestDraft_Serialize; 
+/**  Its response or error. */
+outcome: RunOutcomeView_Serialize } | 
 /**  The request a cURL command describes. */
 { type: "parsedCurl"; 
 /**  The request (not saved, no id). */
@@ -810,13 +895,13 @@ export type Query_Deserialize =
 /**  The current tree of an open collection, read anew from disk. */
 ({ type: "collection"; 
 /**  The collection. */
-collectionId: string }) & { requestId?: never; text?: never } | 
+collectionId: string }) & { id?: never; requestId?: never; text?: never } | 
 /**  A saved request for the editor. */
 ({ type: "request"; 
 /**  The collection. */
 collectionId: string; 
 /**  The request. */
-requestId: string }) & { text?: never } | 
+requestId: string }) & { id?: never; text?: never } | 
 /**
  *  The cURL command for a request as entered (variables and inherited
  *  auth applied, as when sending).
@@ -824,30 +909,36 @@ requestId: string }) & { text?: never } |
 {
 	type: "curl",
 } & OutgoingRequest_Deserialize | 
+/**  The request history, newest first. */
+({ type: "history" }) & { collectionId?: never; id?: never; requestId?: never; text?: never } | 
+/**  One entry of the request history, to open as a new tab. */
+({ type: "historyEntry"; 
+/**  The entry. */
+id: string }) & { collectionId?: never; requestId?: never; text?: never } | 
 /**  A pasted cURL command as a new, unsaved request. */
 ({ type: "parseCurl"; 
 /**  The command. */
-text: string }) & { collectionId?: never; requestId?: never } | 
+text: string }) & { collectionId?: never; id?: never; requestId?: never } | 
 /**
  *  Who the collection's secrets are encrypted for, and the user's own
  *  public key (created on first use).
  */
 ({ type: "recipients"; 
 /**  The collection. */
-collectionId: string }) & { requestId?: never; text?: never };
+collectionId: string }) & { id?: never; requestId?: never; text?: never };
 
 /**  Something the UI wants to read. */
 export type Query_Serialize = 
 /**  The current tree of an open collection, read anew from disk. */
 ({ type: "collection"; 
 /**  The collection. */
-collectionId: string }) & { requestId?: never; text?: never } | 
+collectionId: string }) & { id?: never; requestId?: never; text?: never } | 
 /**  A saved request for the editor. */
 ({ type: "request"; 
 /**  The collection. */
 collectionId: string; 
 /**  The request. */
-requestId: string }) & { text?: never } | 
+requestId: string }) & { id?: never; text?: never } | 
 /**
  *  The cURL command for a request as entered (variables and inherited
  *  auth applied, as when sending).
@@ -855,17 +946,23 @@ requestId: string }) & { text?: never } |
 {
 	type: "curl",
 } & OutgoingRequest_Serialize | 
+/**  The request history, newest first. */
+({ type: "history" }) & { collectionId?: never; id?: never; requestId?: never; text?: never } | 
+/**  One entry of the request history, to open as a new tab. */
+({ type: "historyEntry"; 
+/**  The entry. */
+id: string }) & { collectionId?: never; requestId?: never; text?: never } | 
 /**  A pasted cURL command as a new, unsaved request. */
 ({ type: "parseCurl"; 
 /**  The command. */
-text: string }) & { collectionId?: never; requestId?: never } | 
+text: string }) & { collectionId?: never; id?: never; requestId?: never } | 
 /**
  *  Who the collection's secrets are encrypted for, and the user's own
  *  public key (created on first use).
  */
 ({ type: "recipients"; 
 /**  The collection. */
-collectionId: string }) & { requestId?: never; text?: never };
+collectionId: string }) & { id?: never; requestId?: never; text?: never };
 
 /**  The recipients of a collection and the user's own public key. */
 export type RecipientsView = {

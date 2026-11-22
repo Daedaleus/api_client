@@ -13,7 +13,8 @@ use crate::app::{App, Ports};
 use crate::command::{Command, CommandAck, Query, QueryResult};
 use crate::error::AppError;
 use crate::testing::{
-    FakeBrowserLogin, FakeHttpSender, FakeScriptAssist, FakeScriptRunner, FakeVault, MemoryStore,
+    FakeBrowserLogin, FakeHttpSender, FakeScriptAssist, FakeScriptRunner, FakeVault, MemoryHistory,
+    MemoryStore,
 };
 use crate::view::{CollectionView, RequestDraft, TreeItemView};
 
@@ -25,6 +26,7 @@ pub(crate) type TestApp = App<
     Arc<FakeBrowserLogin>,
     Arc<FakeScriptRunner>,
     Arc<FakeScriptAssist>,
+    Arc<MemoryHistory>,
 >;
 
 /// `Shop` with `Auth/Login` and `Health`, and the environment `Dev`
@@ -33,6 +35,7 @@ pub(crate) struct Fixture {
     pub app: TestApp,
     pub scripts: Arc<FakeScriptRunner>,
     pub assist: Arc<FakeScriptAssist>,
+    pub history: Arc<MemoryHistory>,
     pub http: Arc<FakeHttpSender>,
     pub browser: Arc<FakeBrowserLogin>,
     pub store: Arc<MemoryStore>,
@@ -128,6 +131,7 @@ impl Fixture {
         let browser = Arc::new(browser);
         let scripts = Arc::new(scripts);
         let assist = Arc::new(assist);
+        let history = Arc::new(MemoryHistory::new());
         let app = App::new(
             Ports {
                 http: Arc::clone(&http),
@@ -136,6 +140,7 @@ impl Fixture {
                 login: Arc::clone(&browser),
                 scripts: Arc::clone(&scripts),
                 assist: Arc::clone(&assist),
+                history: Arc::clone(&history),
             },
             Handle::current(),
         );
@@ -145,6 +150,7 @@ impl Fixture {
             browser,
             scripts,
             assist,
+            history,
             store,
             vault,
             root,

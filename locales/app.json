@@ -225,6 +225,21 @@
   },
   "response.failed": { "de": "Request fehlgeschlagen", "en": "Request failed" },
   "sidebar.title": { "de": "Collections", "en": "Collections" },
+  "sidebar.views": { "de": "Ansicht der Seitenleiste", "en": "Sidebar view" },
+  "history.title": { "de": "Verlauf", "en": "History" },
+  "history.filter": { "de": "Verlauf filtern", "en": "Filter history" },
+  "history.empty": {
+    "de": "Noch keine Requests gesendet. Jeder gesendete Request erscheint hier – nur auf diesem Rechner, Geheimnisse unkenntlich.",
+    "en": "No requests sent yet. Every request you send appears here – on this computer only, secrets hidden."
+  },
+  "history.no_match": { "de": "Kein Eintrag passt zum Filter.", "en": "No entry matches the filter." },
+  "history.clear": { "de": "Verlauf leeren", "en": "Clear history" },
+  "history.clear_confirm": {
+    "de": "Alle Einträge des Verlaufs endgültig löschen?",
+    "en": "Delete all entries of the history for good?"
+  },
+  "history.failed": { "de": "Fehler", "en": "Failed" },
+  "history.open": { "de": "{method} {url} öffnen", "en": "Open {method} {url}" },
   "menu.new": { "de": "Neu", "en": "New" },
   "alert.dismiss": { "de": "Meldung schließen", "en": "Close message" },
   "menu.new_title": {
@@ -525,6 +540,10 @@
   "error.already_saved": {
     "de": "Die Collection ist bereits gespeichert.",
     "en": "The collection is saved already."
+  },
+  "error.history": {
+    "de": "Verlauf nicht verfügbar: {detail}",
+    "en": "History not available: {detail}"
   },
   "error.script_assist": {
     "de": "Skriptprüfung nicht möglich: {detail}",

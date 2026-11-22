@@ -23,8 +23,8 @@ use super::collections::item_id_from;
 use super::runs::scope;
 use crate::error::AppError;
 use crate::ports::{
-    BrowserLogin, CollectionStore, HttpSender, ScriptAssist, ScriptJob, ScriptRequest,
-    ScriptResponse, ScriptRunner, SecretVault, TestResult,
+    BrowserLogin, CollectionStore, HistoryStore, HttpSender, ScriptAssist, ScriptJob,
+    ScriptRequest, ScriptResponse, ScriptRunner, SecretVault, TestResult,
 };
 use crate::resolve::Prepared;
 use crate::text::UserText;
@@ -88,7 +88,7 @@ impl Execution {
     }
 }
 
-impl<H, S, V, B, R, A> App<H, S, V, B, R, A>
+impl<H, S, V, B, R, A, Y> App<H, S, V, B, R, A, Y>
 where
     H: HttpSender,
     S: CollectionStore,
@@ -96,6 +96,7 @@ where
     B: BrowserLogin,
     R: ScriptRunner,
     A: ScriptAssist,
+    Y: HistoryStore,
 {
     /// Runs `outgoing` with its scripts and those around it.
     pub(super) async fn run_with_scripts(&self, outgoing: &OutgoingRequest) -> Execution {
@@ -174,7 +175,9 @@ where
             Err(error) => return Execution::failed(error.user_text(), logs, tests),
         };
         let sent = prepared.request.clone();
+        let masking = prepared.masking.clone();
         let response = self.inner.send(prepared).await;
+        self.record_history(&outgoing, &sent, &response, &masking);
         let mut script_error = None;
         if let Ok(received) = &response {
             for step in steps.iter().rev() {

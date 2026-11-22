@@ -153,8 +153,9 @@ export class TabsState {
     }
   }
 
-  /** Routes a run result to the tab waiting for it. */
+  /** Routes a run result to the tab waiting for it (other events are not for tabs). */
   handle(event: AppEvent): void {
+    if (event.type !== 'runFinished') return;
     const tab = this.tabs.find((tab) => tab.pendingRun === event.runId);
     if (tab) {
       tab.outcome = event.outcome;
