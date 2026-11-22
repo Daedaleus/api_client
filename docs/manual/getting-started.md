@@ -41,7 +41,10 @@ your team gets every request with a normal pull. See
 [Collections](collections.md).
 
 To open an existing collection, use the folder button in the sidebar. Open
-collections are opened again when the app starts.
+collections and tabs come back when the app starts – unsaved changes and
+scratch requests included. Passwords, tokens and keys typed directly into a
+tab are not kept that way (`{{variables}}` are); put them into
+[secret variables](environments.md#secrets).
 
 ## Reading the response
 

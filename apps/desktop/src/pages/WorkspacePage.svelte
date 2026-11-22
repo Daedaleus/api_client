@@ -41,6 +41,16 @@
     };
   });
 
+  // Remember the open tabs – a moment after the last change, not per key.
+  const REMEMBER_DELAY = 500;
+  $effect(() => {
+    // Read every tab's draft so typing counts as a change.
+    JSON.stringify(workspace.tabs.tabs.map((tab) => [tab.saved, tab.draft, tab.dirty]));
+    void workspace.tabs.activeKey;
+    const timer = setTimeout(() => workspace.rememberTabs(), REMEMBER_DELAY);
+    return () => clearTimeout(timer);
+  });
+
   function keydown(event: KeyboardEvent) {
     const action = shortcutFor(event);
     if (action === null) return;

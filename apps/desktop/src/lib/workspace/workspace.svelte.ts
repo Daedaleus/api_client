@@ -5,7 +5,7 @@
 import type { Api } from '../api';
 import { toUserText } from '../errors';
 import { i18n } from '../i18n/i18n.svelte';
-import type { KeyValueStorage } from '../storage';
+import { readJson, writeJson, type KeyValueStorage } from '../storage';
 import type {
   CertificateCheckView,
   CollectionView,
@@ -32,6 +32,7 @@ import type { RequestTab } from './request-tab.svelte';
 import { TabsState } from './tabs.svelte';
 import { baseName, dropPlace, foldersAround, locate, moveTargets } from './tree';
 import { TreeDrag } from './drag.svelte';
+import { isSession, sessionOf } from './session';
 import { HistoryState } from './history.svelte';
 import { CurlState } from './curl.svelte';
 import { DefaultsState } from './defaults.svelte';
@@ -41,6 +42,9 @@ export interface EnvironmentEdit {
   collectionId: string;
   draft: EnvironmentDraft;
 }
+
+/** Storage key of the open tabs (see `session.ts`). */
+const SESSION_KEY = 'openTabs';
 
 export class Workspace {
   readonly collections: CollectionsState;
@@ -66,10 +70,14 @@ export class Workspace {
   /** The environment being edited, if the editor is open. */
   editing = $state<EnvironmentEdit | null>(null);
   readonly #api: Api;
+  readonly #storage: KeyValueStorage | null;
+  /** The last session's tabs are back: from now on the open tabs are remembered. */
+  #tabsRestored = false;
 
   constructor(api: Api, storage: KeyValueStorage | null) {
     this.scriptAssist = apiAssist(api);
     this.#api = api;
+    this.#storage = storage;
     this.collections = new CollectionsState(api, storage);
     this.tabs = new TabsState(api);
     this.environments = new EnvironmentChoice(storage);
@@ -92,9 +100,20 @@ export class Workspace {
     });
   }
 
-  /** Opens the collections of the last session. */
-  restore(): Promise<void> {
-    return this.collections.restore();
+  /** Opens the collections and then the tabs of the last session. */
+  async restore(): Promise<void> {
+    await this.collections.restore();
+    const session = readJson(this.#storage, SESSION_KEY, null, isSession);
+    if (session) {
+      await this.tabs.restore(session, (id) => this.collections.find(id) !== undefined);
+    }
+    this.#tabsRestored = true;
+  }
+
+  /** Remembers the open tabs for the next start (once the last ones are back). */
+  rememberTabs(): void {
+    if (!this.#tabsRestored) return;
+    writeJson(this.#storage, SESSION_KEY, sessionOf(this.tabs.tabs, this.tabs.activeKey));
   }
 
   /** Lets the user pick a file (for bodies); its path or `null`. */
