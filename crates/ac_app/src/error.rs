@@ -3,7 +3,7 @@
 use ac_domain::environment::UnresolvedVariable;
 use ac_domain::protocol::InvalidMethod;
 
-use crate::ports::{AssistError, HistoryError, SecretError, StoreError};
+use crate::ports::{AssistError, HistoryError, SecretError, SettingsError, StoreError};
 use crate::text::{UserText, keys};
 
 /// A command or query that cannot be carried out as given.
@@ -72,6 +72,9 @@ pub enum AppError {
     /// The request history cannot be read or written.
     #[error(transparent)]
     History(#[from] HistoryError),
+    /// The app's settings cannot be read, written or applied.
+    #[error(transparent)]
+    Settings(#[from] SettingsError),
     /// An import from a URL got nothing usable.
     #[error("download failed: {0}")]
     Download(String),
@@ -134,6 +137,7 @@ impl AppError {
             | Self::Secret(reason) => reason.user_text(),
             Self::Assist(error) => error.user_text(),
             Self::History(error) => error.user_text(),
+            Self::Settings(error) => error.user_text(),
             Self::RedirectNotLoopback(url) => {
                 UserText::new(keys::OAUTH_REDIRECT).with("url", url.clone())
             }

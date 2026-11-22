@@ -14,12 +14,12 @@ use crate::event::AppEvent;
 use crate::history::{HistoryEntry, HistoryOutcome, Masking};
 use crate::ports::{
     BrowserLogin, CollectionStore, HistoryStore, HttpSender, ScriptAssist, ScriptRunner,
-    SecretVault,
+    SecretVault, SettingsStore,
 };
 use crate::text::{UserText, keys};
 use crate::view::{HistoryItemView, OutgoingRequest, RequestDraft, ResponseView, RunOutcomeView};
 
-impl<H, S, V, B, R, A, Y> App<H, S, V, B, R, A, Y>
+impl<H, S, V, B, R, A, Y, Z> App<H, S, V, B, R, A, Y, Z>
 where
     H: HttpSender,
     S: CollectionStore,
@@ -28,6 +28,7 @@ where
     R: ScriptRunner,
     A: ScriptAssist,
     Y: HistoryStore,
+    Z: SettingsStore,
 {
     /// Records a sent request and tells subscribers; a failed write is
     /// reported in the event, never swallowed.

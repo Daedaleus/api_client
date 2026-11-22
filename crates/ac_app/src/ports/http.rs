@@ -5,6 +5,8 @@ use std::sync::Arc;
 
 use ac_domain::exchange::{ResolvedRequest, Response};
 
+use crate::ports::SettingsError;
+use crate::settings::NetworkSettings;
 use crate::text::{UserText, keys};
 
 /// Sends HTTP requests.
@@ -17,6 +19,14 @@ pub trait HttpSender: Send + Sync + 'static {
         &self,
         request: ResolvedRequest,
     ) -> impl Future<Output = Result<Response, TransportError>> + Send;
+
+    /// Applies the app's network settings (proxy, extra CA certificates) to
+    /// all later requests. Nothing changes if they cannot be applied.
+    ///
+    /// # Errors
+    /// [`SettingsError`] if the proxy URL is invalid or a certificate file
+    /// cannot be read or parsed.
+    fn configure(&self, network: &NetworkSettings) -> Result<(), SettingsError>;
 }
 
 impl<T: HttpSender> HttpSender for Arc<T> {
@@ -25,6 +35,10 @@ impl<T: HttpSender> HttpSender for Arc<T> {
         request: ResolvedRequest,
     ) -> impl Future<Output = Result<Response, TransportError>> + Send {
         T::send(self, request)
+    }
+
+    fn configure(&self, network: &NetworkSettings) -> Result<(), SettingsError> {
+        T::configure(self, network)
     }
 }
 

@@ -26,6 +26,7 @@ mod oauth;
 pub mod ports;
 mod resolve;
 mod resolve_body;
+pub mod settings;
 #[cfg(test)]
 #[path = "tests/support.rs"]
 mod test_support;

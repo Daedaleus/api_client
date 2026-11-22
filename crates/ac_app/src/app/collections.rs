@@ -16,7 +16,7 @@ use crate::ports::{
     BrowserLogin, CollectionStore, HttpSender, Location, OpenedCollection, ScriptRunner,
     SecretVault, StoreError, StoreErrorKind,
 };
-use crate::ports::{HistoryStore, ScriptAssist};
+use crate::ports::{HistoryStore, ScriptAssist, SettingsStore};
 use crate::view::collection::non_empty;
 use crate::view::{CollectionView, RequestDraft};
 
@@ -28,7 +28,8 @@ impl<
     R: ScriptRunner,
     A: ScriptAssist,
     Y: HistoryStore,
-> App<H, S, V, B, R, A, Y>
+    Z: SettingsStore,
+> App<H, S, V, B, R, A, Y, Z>
 {
     pub(super) fn open_collection(&self, path: &str) -> Result<CommandAck, AppError> {
         let opened = self.inner.store.open(Path::new(path))?;

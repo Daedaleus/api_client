@@ -259,3 +259,89 @@ async fn requests_without_certificate_check_use_the_unchecking_client() {
     get.verify_tls = false;
     assert_eq!(sender().send(get).await.unwrap().status.as_u16(), 200);
 }
+
+#[tokio::test]
+async fn a_manual_proxy_carries_the_requests() {
+    // The mock server acts as the proxy: the request for a host that does
+    // not exist arrives there.
+    let proxy = MockServer::start().await;
+    Mock::given(path("/via-proxy"))
+        .respond_with(ResponseTemplate::new(200).set_body_string("proxied"))
+        .mount(&proxy)
+        .await;
+    let sender = sender();
+    sender
+        .configure(&NetworkSettings {
+            proxy: ProxySetting::Manual {
+                url: proxy.uri(),
+                no_proxy: String::new(),
+            },
+            ca_certificates: Vec::new(),
+        })
+        .unwrap();
+    let response = sender
+        .send(request(
+            HttpMethod::Get,
+            "http://api.example.invalid/via-proxy",
+            vec![],
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.body, b"proxied");
+
+    // Back to direct connections: the host cannot be reached any more.
+    sender
+        .configure(&NetworkSettings {
+            proxy: ProxySetting::None,
+            ca_certificates: Vec::new(),
+        })
+        .unwrap();
+    assert!(
+        sender
+            .send(request(
+                HttpMethod::Get,
+                "http://api.example.invalid/via-proxy",
+                vec![]
+            ))
+            .await
+            .is_err()
+    );
+}
+
+#[test]
+fn settings_that_cannot_work_are_refused_and_change_nothing() {
+    let temp = tempfile::tempdir().unwrap();
+    let garbage = temp.path().join("garbage.pem");
+    std::fs::write(
+        &garbage,
+        "-----BEGIN CERTIFICATE-----\nnot base64\n-----END CERTIFICATE-----\n",
+    )
+    .unwrap();
+    let empty = temp.path().join("empty.der");
+    std::fs::write(&empty, [0_u8; 3]).unwrap();
+    let sender = sender();
+    for settings in [
+        NetworkSettings {
+            proxy: ProxySetting::Manual {
+                url: "not a url".into(),
+                no_proxy: String::new(),
+            },
+            ca_certificates: Vec::new(),
+        },
+        NetworkSettings {
+            proxy: ProxySetting::System,
+            ca_certificates: vec![temp.path().join("missing.pem")],
+        },
+        NetworkSettings {
+            proxy: ProxySetting::System,
+            ca_certificates: vec![garbage.clone()],
+        },
+        NetworkSettings {
+            proxy: ProxySetting::System,
+            ca_certificates: vec![empty.clone()],
+        },
+    ] {
+        assert!(sender.configure(&settings).is_err(), "{settings:?}");
+    }
+    assert!(sender.configure(&NetworkSettings::default()).is_ok());
+}

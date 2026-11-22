@@ -40,6 +40,8 @@ collections, environments and secrets, scripts, import, shortcuts.
   machine only, secrets hidden.
 - **Command line runner** for CI with JUnit and JSON reports
   ([CLI](docs/cli.md)).
+- **Network settings** – system or own proxy, extra CA certificates; redirects
+  and time limit per request, folder or collection.
 - Keyboard shortcuts, interface in **English and German**, light and dark
   theme.
 

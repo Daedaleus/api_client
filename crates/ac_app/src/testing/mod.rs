@@ -7,6 +7,7 @@
 //! - [`script`]: [`FakeScriptRunner`], scripts with queued results.
 //! - [`assist`]: [`FakeScriptAssist`], checks and completions with queued answers.
 //! - [`history`]: [`MemoryHistory`], the request history in memory.
+//! - [`settings`]: [`MemorySettings`], the app's settings in memory.
 
 pub mod assist;
 pub mod history;
@@ -14,6 +15,7 @@ pub mod http;
 pub mod login;
 pub mod script;
 pub mod secrets;
+pub mod settings;
 pub mod store;
 
 pub use assist::FakeScriptAssist;
@@ -22,6 +24,7 @@ pub use http::{FakeHttpSender, response};
 pub use login::{FAKE_PORT, FakeBrowserLogin, LoginAnswer};
 pub use script::FakeScriptRunner;
 pub use secrets::FakeVault;
+pub use settings::MemorySettings;
 pub use store::MemoryStore;
 
 use std::sync::{Mutex, MutexGuard, PoisonError};

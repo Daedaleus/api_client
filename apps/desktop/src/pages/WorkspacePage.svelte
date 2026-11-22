@@ -7,6 +7,7 @@
   import CurlImportDialog from '../components/organisms/CurlImportDialog.svelte';
   import DefaultsDialog from '../components/organisms/DefaultsDialog.svelte';
   import QuickSearch from '../components/organisms/QuickSearch.svelte';
+  import SettingsDialog from '../components/organisms/SettingsDialog.svelte';
   import RequestEditor from '../components/organisms/RequestEditor.svelte';
   import ResponseViewer from '../components/organisms/ResponseViewer.svelte';
   import Sidebar from '../components/organisms/Sidebar.svelte';
@@ -135,6 +136,7 @@
   {/if}
   <CurlImportDialog curl={workspace.curl} />
   <QuickSearch {workspace} />
+  <SettingsDialog settings={workspace.settings} />
   {#if workspace.defaults.editing}
     <DefaultsDialog defaults={workspace.defaults} assist={workspace.scriptAssist} />
   {/if}

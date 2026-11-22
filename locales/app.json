@@ -233,6 +233,30 @@
   },
   "response.failed": { "de": "Request fehlgeschlagen", "en": "Request failed" },
   "sidebar.title": { "de": "Collections", "en": "Collections" },
+  "settings.title": { "de": "Einstellungen", "en": "Settings" },
+  "settings.language": { "de": "Sprache", "en": "Language" },
+  "settings.language_de": { "de": "Deutsch", "en": "German" },
+  "settings.language_en": { "de": "Englisch", "en": "English" },
+  "settings.network": { "de": "Netzwerk", "en": "Network" },
+  "settings.network_note": {
+    "de": "Gelten für alle Requests aller Collections auf diesem Rechner.",
+    "en": "Apply to every request of every collection on this computer."
+  },
+  "settings.proxy": { "de": "Proxy", "en": "Proxy" },
+  "settings.proxy_system": { "de": "Wie im System eingestellt", "en": "As set in the system" },
+  "settings.proxy_none": { "de": "Kein Proxy", "en": "No proxy" },
+  "settings.proxy_manual": { "de": "Eigener Proxy", "en": "Own proxy" },
+  "settings.proxy_url": { "de": "Proxy-URL", "en": "Proxy URL" },
+  "settings.no_proxy": { "de": "Ohne Proxy für", "en": "Without proxy for" },
+  "settings.ca": { "de": "Zusätzliche CA-Zertifikate", "en": "Extra CA certificates" },
+  "settings.ca_none": {
+    "de": "Keine – es gelten die Zertifikate des Systems.",
+    "en": "None – the system's certificates apply."
+  },
+  "settings.ca_add": { "de": "Zertifikat hinzufügen …", "en": "Add certificate …" },
+  "settings.ca_remove": { "de": "„{file}“ entfernen", "en": "Remove “{file}”" },
+  "settings.ca_pick": { "de": "CA-Zertifikat wählen", "en": "Choose a CA certificate" },
+  "settings.ca_files": { "de": "Zertifikate (PEM, DER)", "en": "Certificates (PEM, DER)" },
   "search.title": { "de": "Request suchen", "en": "Find a request" },
   "search.placeholder": {
     "de": "Name, URL, Methode oder Ordner …",
@@ -585,6 +609,10 @@
   "error.already_saved": {
     "de": "Die Collection ist bereits gespeichert.",
     "en": "The collection is saved already."
+  },
+  "error.settings": {
+    "de": "Einstellungen nicht übernommen: {detail}",
+    "en": "Settings not applied: {detail}"
   },
   "error.history": {
     "de": "Verlauf nicht verfügbar: {detail}",

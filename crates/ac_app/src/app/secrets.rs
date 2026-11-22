@@ -12,7 +12,7 @@ use crate::error::AppError;
 use crate::ports::{
     BrowserLogin, CollectionStore, HttpSender, ScriptRunner, SecretError, SecretValues, SecretVault,
 };
-use crate::ports::{HistoryStore, ScriptAssist};
+use crate::ports::{HistoryStore, ScriptAssist, SettingsStore};
 
 /// An environment for sending, with the secret values that could be
 /// decrypted.
@@ -30,7 +30,8 @@ impl<
     R: ScriptRunner,
     A: ScriptAssist,
     Y: HistoryStore,
-> App<H, S, V, B, R, A, Y>
+    Z: SettingsStore,
+> App<H, S, V, B, R, A, Y, Z>
 {
     /// Fills in the secret values of `environment`, whose file is `file`.
     pub(super) fn unlock(
