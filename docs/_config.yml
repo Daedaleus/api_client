@@ -1,0 +1,12 @@
+# GitHub Pages: the Markdown in docs/ as a website (built by GitHub with
+# Jekyll; links between .md files are rewritten by jekyll-relative-links,
+# README.md files become folder index pages). Nothing to build locally.
+title: api_client
+description: A fast, fully open-source API client – collections as plain files, no account, no cloud.
+theme: jekyll-theme-cayman
+plugins:
+  - jekyll-relative-links
+  - jekyll-readme-index
+relative_links:
+  enabled: true
+  collections: false

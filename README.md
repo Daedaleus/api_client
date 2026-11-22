@@ -9,27 +9,43 @@ alternative to tools like Bruno or Postman. **No premium tier, no account,
 no cloud:** every feature is available to everyone, and your collections stay
 on your machine.
 
-> **Status:** early development. There is nothing to download yet. The
-> product name is not final; `api_client` is the working name.
+> **Status:** early development. There is nothing to download yet – to try
+> it, build it from source ([CONTRIBUTING.md](CONTRIBUTING.md)). The product
+> name is not final; `api_client` is the working name.
 
-## Planned features
+**[User manual](docs/manual/README.md)** – getting started, requests,
+collections, environments and secrets, scripts, import, shortcuts.
 
-- **Collections as plain files** – one human-readable TOML file per request,
-  made to be versioned in git next to your code.
-- **Requests** – all methods, path and query parameters, headers, bodies
-  (JSON, text, form, multipart, binary) and auth (Basic, Bearer, API key,
-  OAuth 2).
-- **Environments and variables** with `{{variable}}` interpolation.
+## Features
+
+- **Collections as plain files** – one human-readable TOML file per request
+  in a folder, made to be versioned in git next to your code
+  ([format](docs/format/v1.md)).
+- **Requests** – any method, query parameters and path variables (`/users/:id`)
+  as tables, headers, bodies (JSON, text, form, multipart, file) and auth
+  (Basic, Bearer, API key, OAuth 2 with client credentials or browser sign-in).
+- **Variables and environments** – `{{variable}}` in every field, defined on
+  the collection, environments, folders, the request or by scripts; a
+  preview shows the URL as it will be sent.
 - **Secrets encrypted with [age](https://age-encryption.org/)** for several
   recipients, so a team (and CI) can share them safely through git.
-- **TypeScript scripts and tests** before and after a request
-  ([`docs/scripting.md`](docs/scripting.md)), sandboxed; a checker and code
-  completion in the editor follow.
-- **Import** from Postman, Bruno and OpenAPI (also straight from a URL); **export** to cURL.
-- **Request history** – every sent request with its response, on your machine
-  only, secrets hidden; open any entry again as a new tab.
-- **Command line runner** for CI ([`docs/cli.md`](docs/cli.md)).
-- Interface in **English and German**, light and dark theme.
+- **TypeScript scripts and tests** before and after a request, also on
+  folders and the collection, sandboxed, with type checking and completion in
+  the editor ([scripting](docs/scripting.md)).
+- **Response viewer** – status, time, size, headers, formatted and foldable
+  JSON with search, script log and test results.
+- **Import** from Postman, Bruno (including their scripts) and OpenAPI, also
+  straight from a URL; **cURL** import and export.
+- **Request history** – every sent request with its response, on your
+  machine only, secrets hidden.
+- **Command line runner** for CI with JUnit and JSON reports
+  ([CLI](docs/cli.md)).
+- Keyboard shortcuts, interface in **English and German**, light and dark
+  theme.
+
+Planned next: duplicating and moving requests, a collection runner in the
+app, cookies, more auth types, request chains as automated tests
+([all ideas](https://github.com/Daedaleus/api_client/issues?q=is%3Aopen+label%3Aenhancement)).
 
 ## Privacy and security
 
