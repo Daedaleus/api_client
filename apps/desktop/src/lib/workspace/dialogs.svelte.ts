@@ -14,6 +14,16 @@ export type DialogRequest =
     }
   | { kind: 'confirm'; title: UserText; message: UserText; answer(ok: boolean): void }
   | {
+      kind: 'choose';
+      title: UserText;
+      /** The list's label. */
+      label: UserText;
+      /** Values with their display texts (already in the user's language or data). */
+      options: { value: string; label: string }[];
+      value: string;
+      answer(value: string | null): void;
+    }
+  | {
       kind: 'info';
       title: UserText;
       message: UserText;
@@ -57,6 +67,27 @@ export class Dialogs {
         answer: () => {
           this.current = null;
           resolve();
+        },
+      };
+    });
+  }
+
+  /** Asks to pick one of `options`; resolves to its value or `null` if cancelled. */
+  choose(
+    title: UserText,
+    label: UserText,
+    options: { value: string; label: string }[],
+  ): Promise<string | null> {
+    return new Promise((resolve) => {
+      this.current = {
+        kind: 'choose',
+        title,
+        label,
+        options,
+        value: options[0]?.value ?? '',
+        answer: (value) => {
+          this.current = null;
+          resolve(value);
         },
       };
     });

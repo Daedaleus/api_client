@@ -32,17 +32,27 @@ pub trait CollectionStore: Send + Sync + 'static {
     /// If the file is damaged, read-only or cannot be written.
     fn save_request(&self, file: &Path, request: &Request) -> Result<(), StoreError>;
 
-    /// Creates a file for `request` in the collection or folder `dir`.
+    /// Creates a file for `request` in the collection or folder `dir`;
+    /// returns its path.
     ///
     /// # Errors
     /// If the file or the folder settings cannot be written.
-    fn create_request(&self, dir: &Path, request: &Request) -> Result<(), StoreError>;
+    fn create_request(&self, dir: &Path, request: &Request) -> Result<PathBuf, StoreError>;
 
-    /// Creates a folder named `name` in `parent`; returns its id.
+    /// Creates a folder named `name` in `parent`; returns its path and id.
     ///
     /// # Errors
     /// If the folder cannot be created.
-    fn create_folder(&self, parent: &Path, name: &str) -> Result<ItemId, StoreError>;
+    fn create_folder(&self, parent: &Path, name: &str) -> Result<(PathBuf, ItemId), StoreError>;
+
+    /// Moves the request file or folder `path` into the collection or folder
+    /// `to_dir`, at `position` among its items (also within the same
+    /// folder: reordering).
+    ///
+    /// # Errors
+    /// If a folder is moved into itself, settings are damaged or read-only,
+    /// or it cannot be moved.
+    fn move_item(&self, path: &Path, to_dir: &Path, position: usize) -> Result<(), StoreError>;
 
     /// Sets the name of the folder `dir`, keeping its id.
     ///
@@ -179,11 +189,14 @@ impl<T: CollectionStore> CollectionStore for Arc<T> {
     fn save_request(&self, file: &Path, request: &Request) -> Result<(), StoreError> {
         T::save_request(self, file, request)
     }
-    fn create_request(&self, dir: &Path, request: &Request) -> Result<(), StoreError> {
+    fn create_request(&self, dir: &Path, request: &Request) -> Result<PathBuf, StoreError> {
         T::create_request(self, dir, request)
     }
-    fn create_folder(&self, parent: &Path, name: &str) -> Result<ItemId, StoreError> {
+    fn create_folder(&self, parent: &Path, name: &str) -> Result<(PathBuf, ItemId), StoreError> {
         T::create_folder(self, parent, name)
+    }
+    fn move_item(&self, path: &Path, to_dir: &Path, position: usize) -> Result<(), StoreError> {
+        T::move_item(self, path, to_dir, position)
     }
     fn rename_folder(&self, dir: &Path, id: ItemId, name: &str) -> Result<(), StoreError> {
         T::rename_folder(self, dir, id, name)

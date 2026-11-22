@@ -32,6 +32,12 @@ From the menu ⋯ of a collection, folder or request (or a right click):
 
 - **New request**, **New folder** – inside the collection or folder.
 - **Rename** – changes the display name; the file keeps its name.
+- **Duplicate** – copies a request, or a folder with everything in it, right
+  after the original; the copy gets new ids.
+- **Move** – *Up* and *Down* within the folder, *To folder …* into another
+  folder or the top level. With the mouse, drag a request or folder: the
+  line above or below a row shows where it lands, the outlined folder means
+  into it.
 - **Delete** – moves the file or folder to the system trash, never deletes
   it for good.
 

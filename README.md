@@ -43,8 +43,7 @@ collections, environments and secrets, scripts, import, shortcuts.
 - Keyboard shortcuts, interface in **English and German**, light and dark
   theme.
 
-Planned next: duplicating and moving requests, a collection runner in the
-app, cookies, more auth types, request chains as automated tests
+Planned next: a collection runner in the app, cookies, more auth types, request chains as automated tests
 ([all ideas](https://github.com/Daedaleus/api_client/issues?q=is%3Aopen+label%3Aenhancement)).
 
 ## Privacy and security

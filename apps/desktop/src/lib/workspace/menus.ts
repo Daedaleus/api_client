@@ -59,6 +59,19 @@ export function treeItemMenu(
 ): MenuItem[] {
   const common: MenuItem[] = [
     entry('rename', i18n.t('collection.rename'), () => workspace.rename(collectionId, item)),
+    entry('duplicate', i18n.t('collection.duplicate'), () =>
+      workspace.duplicate(collectionId, item),
+    ),
+    entry('move', i18n.t('collection.move'), [
+      entry('move-up', i18n.t('collection.move_up'), () =>
+        workspace.moveBy(collectionId, item, -1),
+      ),
+      entry('move-down', i18n.t('collection.move_down'), () =>
+        workspace.moveBy(collectionId, item, 1),
+      ),
+      entry('move-to', i18n.t('collection.move_to'), () => workspace.moveTo(collectionId, item)),
+    ]),
+    separator,
     entry('delete', i18n.t('collection.delete'), () => workspace.remove(collectionId, item)),
   ];
   if (item.kind !== 'folder') return common;

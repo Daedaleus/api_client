@@ -45,6 +45,7 @@
 //  18. sent requests are in the history (secrets masked) and open as a tab,
 //  19. a path variable is filled in from the params table and a query
 //      parameter switched off there is not sent,
+//  20. a request is duplicated and the copy moved into a folder,
 // and the program is still running after each send.
 //
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
@@ -65,6 +66,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
@@ -1369,5 +1371,63 @@ check(withoutDrop.endsWith('/:id?keep=1'), `switched-off parameter left the URL 
 await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);
 await echoWith('/echo/42?keep=1', 'echo with the path variable filled in');
 check(true, 'path variable replaced when sending');
+
+// --- 20. Duplicate and move -------------------------------------------------------
+
+/** Opens the menu of the tree entry `name` in the collection "Shop API" and picks `ids`. */
+async function chooseFromItemMenu(name, ...ids) {
+  await evaluate(`(() => {
+    const section = document.querySelector('.sidebar__collection[aria-label="Shop API"]');
+    const row = [...section.querySelectorAll('.tree-node__row')].find(
+      (candidate) => candidate.querySelector('.tree-node__name')?.textContent === ${JSON.stringify(name)},
+    );
+    row.querySelector('.tree-node__actions button').click();
+  })()`);
+  for (const id of ids) {
+    const selector = `.menu [data-item="${id}"]`;
+    await waitFor(`!!document.querySelector(${JSON.stringify(selector)})`, `menu entry ${id}`);
+    await evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);
+  }
+}
+
+/** The request file in `dir` whose name starts with `prefix`, if any. */
+const requestFileNamed = (dir, prefix) =>
+  readdirSync(dir)
+    .filter((file) => file.endsWith('.toml'))
+    .find((file) => readFileSync(path.join(dir, file), 'utf8').includes(`name = "${prefix}`));
+
+await chooseFromItemMenu('Health', 'duplicate');
+const copyFile = await waitFor(
+  `(() => [...document.querySelectorAll('.sidebar__collection[aria-label="Shop API"] .tree-node__name')].map((name) => name.textContent).find((name) => name.startsWith('Health (')) ?? null)()`,
+  'copy in the tree',
+);
+const copyOnDisk = requestFileNamed(collectionDir, copyFile);
+check(Boolean(copyOnDisk), `duplicate written to its own file (${copyOnDisk})`);
+check(
+  readFileSync(path.join(collectionDir, copyOnDisk), 'utf8') !==
+    readFileSync(path.join(collectionDir, 'health.toml'), 'utf8'),
+  'duplicate has its own id',
+);
+
+// Into the folder "Products" through the dialog (the keyboard way).
+await chooseFromItemMenu(copyFile, 'move', 'move-to');
+await waitFor(`!!document.querySelector('.dialog-host select')`, 'destination list');
+await evaluate(`(() => {
+  const select = document.querySelector('.dialog-host select');
+  select.value = [...select.options].find((option) => option.text.endsWith('/ Products')).value;
+  select.dispatchEvent(new Event('change', { bubbles: true }));
+  document.querySelector('.dialog-host [type=submit]').click();
+})()`);
+const productsDir = path.join(collectionDir, 'products');
+let movedFile;
+for (let attempt = 0; attempt < 40 && !movedFile; attempt++) {
+  await sleep(250);
+  movedFile = requestFileNamed(productsDir, copyFile);
+}
+check(Boolean(movedFile), `duplicate moved into the folder (${movedFile})`);
+check(
+  readFileSync(path.join(productsDir, 'folder.toml'), 'utf8').includes(`"${movedFile}"`),
+  'folder order lists the moved request',
+);
 
 finish(null);

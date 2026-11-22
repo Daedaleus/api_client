@@ -125,6 +125,35 @@ describe('WorkspacePage', () => {
     expect(screen.getByRole('combobox', { name: 'Environment' })).toHaveFocus();
   });
 
+  it('moves a request by dragging it in the tree', async () => {
+    const { api } = await setup();
+    const health = screen.getByRole('button', { name: 'GET Health' });
+    const authRow = screen.getByRole('button', { name: 'Auth' }).closest('.tree-node__row')!;
+    await fireEvent.pointerDown(health.closest('.tree-node__row')!, {
+      button: 0,
+      clientX: 10,
+      clientY: 50,
+    });
+    await fireEvent.pointerMove(window, { clientX: 10, clientY: 20 });
+    // Rows have no size in the test DOM: the top of the Auth row, before it.
+    await fireEvent.pointerMove(authRow, { clientX: 10, clientY: 0 });
+    expect(authRow).toHaveClass('tree-node__row--drop-before');
+    api.answers.push(changed(shop()));
+    await fireEvent.pointerUp(window);
+    // The click that ends the drag does not open the request.
+    await fireEvent.click(health);
+    await waitFor(() =>
+      expect(api.commands.at(-1)).toEqual({
+        type: 'moveItem',
+        collectionId: 'c1',
+        itemId: 'r2',
+        parentId: 'c1',
+        index: 0,
+      }),
+    );
+    expect(api.queries.filter((query) => query.type === 'request')).toEqual([]);
+  });
+
   it('opens a collection folder with its own button', async () => {
     const { api } = await setup();
     api.folder = 'C:\\apis\\billing';

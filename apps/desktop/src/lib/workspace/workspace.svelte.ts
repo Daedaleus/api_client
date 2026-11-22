@@ -4,6 +4,7 @@
 
 import type { Api } from '../api';
 import { toUserText } from '../errors';
+import { i18n } from '../i18n/i18n.svelte';
 import type { KeyValueStorage } from '../storage';
 import type {
   CertificateCheckView,
@@ -29,7 +30,8 @@ import {
 import { RecipientsState } from './recipients.svelte';
 import type { RequestTab } from './request-tab.svelte';
 import { TabsState } from './tabs.svelte';
-import { baseName, foldersAround } from './tree';
+import { baseName, dropPlace, foldersAround, locate, moveTargets } from './tree';
+import { TreeDrag } from './drag.svelte';
 import { HistoryState } from './history.svelte';
 import { CurlState } from './curl.svelte';
 import { DefaultsState } from './defaults.svelte';
@@ -53,6 +55,8 @@ export class Workspace {
   readonly curl: CurlState;
   /** Checker and completion of the script editor. */
   readonly scriptAssist: ScriptAssist;
+  /** Dragging items in the sidebar tree. */
+  readonly drag = new TreeDrag();
   /** Requests sent before (sidebar). */
   readonly history: HistoryState;
   /** The environment being edited, if the editor is open. */
@@ -222,6 +226,62 @@ export class Workspace {
       name,
     });
     if (changed && item.kind === 'request') this.tabs.renamed(collectionId, item.id, name);
+  }
+
+  /** Copies a request or folder (with everything in it) right after it. */
+  async duplicate(collectionId: string, item: TreeItemView): Promise<void> {
+    await this.collections.run({
+      type: 'duplicateItem',
+      collectionId,
+      itemId: item.id,
+      name: i18n.t('collection.copy_name', { name: item.name }),
+    });
+  }
+
+  /** Moves an item into the collection or folder `parentId` at `index`. */
+  async move(collectionId: string, itemId: string, parentId: string, index: number): Promise<void> {
+    await this.collections.run({ type: 'moveItem', collectionId, itemId, parentId, index });
+  }
+
+  /** Moves an item one place up (`-1`) or down (`1`) within its folder. */
+  async moveBy(collectionId: string, item: TreeItemView, step: -1 | 1): Promise<void> {
+    const collection = this.collections.find(collectionId);
+    const place = collection && locate(collection, item.id);
+    if (!place) return;
+    const index = place.index + step;
+    if (index < 0 || index >= place.count) return;
+    await this.move(collectionId, item.id, place.parentId, index);
+  }
+
+  /** Asks for a folder (or the collection) and moves the item to its end. */
+  async moveTo(collectionId: string, item: TreeItemView): Promise<void> {
+    const collection = this.collections.find(collectionId);
+    if (!collection) return;
+    const targets = moveTargets(collection, item.id);
+    const chosen = await this.dialogs.choose(
+      { key: 'collection.move_to_title', args: { name: item.name } },
+      { key: 'collection.move_to_label', args: {} },
+      targets.map((target) => ({ value: target.id, label: target.label })),
+    );
+    const target = targets.find((candidate) => candidate.id === chosen);
+    if (!target) return;
+    await this.move(collectionId, item.id, target.id, target.count);
+  }
+
+  /** Ends a drag in the tree: moves the item where it was dropped. */
+  async drop(): Promise<void> {
+    const dropped = this.drag.release();
+    if (!dropped) return;
+    const collection = this.collections.find(dropped.source.collectionId);
+    if (!collection) return;
+    const place = dropPlace(
+      collection,
+      dropped.source.item.id,
+      dropped.target.item,
+      dropped.target.position,
+    );
+    if (!place) return;
+    await this.move(collection.id, dropped.source.item.id, place.parentId, place.index);
   }
 
   async remove(collectionId: string, item: TreeItemView): Promise<void> {

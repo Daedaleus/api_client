@@ -5,6 +5,7 @@
   import type { TreeItemView } from '../../lib/types';
   import type { Workspace } from '../../lib/workspace/workspace.svelte';
   import { treeItemMenu } from '../../lib/workspace/menus';
+  import { dropPosition } from '../../lib/workspace/tree';
   import ContextMenu from './ContextMenu.svelte';
   import MenuButton from './MenuButton.svelte';
   import TreeNode from './TreeNode.svelte';
@@ -22,6 +23,35 @@
   let active = $derived(
     item.kind === 'request' && workspace.tabs.active?.isFor(collectionId, item.id) === true,
   );
+  let drag = $derived(workspace.drag);
+  let dragged = $derived(drag.source?.item.id === item.id);
+  /** Where a dragged item would land on this row. */
+  let drop = $derived(
+    drag.target?.item.id === item.id && drag.target.collectionId === collectionId
+      ? drag.target.position
+      : null,
+  );
+
+  function press(event: PointerEvent) {
+    if (event.button !== 0) return;
+    drag.press(collectionId, item, event.clientX, event.clientY);
+  }
+
+  function hover(event: PointerEvent) {
+    if (!drag.source) return;
+    const row = event.currentTarget as HTMLElement;
+    const bounds = row.getBoundingClientRect();
+    drag.hover({
+      collectionId,
+      item,
+      position: dropPosition(event.clientY - bounds.top, bounds.height, item.kind === 'folder'),
+    });
+  }
+
+  /** A click that ends a drag does not open or fold the item. */
+  function guard(action: () => void) {
+    if (!drag.consumesClick) action();
+  }
 </script>
 
 <li class="tree-node">
@@ -29,13 +59,24 @@
     label={i18n.t('menu.more', { name: item.name })}
     items={() => treeItemMenu(workspace, collectionId, item)}
   >
-    <div class="tree-node__row" class:tree-node__row--active={active} style:--depth={depth}>
+    <div
+      class="tree-node__row"
+      class:tree-node__row--active={active}
+      class:tree-node__row--dragged={dragged}
+      class:tree-node__row--drop-before={drop === 'before'}
+      class:tree-node__row--drop-after={drop === 'after'}
+      class:tree-node__row--drop-inside={drop === 'inside'}
+      style:--depth={depth}
+      onpointerdown={press}
+      onpointermove={hover}
+      role="presentation"
+    >
       {#if item.kind === 'folder'}
         <button
           type="button"
           class="tree-node__main"
           aria-expanded={expanded}
-          onclick={() => (expanded = !expanded)}
+          onclick={() => guard(() => (expanded = !expanded))}
         >
           <span class="tree-node__chevron" class:tree-node__chevron--open={expanded}>
             <Icon name="chevron" size={12} />
@@ -47,7 +88,7 @@
           type="button"
           class="tree-node__main"
           aria-current={active ? 'page' : undefined}
-          onclick={() => workspace.openRequest(collectionId, item.id)}
+          onclick={() => guard(() => workspace.openRequest(collectionId, item.id))}
         >
           <MethodBadge method={item.method} />
           <span class="tree-node__name">{item.name}</span>
@@ -82,6 +123,23 @@
   .tree-node__children {
     margin: 0;
     padding: 0;
+  }
+
+  .tree-node__row--dragged {
+    opacity: 0.5;
+  }
+
+  .tree-node__row--drop-before {
+    box-shadow: inset 0 2px 0 var(--color-accent);
+  }
+
+  .tree-node__row--drop-after {
+    box-shadow: inset 0 -2px 0 var(--color-accent);
+  }
+
+  .tree-node__row--drop-inside {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
   }
 
   .tree-node__row {

@@ -26,6 +26,7 @@
 //! - `auth`: authentication tables in request, folder and collection files.
 //! - [`create`]: creating collections, folders and requests.
 //! - [`remove`]: removing requests and folders.
+//! - [`arrange`]: moving requests and folders, reordering.
 //! - `tree`: reading the text files of a folder tree (folder imports).
 //! - [`store`]: [`FileStore`], the `CollectionStore` port of `ac_app`.
 //! - [`history`]: [`FileHistory`], the `HistoryStore` port (request history).
@@ -33,6 +34,7 @@
 //! - `order`: keeping `order` lists in step with their folder.
 //! - `document`: reading and updating TOML values in place, atomic writes.
 
+pub mod arrange;
 mod auth;
 mod body;
 pub mod create;
