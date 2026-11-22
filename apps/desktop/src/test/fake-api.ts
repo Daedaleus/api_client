@@ -44,6 +44,7 @@ export function shop(): CollectionView {
     variables: [],
     auth: { kind: 'inherit' },
     certificateCheck: 'inherit',
+    scripts: { preRequest: '', postResponse: '' },
     environments: [
       {
         id: 'e1',
@@ -64,6 +65,7 @@ export function shop(): CollectionView {
         variables: [],
         auth: { kind: 'inherit' },
         certificateCheck: 'inherit',
+        scripts: { preRequest: '', postResponse: '' },
         items: [{ kind: 'request', id: 'r1', name: 'Login', method: 'POST', readOnly: false }],
       },
       { kind: 'request', id: 'r2', name: 'Health', method: 'GET', readOnly: false },

@@ -87,7 +87,7 @@ impl<
             };
             // A failing post-response script fails the request, as a
             // failing test would.
-            let execution = self.run_with_scripts(&outgoing, None).await;
+            let execution = self.run_with_scripts(&outgoing).await;
             let outcome = match (execution.response, execution.script_error) {
                 (Err(error), _) | (Ok(_), Some(error)) => RunResultOutcome::Failed { error },
                 (Ok(response), None) => RunResultOutcome::Response {

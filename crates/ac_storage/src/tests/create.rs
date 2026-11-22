@@ -137,10 +137,12 @@ fn whole_collections_are_written_with_folders_requests_and_settings() {
     let root = temp.path().join("imported");
     let login = Request::new("Login");
     let collection = Collection {
+        scripts: ac_domain::script::Scripts::default(),
         id: ItemId::new(),
         name: "Imported".into(),
         items: vec![
             Item::Folder(Folder {
+                scripts: ac_domain::script::Scripts::default(),
                 id: ItemId::new(),
                 name: "Auth".into(),
                 items: vec![Item::Request(login.clone())],

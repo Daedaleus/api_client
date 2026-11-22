@@ -11,6 +11,15 @@ Scripts are edited in the request's *Scripts* section and saved in the
 request file ([format](format/v1.md#scripts)). What they log appears in the
 *Log* tab of the response.
 
+The collection and every folder can have the same two scripts (*Collection
+variables & auth* or the folder's settings, section *Scripts*), e.g. a
+login or a common header for all requests in it. Before sending they run
+from the outside in – collection, outer folders, inner folders, then the
+request's own script – and after the response in reverse order. Each sees
+what the ones before changed and set; one that fails stops the rest, and
+its error names the folder or collection. The command line runner runs
+them too.
+
 ```ts
 // Before the request
 req.setHeader('X-Request-Id', String(Date.now()));

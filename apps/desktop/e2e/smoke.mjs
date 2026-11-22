@@ -39,6 +39,8 @@
 //      stops the request and names its line, as does an error while running,
 //  16. Ctrl+Enter sends from the script editor, Ctrl+E focuses the
 //      environment picker,
+//  17. a pre-request script of the collection is saved and runs before
+//      sending,
 // and the program is still running after each send.
 //
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
@@ -1277,6 +1279,38 @@ await pressCtrl('e', 'KeyE');
 check(
   await evaluate(`document.activeElement?.classList.contains('environment-picker__select')`),
   'Ctrl+E focuses the environment picker',
+);
+
+// --- 17. Collection scripts ---------------------------------------------------------
+
+// A pre-request script of the collection, set in its settings dialog,
+// runs before the request's own and is saved to collection.toml.
+await chooseFromMenu('.sidebar__collection-header .menu-button', 'settings');
+await waitFor(`!!document.querySelector('.defaults-dialog')`, 'collection settings dialog');
+await evaluate(`document.querySelectorAll('.defaults-dialog__section')[2].click()`);
+await waitFor(
+  `document.querySelectorAll('.defaults-dialog .cm-content').length === 2`,
+  'collection script editors',
+);
+await evaluate(`(() => {
+  const content = document.querySelectorAll('.defaults-dialog .cm-content')[0];
+  content.focus();
+  document.execCommand('selectAll');
+  document.execCommand('insertText', false, "req.setHeader('X-Client', 'from-collection');");
+})()`);
+await evaluate(`document.querySelector('.defaults-dialog [type=submit]').click()`);
+await waitFor(`!document.querySelector('.defaults-dialog')`, 'collection scripts saved');
+const collectionToml = readFileSync(path.join(collectionDir, 'collection.toml'), 'utf8');
+check(
+  collectionToml.includes('[scripts]') && collectionToml.includes('from-collection'),
+  'collection script saved to collection.toml',
+);
+await evaluate(setValue('.url-bar__input', `${echoUrl}?collection=1`));
+await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);
+const fromCollection = await echoWith('collection=1', 'echo with the collection script');
+check(
+  fromCollection.includes('"xClient": "from-collection"'),
+  'collection pre-request script ran before sending',
 );
 
 finish(null);

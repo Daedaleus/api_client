@@ -94,6 +94,7 @@ pub fn write_collection(
     save_collection_defaults(
         root,
         &RequestDefaults {
+            scripts: collection.scripts.clone(),
             variables: collection.variables.clone(),
             auth: collection.auth.clone(),
             certificate_check: collection.certificate_check,
@@ -115,6 +116,7 @@ fn write_items(dir: &Path, items: &[Item]) -> Result<(), StorageError> {
             Item::Folder(folder) => {
                 let (path, id) = create_folder(dir, &folder.name)?;
                 let defaults = RequestDefaults {
+                    scripts: folder.scripts.clone(),
                     variables: folder.variables.clone(),
                     auth: folder.auth.clone(),
                     certificate_check: folder.certificate_check,

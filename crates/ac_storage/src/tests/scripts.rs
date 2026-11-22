@@ -7,7 +7,10 @@ fn round_trip(scripts: &Scripts) -> (Scripts, String) {
     write(doc.as_table_mut(), &Scripts::default(), scripts);
     let text = doc.to_string();
     let parsed: DocumentMut = text.parse().unwrap();
-    (read(parsed.get(KEY), Path::new("x.toml")).unwrap(), text)
+    (
+        read(parsed.get(KEY), Path::new("x.toml"), "request.scripts").unwrap(),
+        text,
+    )
 }
 
 #[test]
@@ -25,11 +28,14 @@ fn scripts_round_trip_as_readable_multi_line_strings() {
 
 #[test]
 fn missing_and_wrong_tables() {
-    assert_eq!(read(None, Path::new("x")).unwrap(), Scripts::default());
+    assert_eq!(
+        read(None, Path::new("x"), "request.scripts").unwrap(),
+        Scripts::default()
+    );
     let doc: DocumentMut = "scripts = 1".parse().unwrap();
-    assert!(read(doc.get(KEY), Path::new("x")).is_err());
+    assert!(read(doc.get(KEY), Path::new("x"), "request.scripts").is_err());
     let doc: DocumentMut = "[scripts]\npre_request = 1".parse().unwrap();
-    assert!(read(doc.get(KEY), Path::new("x")).is_err());
+    assert!(read(doc.get(KEY), Path::new("x"), "request.scripts").is_err());
 }
 
 #[test]

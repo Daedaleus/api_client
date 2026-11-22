@@ -53,7 +53,7 @@ pub(crate) fn request_from(doc: &DocumentMut, path: &Path) -> Result<Request, St
         variables: variables::read(table.get(variables::KEY), path, "request.variables")?,
         auth: auth::read(table.get(auth::KEY), path, "request.auth")?,
         certificate_check: tls::read(table, path)?,
-        scripts: scripts::read(table.get(scripts::KEY), path)?,
+        scripts: scripts::read(table.get(scripts::KEY), path, "request.scripts")?,
         id: document::id(root, path, path)?,
         name,
         method,

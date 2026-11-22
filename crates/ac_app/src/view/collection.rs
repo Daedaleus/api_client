@@ -32,6 +32,8 @@ pub struct CollectionView {
     pub auth: AuthDraft,
     /// Certificate check for its requests.
     pub certificate_check: CertificateCheckView,
+    /// Scripts around its requests.
+    pub scripts: ScriptsDraft,
     /// Files that could not be loaded.
     pub problems: Vec<UserText>,
     /// Not saved yet (an import): lives in a temporary folder until saved
@@ -46,6 +48,10 @@ pub struct CollectionView {
     tag = "kind",
     rename_all = "camelCase",
     rename_all_fields = "camelCase"
+)]
+#[expect(
+    clippy::large_enum_variant,
+    reason = "a view model built once per change and serialized; boxing buys nothing"
 )]
 pub enum TreeItemView {
     /// A folder.
@@ -64,6 +70,8 @@ pub enum TreeItemView {
         auth: AuthDraft,
         /// Certificate check for the requests in the folder.
         certificate_check: CertificateCheckView,
+        /// Scripts around the requests in the folder.
+        scripts: ScriptsDraft,
     },
     /// A request.
     Request {
@@ -102,6 +110,7 @@ impl CollectionView {
             variables: VariableDraft::list(&collection.variables),
             auth: AuthDraft::from_auth(&collection.auth),
             certificate_check: CertificateCheckView::from_check(collection.certificate_check),
+            scripts: ScriptsDraft::from_scripts(&collection.scripts),
             problems: opened.problems.iter().map(StoreError::user_text).collect(),
             temporary: false,
         }
@@ -126,6 +135,7 @@ fn tree(items: &[Item], opened: &OpenedCollection) -> Vec<TreeItemView> {
                 variables: VariableDraft::list(&folder.variables),
                 auth: AuthDraft::from_auth(&folder.auth),
                 certificate_check: CertificateCheckView::from_check(folder.certificate_check),
+                scripts: ScriptsDraft::from_scripts(&folder.scripts),
             },
             Item::Request(request) => TreeItemView::Request {
                 id: request.id.to_string(),

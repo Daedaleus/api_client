@@ -48,6 +48,23 @@ describe('DefaultsDialog', () => {
     expect(workspace.defaults.editing).toBeNull();
   });
 
+  it('edits the scripts of a folder', async () => {
+    const { api, workspace } = setup('f1');
+    await userEvent.click(screen.getByRole('tab', { name: 'Scripts' }));
+    expect(screen.getByText(/from the outside in/)).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Before the request' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'After the response' })).toBeInTheDocument();
+    workspace.defaults.editing!.scripts.postResponse = 'log(res.status);';
+
+    api.answers.push(changed(shop()));
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await vi.waitFor(() => expect(workspace.defaults.editing).toBeNull());
+    expect(api.commands.at(-1)).toMatchObject({
+      itemId: 'f1',
+      scripts: { preRequest: '', postResponse: 'log(res.status);' },
+    });
+  });
+
   it('switches the certificate check of the collection', async () => {
     const { api, workspace } = setup('c1');
     await userEvent.click(screen.getByRole('tab', { name: 'Settings' }));

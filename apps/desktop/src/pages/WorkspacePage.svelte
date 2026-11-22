@@ -120,7 +120,7 @@
   {/if}
   <CurlImportDialog curl={workspace.curl} />
   {#if workspace.defaults.editing}
-    <DefaultsDialog defaults={workspace.defaults} />
+    <DefaultsDialog defaults={workspace.defaults} assist={workspace.scriptAssist} />
   {/if}
   {#if workspace.recipients.editing}
     <RecipientsDialog recipients={workspace.recipients} />

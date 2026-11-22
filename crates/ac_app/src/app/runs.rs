@@ -35,11 +35,10 @@ impl<
     /// Starts a run: checked at once unless a pre-request script may still
     /// change the request, then scripts and sending in the background.
     pub(super) fn send_request(&self, outgoing: &OutgoingRequest) -> Result<CommandAck, AppError> {
-        let prepared = if outgoing
-            .scripts
-            .to_scripts()
-            .get(ScriptPhase::PreRequest)
-            .is_some()
+        let steps = self.script_steps(outgoing)?;
+        let prepared = if steps
+            .iter()
+            .any(|step| step.scripts.get(ScriptPhase::PreRequest).is_some())
         {
             None
         } else {
@@ -49,7 +48,10 @@ impl<
         let app = self.clone();
         let outgoing = outgoing.clone();
         self.inner.runtime.spawn(async move {
-            let outcome = app.run_with_scripts(&outgoing, prepared).await.into_view();
+            let outcome = app
+                .run_with_steps(&outgoing, &steps, prepared)
+                .await
+                .into_view();
             // Nobody listening is fine: then nobody wants the result.
             let _ = app
                 .inner

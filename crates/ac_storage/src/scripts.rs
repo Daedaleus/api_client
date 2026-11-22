@@ -1,4 +1,5 @@
-//! The scripts table of a request file:
+//! The scripts table of a request file (`[request.scripts]`) and of
+//! `folder.toml` / `collection.toml` (`[scripts]`):
 //!
 //! ```toml
 //! [request.scripts]
@@ -25,14 +26,19 @@ pub(crate) const KEY: &str = "scripts";
 const PRE_REQUEST: &str = "pre_request";
 const POST_RESPONSE: &str = "post_response";
 
-/// Reads the scripts in `item` (missing = none).
-pub(crate) fn read(item: Option<&Item>, path: &Path) -> Result<Scripts, StorageError> {
+/// Reads the scripts in `item` (missing = none); `name` is the table's
+/// name in error messages.
+pub(crate) fn read(
+    item: Option<&Item>,
+    path: &Path,
+    name: &'static str,
+) -> Result<Scripts, StorageError> {
     let Some(item) = item else {
         return Ok(Scripts::default());
     };
     let table = item
         .as_table_like()
-        .ok_or_else(|| StorageError::invalid(path, "request.scripts", "must be a table"))?;
+        .ok_or_else(|| StorageError::invalid(path, name, "must be a table"))?;
     Ok(Scripts {
         pre_request: document::opt_str(table, PRE_REQUEST, path)?.unwrap_or_default(),
         post_response: document::opt_str(table, POST_RESPONSE, path)?.unwrap_or_default(),

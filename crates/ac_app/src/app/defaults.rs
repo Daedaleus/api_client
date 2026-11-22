@@ -1,5 +1,6 @@
-//! What a collection and its folders pass on to their requests: variables
-//! and authentication (a request's own are saved with the request).
+//! What a collection and its folders pass on to their requests: variables,
+//! authentication, certificate check and scripts (a request's own are saved
+//! with the request).
 
 use ac_domain::collection::{Item, RequestDefaults};
 
@@ -9,7 +10,7 @@ use crate::command::CommandAck;
 use crate::error::AppError;
 use crate::ports::ScriptAssist;
 use crate::ports::{BrowserLogin, CollectionStore, HttpSender, ScriptRunner, SecretVault};
-use crate::view::{AuthDraft, CertificateCheckView, VariableDraft};
+use crate::view::{AuthDraft, CertificateCheckView, ScriptsDraft, VariableDraft};
 
 impl<
     H: HttpSender,
@@ -27,10 +28,12 @@ impl<
         variables: &[VariableDraft],
         auth: &AuthDraft,
         certificate_check: CertificateCheckView,
+        scripts: &ScriptsDraft,
     ) -> Result<CommandAck, AppError> {
         let opened = self.current(collection_id)?;
         let id = item_id_from(item_id)?;
         let defaults = RequestDefaults {
+            scripts: scripts.to_scripts(),
             variables: VariableDraft::to_plain_variables(variables),
             auth: auth.to_auth(),
             certificate_check: certificate_check.to_check(),

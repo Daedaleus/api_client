@@ -104,6 +104,12 @@ pub mod keys {
     pub const SCRIPT_PRE_REQUEST: &str = "error.script_pre_request";
     /// The post-response script failed. Placeholder: `detail`.
     pub const SCRIPT_POST_RESPONSE: &str = "error.script_post_response";
+    /// The pre-request script of a folder or the collection failed.
+    /// Placeholders: `owner`, `detail`.
+    pub const SCRIPT_PRE_REQUEST_OF: &str = "error.script_pre_request_of";
+    /// The post-response script of a folder or the collection failed.
+    /// Placeholders: `owner`, `detail`.
+    pub const SCRIPT_POST_RESPONSE_OF: &str = "error.script_post_response_of";
     /// Checking or completing a script failed. Placeholder: `detail`.
     pub const SCRIPT_ASSIST: &str = "error.script_assist";
 
@@ -134,7 +140,7 @@ pub mod keys {
 
     /// All keys with the names of their placeholders, checked against the
     /// translation file by a test.
-    pub const ALL: [(&str, &[&str]); 44] = [
+    pub const ALL: [(&str, &[&str]); 46] = [
         (URL_EMPTY, &[]),
         (URL_INVALID, &["reason"]),
         (URL_SCHEME, &["scheme"]),
@@ -166,6 +172,8 @@ pub mod keys {
         (OAUTH_REDIRECT, &["url"]),
         (SCRIPT_PRE_REQUEST, &["detail"]),
         (SCRIPT_POST_RESPONSE, &["detail"]),
+        (SCRIPT_PRE_REQUEST_OF, &["owner", "detail"]),
+        (SCRIPT_POST_RESPONSE_OF, &["owner", "detail"]),
         (SCRIPT_ASSIST, &["detail"]),
         (STORE_IO, &["path", "detail"]),
         (STORE_DAMAGED, &["path", "detail"]),

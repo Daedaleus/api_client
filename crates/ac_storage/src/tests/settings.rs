@@ -57,6 +57,7 @@ fn missing_folders_are_io_errors() {
 /// Variables only, authentication inherited.
 fn with_variables(variables: &[Variable]) -> RequestDefaults {
     RequestDefaults {
+        scripts: ac_domain::script::Scripts::default(),
         certificate_check: ac_domain::tls::CertificateCheck::Inherit,
         variables: variables.to_vec(),
         auth: ac_domain::auth::Auth::Inherit,
@@ -128,4 +129,34 @@ fn collection_variables_need_a_writable_collection_file() {
     .unwrap();
     let error = save_collection_defaults(&root, &with_variables(&[])).unwrap_err();
     assert!(matches!(error, StorageError::ReadOnly { .. }), "{error}");
+}
+
+#[test]
+fn folder_and_collection_scripts_are_saved_and_loaded() {
+    let (_temp, root) = shop_api();
+    let scripts = ac_domain::script::Scripts {
+        pre_request: "req.setHeader('X-Team', 'a');".into(),
+        post_response: "log(res.status);".into(),
+    };
+    let defaults = RequestDefaults {
+        scripts: scripts.clone(),
+        ..RequestDefaults::default()
+    };
+    let dir = root.join("products");
+    let id: ItemId = "0193a8f2-7c1e-7b40-9d3a-5f2c8e1b4a71".parse().unwrap();
+    save_folder_defaults(&dir, id, "Products", &defaults).unwrap();
+    save_collection_defaults(&root, &defaults).unwrap();
+    assert!(read(&dir.join("folder.toml")).contains("[scripts]"));
+    assert!(read(&root.join("collection.toml")).contains("[scripts]"));
+
+    let loaded = load_collection(&root).unwrap();
+    assert_eq!(loaded.collection.scripts, scripts);
+    let Some(ac_domain::collection::Item::Folder(folder)) = loaded.collection.find(id) else {
+        panic!("folder missing");
+    };
+    assert_eq!(folder.scripts, scripts);
+
+    // Removed again: no table left.
+    save_collection_defaults(&root, &RequestDefaults::default()).unwrap();
+    assert!(!read(&root.join("collection.toml")).contains("[scripts]"));
 }

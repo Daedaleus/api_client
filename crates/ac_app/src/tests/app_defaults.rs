@@ -22,6 +22,7 @@ fn save(
     variables: Vec<VariableDraft>,
 ) -> Result<CommandAck, AppError> {
     fixture.app.execute(Command::SaveDefaults {
+        scripts: crate::view::ScriptsDraft::default(),
         certificate_check: crate::view::CertificateCheckView::Inherit,
         collection_id: fixture.collection.clone(),
         item_id: item_id.into(),
@@ -208,6 +209,7 @@ async fn requests_inherit_auth_from_folders_and_the_collection() {
         fixture
             .app
             .execute(Command::SaveDefaults {
+                scripts: crate::view::ScriptsDraft::default(),
                 certificate_check: crate::view::CertificateCheckView::Inherit,
                 collection_id: fixture.collection.clone(),
                 item_id: item.into(),
@@ -329,6 +331,7 @@ async fn the_certificate_check_is_inherited_and_on_by_default() {
     fixture
         .app
         .execute(Command::SaveDefaults {
+            scripts: crate::view::ScriptsDraft::default(),
             collection_id: fixture.collection.clone(),
             item_id: fixture.auth.clone(),
             variables: Vec::new(),
