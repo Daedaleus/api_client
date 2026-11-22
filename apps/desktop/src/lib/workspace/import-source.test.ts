@@ -24,5 +24,10 @@ describe('import sources', () => {
         { name: 'Alle Dateien', extensions: ['*'] },
       ],
     });
+    expect(sourceOptions('har').filters?.[0]).toEqual({
+      name: 'HAR-Datei',
+      extensions: ['har', 'json'],
+    });
+    expect(sourceOptions('insomnia').title).toBe('Insomnia-Export importieren');
   });
 });

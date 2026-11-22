@@ -82,7 +82,7 @@ when all its tests pass, and the JUnit report lists every test.
 ## Scripts from Postman and Bruno
 
 Imported collections keep their scripts as they are: Postman's pre-request
-and test scripts become the scripts before the request and after the
+and test scripts (and Insomnia's) become the scripts before the request and after the
 response, Bruno's `script:pre-request`, `script:post-response` and `tests`
 likewise. Bruno's declarative `assert` block becomes tests
 (`res.status: eq 200` → `test(…, () => expect(res.getStatus()).to.eql(200))`);
@@ -100,6 +100,8 @@ part of both tools
   `to.have.header(…)`, `to.be.ok`), `pm.request` (method, URL, headers,
   body), `pm.environment` / `pm.variables` / `pm.collectionVariables` /
   `pm.globals` (`get`, `set`, `unset`, `has`, `replaceIn`).
+- **Insomnia** – `insomnia` is the same object as `pm`
+  (`insomnia.test`, `insomnia.expect`, `insomnia.response` …).
 - **Bruno** – `bru.getEnvVar` / `setEnvVar` / `getVar` / `setVar` /
   `interpolate`, `req.getUrl()` / `setUrl()` / `getMethod()` /
   `setBody()` …, `res.getStatus()` / `getBody()` / `getHeader()` /

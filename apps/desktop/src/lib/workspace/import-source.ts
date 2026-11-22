@@ -5,7 +5,7 @@ import type { FileFilter, PickOptions } from '../api';
 import { i18n } from '../i18n/i18n.svelte';
 
 /** The formats the app imports. */
-export type ImportFormat = 'postman' | 'openapi' | 'bruno';
+export type ImportFormat = 'postman' | 'insomnia' | 'openapi' | 'har' | 'bruno';
 
 /** The file a Bruno collection is recognised by, in its folder. */
 export const BRUNO_MARKER = 'bruno.json';
@@ -22,6 +22,14 @@ const SOURCES: Record<ImportFormat, Source> = {
   postman: {
     title: 'import.title_postman',
     filter: { name: 'import.filter_postman', extensions: ['json'] },
+  },
+  insomnia: {
+    title: 'import.title_insomnia',
+    filter: { name: 'import.filter_insomnia', extensions: ['json', 'yaml', 'yml'] },
+  },
+  har: {
+    title: 'import.title_har',
+    filter: { name: 'import.filter_har', extensions: ['har', 'json'] },
   },
   openapi: {
     title: 'import.title_openapi',

@@ -34,8 +34,8 @@ collections, environments and secrets, scripts, import, shortcuts.
   the editor ([scripting](docs/scripting.md)).
 - **Response viewer** – status, time, size, headers, formatted and foldable
   JSON with search, script log and test results.
-- **Import** from Postman, Bruno (including their scripts) and OpenAPI, also
-  straight from a URL; **cURL** import and export; copy a request as
+- **Import** from Postman, Insomnia, Bruno (including their scripts),
+  OpenAPI and browser recordings (HAR), also straight from a URL; **cURL** import and export; copy a request as
   code (JavaScript, Python, Go, HTTPie).
 - **Request history** – every sent request with its response, on your
   machine only, secrets hidden.

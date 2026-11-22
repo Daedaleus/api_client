@@ -128,6 +128,9 @@ declare const pm: {
   setNextRequest(...args: unknown[]): never;
 };
 
+/** Insomnia's `insomnia`: the same object as `pm`. */
+declare const insomnia: typeof pm;
+
 /** Bruno's `bru`, built on this API; all variables are the script variables (`env`). */
 declare const bru: {
   getEnvVar(name: string): string | undefined;
