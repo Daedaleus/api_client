@@ -16,6 +16,15 @@
   --color-error: #c62828;
   --color-error-bg: rgba(198, 40, 40, 0.08);
 
+  /* Code: strings, numbers, keywords, property names, comments, punctuation. */
+  --color-syntax-string: #0a7a3e;
+  --color-syntax-number: #b35900;
+  --color-syntax-keyword: #8a2be2;
+  --color-syntax-property: #1d58b8;
+  --color-syntax-comment: #6a737d;
+  --color-syntax-punctuation: #566070;
+  --color-code-selection: rgba(31, 111, 235, 0.18);
+
   --font-sans: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
   --font-size-s: 12px;
@@ -48,5 +57,13 @@
     --color-warning: #f2b673;
     --color-error: #ff7b7b;
     --color-error-bg: rgba(255, 123, 123, 0.1);
+
+    --color-syntax-string: #7ee2a8;
+    --color-syntax-number: #f2b673;
+    --color-syntax-keyword: #c792ea;
+    --color-syntax-property: #82aaff;
+    --color-syntax-comment: #8b949e;
+    --color-syntax-punctuation: #a0a8b5;
+    --color-code-selection: rgba(91, 157, 255, 0.28);
   }
 }

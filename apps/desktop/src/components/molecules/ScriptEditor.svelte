@@ -8,12 +8,7 @@
   } from '@codemirror/autocomplete';
   import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
   import { javascript } from '@codemirror/lang-javascript';
-  import {
-    bracketMatching,
-    defaultHighlightStyle,
-    indentOnInput,
-    syntaxHighlighting,
-  } from '@codemirror/language';
+  import { bracketMatching, indentOnInput } from '@codemirror/language';
   import { linter, lintGutter, lintKeymap } from '@codemirror/lint';
   import { EditorState, type Extension } from '@codemirror/state';
   import {
@@ -23,6 +18,7 @@
     placeholder as placeholderText,
   } from '@codemirror/view';
 
+  import { codeTheme } from '../../lib/codemirror-theme';
   import { complete, toDiagnostics, type ScriptAssist } from '../../lib/script-assist';
 
   interface Props {
@@ -42,28 +38,8 @@
   /** Wait this long after typing before checking (ms). */
   const CHECK_DELAY = 400;
 
-  /** Colours and fonts from the design tokens (light and dark theme). */
-  const theme = EditorView.theme({
-    '&': {
-      border: '1px solid var(--color-border)',
-      borderRadius: '6px',
-      backgroundColor: 'var(--color-code-bg)',
-      color: 'var(--color-text)',
-      fontSize: 'var(--font-size-s)',
-    },
-    '&.cm-focused': { outline: '2px solid var(--color-accent)', outlineOffset: '-1px' },
-    '.cm-content': {
-      fontFamily: 'var(--font-mono)',
-      minHeight: '7.5em',
-      caretColor: 'var(--color-text)',
-    },
-    '.cm-scroller': { fontFamily: 'var(--font-mono)', lineHeight: '1.5' },
-    '.cm-gutters': {
-      backgroundColor: 'var(--color-raised)',
-      color: 'var(--color-muted)',
-      border: 'none',
-    },
-  });
+  /** The script editor is at least a few lines high. */
+  const size = EditorView.theme({ '.cm-content': { minHeight: '7.5em' } });
 
   function extensions(): Extension[] {
     const base: Extension[] = [
@@ -72,7 +48,6 @@
       indentOnInput(),
       bracketMatching(),
       closeBrackets(),
-      syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
       javascript({ typescript: true }),
       placeholderText(placeholder),
       // Tab is left to move the focus (keyboard users must get out again).
@@ -87,7 +62,8 @@
       EditorView.updateListener.of((update) => {
         if (update.docChanged) value = update.state.doc.toString();
       }),
-      theme,
+      codeTheme,
+      size,
     ];
     if (!assist) return base;
     const checker = assist;

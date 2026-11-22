@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatBytes, formatDuration } from './format';
+import { MAX_CODE_LINE, fitsCodeView, formatBytes, formatDuration } from './format';
 
 describe('formatBytes', () => {
   it('uses the largest fitting unit', () => {
@@ -22,5 +22,16 @@ describe('formatDuration', () => {
   it('shows seconds from one second on', () => {
     expect(formatDuration(1000)).toBe('1.00 s');
     expect(formatDuration(1250)).toBe('1.25 s');
+  });
+});
+
+describe('code view', () => {
+  it('takes bodies without very long lines', () => {
+    expect(fitsCodeView('')).toBe(true);
+    expect(fitsCodeView('{\n  "a": 1\n}')).toBe(true);
+    expect(fitsCodeView('x'.repeat(MAX_CODE_LINE))).toBe(true);
+    expect(fitsCodeView('x'.repeat(MAX_CODE_LINE + 1))).toBe(false);
+    expect(fitsCodeView(`short\n${'y'.repeat(MAX_CODE_LINE + 1)}\nshort`)).toBe(false);
+    expect(fitsCodeView('ends with a newline\n')).toBe(true);
   });
 });

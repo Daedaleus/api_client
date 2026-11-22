@@ -20,3 +20,23 @@ export function formatDuration(milliseconds: number): string {
   }
   return `${(milliseconds / 1000).toFixed(2)} s`;
 }
+
+/**
+ * Lines longer than this are shown as plain text instead of in the code
+ * viewer: it draws only the visible lines, but always whole lines, and a
+ * megabyte on one line (a minified body) would freeze it.
+ */
+export const MAX_CODE_LINE = 20_000;
+
+/** Whether no line of `text` is longer than {@link MAX_CODE_LINE}. */
+export function fitsCodeView(text: string): boolean {
+  let start = 0;
+  while (start <= text.length) {
+    const end = text.indexOf('\n', start);
+    const lineEnd = end < 0 ? text.length : end;
+    if (lineEnd - start > MAX_CODE_LINE) return false;
+    if (end < 0) return true;
+    start = end + 1;
+  }
+  return true;
+}
