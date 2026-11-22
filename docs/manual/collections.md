@@ -45,6 +45,14 @@ The order of the tree is stored in `order` in `collection.toml` and
 `folder.toml`. Entries not listed there (e.g. added by hand or by a git
 merge) are shown after the listed ones, sorted by name.
 
+## Finding requests
+
+- **Ctrl+K** opens a search over all open collections: type words from the
+  request's name, URL, method, folder or collection; arrows and **Enter**
+  open the request.
+- The **filter** field above the tree narrows the tree down to matching
+  requests and folders.
+
 ## What folders and the collection pass on
 
 *Collection variables & auth* (collection menu) and *Folder variables &

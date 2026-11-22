@@ -15,11 +15,14 @@
     collectionId: string;
     workspace: Workspace;
     depth: number;
+    /** Shown unfolded whatever the user chose (while the tree is filtered). */
+    open?: boolean;
   }
 
-  let { item, collectionId, workspace, depth }: Props = $props();
+  let { item, collectionId, workspace, depth, open = false }: Props = $props();
 
-  let expanded = $state(true);
+  let folded = $state(false);
+  let expanded = $derived(open || !folded);
   let active = $derived(
     item.kind === 'request' && workspace.tabs.active?.isFor(collectionId, item.id) === true,
   );
@@ -76,7 +79,7 @@
           type="button"
           class="tree-node__main"
           aria-expanded={expanded}
-          onclick={() => guard(() => (expanded = !expanded))}
+          onclick={() => guard(() => (folded = !folded))}
         >
           <span class="tree-node__chevron" class:tree-node__chevron--open={expanded}>
             <Icon name="chevron" size={12} />
@@ -109,7 +112,7 @@
   {#if item.kind === 'folder' && expanded && item.items.length > 0}
     <ul class="tree-node__children">
       {#each item.items as child (child.id)}
-        <TreeNode item={child} {collectionId} {workspace} depth={depth + 1} />
+        <TreeNode item={child} {collectionId} {workspace} depth={depth + 1} {open} />
       {/each}
     </ul>
   {/if}

@@ -46,6 +46,7 @@
 //  19. a path variable is filled in from the params table and a query
 //      parameter switched off there is not sent,
 //  20. a request is duplicated and the copy moved into a folder,
+//  22. Ctrl+K finds a request and opens it,
 // and the program is still running after each send.
 //
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
@@ -1429,5 +1430,21 @@ check(
   readFileSync(path.join(productsDir, 'folder.toml'), 'utf8').includes(`"${movedFile}"`),
   'folder order lists the moved request',
 );
+
+// --- 22. Quick search --------------------------------------------------------------
+
+// Ctrl+K, a word, Enter: the request opens.
+await pressCtrl('k', 'KeyK');
+await waitFor(`!!document.querySelector('.quick-search__input')`, 'quick search');
+await evaluate(setValue('.quick-search__input', 'health'));
+await waitFor(`document.querySelectorAll('.quick-search__hit').length > 0`, 'search hits');
+await evaluate(
+  `document.querySelector('.quick-search__dialog').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))`,
+);
+const openedName = await waitFor(
+  `(() => { const name = document.querySelector('.request-editor__input'); return name && !document.querySelector('.quick-search') ? name.value : null; })()`,
+  'request opened from the search',
+);
+check(openedName === 'Health', `quick search opened the request (${openedName})`);
 
 finish(null);

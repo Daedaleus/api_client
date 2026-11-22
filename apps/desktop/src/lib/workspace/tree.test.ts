@@ -14,6 +14,7 @@ function tree(): CollectionView {
     id: 'r3',
     name: 'Status',
     method: 'GET',
+    url: '{{baseUrl}}/status',
     readOnly: false,
   });
   return collection;
