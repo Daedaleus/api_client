@@ -7,6 +7,7 @@ use super::*;
 
 fn request(method: HttpMethod, body: Option<RequestBody>) -> ResolvedRequest {
     ResolvedRequest {
+        transport: ac_domain::transport::EffectiveTransport::default(),
         method,
         url: Url::parse("https://api.example.com/items?q=a b").unwrap(),
         headers: vec![Header::new("Authorization", "Bearer it's")],

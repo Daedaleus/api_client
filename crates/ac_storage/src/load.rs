@@ -18,7 +18,7 @@ use crate::format::{
 };
 use crate::names::file_stem;
 use crate::request_file::read_request;
-use crate::{auth, scripts, tls, variables};
+use crate::{auth, scripts, tls, transport, variables};
 
 /// A loaded collection with the file behind every item.
 #[derive(Debug)]
@@ -80,6 +80,7 @@ pub fn load_collection(root: &Path) -> Result<LoadedCollection, StorageError> {
     let variables = variables::read(table.get(variables::KEY), &settings, variables::KEY)?;
     let auth = auth::read(table.get(auth::KEY), &settings, auth::KEY)?;
     let certificate_check = tls::read(table, &settings)?;
+    let transport = transport::read(table, &settings)?;
     let scripts = scripts::read(table.get(scripts::KEY), &settings, scripts::KEY)?;
 
     let mut loader = Loader::default();
@@ -96,6 +97,7 @@ pub fn load_collection(root: &Path) -> Result<LoadedCollection, StorageError> {
     Ok(LoadedCollection {
         root: root.to_owned(),
         collection: Collection {
+            transport,
             scripts,
             id,
             name,
@@ -118,6 +120,7 @@ struct FolderSettings {
     variables: Vec<ac_domain::environment::Variable>,
     auth: ac_domain::auth::Auth,
     certificate_check: ac_domain::tls::CertificateCheck,
+    transport: ac_domain::transport::TransportSettings,
     scripts: ac_domain::script::Scripts,
     read_only: bool,
 }
@@ -182,6 +185,7 @@ impl Loader {
             variables: Vec::new(),
             auth: ac_domain::auth::Auth::Inherit,
             certificate_check: ac_domain::tls::CertificateCheck::Inherit,
+            transport: ac_domain::transport::TransportSettings::default(),
             scripts: ac_domain::script::Scripts::default(),
             read_only: false,
         };
@@ -192,6 +196,7 @@ impl Loader {
             variables,
             auth,
             certificate_check,
+            transport,
             scripts,
             read_only,
         } = if settings.is_file() {
@@ -221,6 +226,7 @@ impl Loader {
             },
         );
         Item::Folder(Folder {
+            transport,
             scripts,
             id,
             name,
@@ -242,6 +248,7 @@ impl Loader {
             variables: variables::read(table.get(variables::KEY), settings, variables::KEY)?,
             auth: auth::read(table.get(auth::KEY), settings, auth::KEY)?,
             certificate_check: tls::read(table, settings)?,
+            transport: transport::read(table, settings)?,
             scripts: scripts::read(table.get(scripts::KEY), settings, scripts::KEY)?,
             read_only: parsed.read_only(),
         })

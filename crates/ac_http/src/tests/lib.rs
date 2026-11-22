@@ -7,6 +7,7 @@ use super::*;
 
 fn request(method: HttpMethod, url: &str, headers: Vec<Header>) -> ResolvedRequest {
     ResolvedRequest {
+        transport: ac_domain::transport::EffectiveTransport::default(),
         verify_tls: true,
         method,
         url: Url::parse(url).unwrap(),
@@ -111,12 +112,38 @@ async fn slow_servers_time_out() {
         .mount(&server)
         .await;
 
-    let sender = ReqwestSender::new(Duration::from_millis(100)).unwrap();
-    let error = sender
-        .send(request(HttpMethod::Get, &server.uri(), vec![]))
-        .await
-        .unwrap_err();
+    // The request's own time limit counts.
+    let mut slow = request(HttpMethod::Get, &server.uri(), vec![]);
+    slow.transport.timeout = Duration::from_millis(100);
+    let error = sender().send(slow).await.unwrap_err();
     assert_eq!(error, TransportError::Timeout);
+}
+
+#[tokio::test]
+async fn redirects_are_followed_unless_the_request_says_stop() {
+    let server = MockServer::start().await;
+    Mock::given(path("/old"))
+        .respond_with(ResponseTemplate::new(302).insert_header("Location", "/new"))
+        .mount(&server)
+        .await;
+    Mock::given(path("/new"))
+        .respond_with(ResponseTemplate::new(200).set_body_string("moved"))
+        .mount(&server)
+        .await;
+
+    let url = format!("{}/old", server.uri());
+    let followed = sender()
+        .send(request(HttpMethod::Get, &url, vec![]))
+        .await
+        .unwrap();
+    assert_eq!(followed.status.as_u16(), 200);
+    assert_eq!(followed.body, b"moved");
+
+    let mut stop = request(HttpMethod::Get, &url, vec![]);
+    stop.transport.follow_redirects = false;
+    let redirect = sender().send(stop).await.unwrap();
+    assert_eq!(redirect.status.as_u16(), 302);
+    assert!(redirect.headers.iter().any(|header| header.value == "/new"));
 }
 
 #[tokio::test]

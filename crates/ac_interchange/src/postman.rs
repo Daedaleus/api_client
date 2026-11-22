@@ -41,6 +41,7 @@ pub(crate) fn from_value(root: &Value) -> Option<Imported> {
     let mut skipped = Vec::new();
     let auth = auth(root.get("auth"), &name, &mut skipped);
     let collection = Collection {
+        transport: ac_domain::transport::TransportSettings::default(),
         scripts: scripts(root),
         id: ItemId::new(),
         items: items_of(items, &mut skipped),
@@ -67,6 +68,7 @@ fn item_of(item: &Value, skipped: &mut Vec<Skipped>) -> Item {
     let name = text_of(item.get("name")).unwrap_or_default();
     if let Some(children) = item.get("item") {
         return Item::Folder(Folder {
+            transport: ac_domain::transport::TransportSettings::default(),
             scripts: scripts(item),
             id: ItemId::new(),
             items: items_of(children, skipped),

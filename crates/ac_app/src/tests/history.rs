@@ -14,6 +14,7 @@ fn header(name: &str, value: &str) -> Header {
 
 fn sent(url: &str, body: &str) -> ResolvedRequest {
     ResolvedRequest {
+        transport: ac_domain::transport::EffectiveTransport::default(),
         method: HttpMethod::Post,
         url: url.parse().unwrap(),
         headers: vec![

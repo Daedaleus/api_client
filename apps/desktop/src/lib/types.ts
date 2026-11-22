@@ -37,10 +37,12 @@ export type {
   HeaderDraft,
   HeaderView,
   OutgoingRequest,
+  RedirectsView,
   Query,
   RecipientsView,
   StatusClassView as StatusClass,
   TestResultView,
+  TransportDraft,
   UserText,
 } from './bindings';
 

@@ -104,6 +104,7 @@ pub(super) fn token_request(
         );
     }
     ResolvedRequest {
+        transport: ac_domain::transport::EffectiveTransport::default(),
         method: HttpMethod::Post,
         url: client.token_url.clone(),
         headers,

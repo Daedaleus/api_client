@@ -131,6 +131,7 @@ fn errors_explain_themselves() {
 #[test]
 fn authorize_keeps_an_authorization_header_the_user_set() {
     let mut request = ResolvedRequest {
+        transport: ac_domain::transport::EffectiveTransport::default(),
         method: HttpMethod::Get,
         url: Url::parse("https://api.example.com").unwrap(),
         headers: vec![Header::new("Authorization", "Basic x")],

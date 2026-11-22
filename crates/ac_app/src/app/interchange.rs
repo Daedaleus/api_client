@@ -64,6 +64,7 @@ impl<
     pub async fn import_from_url(&self, url: &str) -> Result<CommandAck, AppError> {
         let url = resolve_url(url)?;
         let request = ResolvedRequest {
+            transport: ac_domain::transport::EffectiveTransport::default(),
             method: HttpMethod::Get,
             url: url.clone(),
             headers: vec![Header::new(header::ACCEPT, IMPORT_ACCEPT)],

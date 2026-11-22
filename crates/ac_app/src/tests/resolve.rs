@@ -21,6 +21,7 @@ fn with_auth(
     variables: &HashMap<&str, &str>,
 ) -> Result<ResolvedRequest, AppError> {
     let entered = Entered {
+        transport: ac_domain::transport::EffectiveTransport::default(),
         path_params: &[],
         verify_tls: true,
         method,
@@ -352,6 +353,7 @@ fn path_variables_are_filled_in_before_the_variables() {
     ];
     let variables = HashMap::from([("base", "http://localhost:8080"), ("userId", "42")]);
     let entered = Entered {
+        transport: ac_domain::transport::EffectiveTransport::default(),
         path_params: &params,
         verify_tls: true,
         method: "GET",

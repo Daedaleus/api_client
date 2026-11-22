@@ -79,6 +79,7 @@ impl<
                 variables: draft.variables,
                 auth: draft.auth,
                 certificate_check: draft.certificate_check,
+                transport: draft.transport,
                 scripts: draft.scripts,
                 path_params: draft.path_params,
                 context: Some(SendContext {

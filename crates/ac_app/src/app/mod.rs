@@ -28,6 +28,7 @@ mod runs;
 mod script_runs;
 mod secrets;
 
+use defaults::DefaultsDraft;
 pub use runner::RunPlan;
 
 use std::collections::HashSet;
@@ -210,13 +211,17 @@ impl<
                 auth,
                 certificate_check,
                 scripts,
+                transport,
             } => self.save_defaults(
                 &collection_id,
                 &item_id,
-                &variables,
-                &auth,
-                certificate_check,
-                &scripts,
+                &DefaultsDraft {
+                    variables: &variables,
+                    auth: &auth,
+                    certificate_check,
+                    scripts: &scripts,
+                    transport,
+                },
             ),
             Command::ImportCollection { file, path } => {
                 self.import_collection(&file, path.as_deref())

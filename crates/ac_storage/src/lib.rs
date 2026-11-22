@@ -22,6 +22,7 @@
 //! - `variables`: variable lists in collection, folder, environment and
 //!   request files.
 //! - `tls`: the certificate check (`verify_tls`).
+//! - `transport`: redirects and time limit.
 //! - `body`: the body table of request files.
 //! - `auth`: authentication tables in request, folder and collection files.
 //! - [`create`]: creating collections, folders and requests.
@@ -58,6 +59,7 @@ pub mod temporary;
 #[path = "tests/support.rs"]
 mod test_support;
 mod tls;
+mod transport;
 mod tree;
 mod variables;
 

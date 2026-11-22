@@ -45,6 +45,7 @@ fn items_are_found_anywhere_in_the_tree() {
     let nested = Request::new("Nested");
     let top = Request::new("Top");
     let folder = Folder {
+        transport: crate::transport::TransportSettings::default(),
         scripts: crate::script::Scripts::default(),
         certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: crate::auth::Auth::Inherit,
@@ -54,6 +55,7 @@ fn items_are_found_anywhere_in_the_tree() {
         items: vec![Item::Request(nested.clone())],
     };
     let collection = Collection {
+        transport: crate::transport::TransportSettings::default(),
         scripts: crate::script::Scripts::default(),
         certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: crate::auth::Auth::Inherit,
@@ -72,6 +74,7 @@ fn items_are_found_anywhere_in_the_tree() {
 fn items_expose_id_and_name() {
     let request = Request::new("Login");
     let folder = Folder {
+        transport: crate::transport::TransportSettings::default(),
         scripts: crate::script::Scripts::default(),
         certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: crate::auth::Auth::Inherit,
@@ -91,6 +94,7 @@ fn items_expose_id_and_name() {
 fn folders_around_an_item_lead_from_outside_in() {
     let login = Request::new("Login");
     let inner = Folder {
+        transport: crate::transport::TransportSettings::default(),
         scripts: crate::script::Scripts::default(),
         certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: crate::auth::Auth::Inherit,
@@ -100,6 +104,7 @@ fn folders_around_an_item_lead_from_outside_in() {
         variables: Vec::new(),
     };
     let outer = Folder {
+        transport: crate::transport::TransportSettings::default(),
         scripts: crate::script::Scripts::default(),
         certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: crate::auth::Auth::Inherit,
@@ -110,6 +115,7 @@ fn folders_around_an_item_lead_from_outside_in() {
     };
     let health = Request::new("Health");
     let collection = Collection {
+        transport: crate::transport::TransportSettings::default(),
         scripts: crate::script::Scripts::default(),
         certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: crate::auth::Auth::Inherit,
@@ -135,6 +141,7 @@ fn requests_inherit_auth_from_the_innermost_folder_that_sets_one() {
     };
     let login = Request::new("Login");
     let mut inner = Folder {
+        transport: crate::transport::TransportSettings::default(),
         scripts: crate::script::Scripts::default(),
         certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: crate::auth::Auth::Inherit,
@@ -144,6 +151,7 @@ fn requests_inherit_auth_from_the_innermost_folder_that_sets_one() {
         variables: Vec::new(),
     };
     let outer = |inner: &Folder| Folder {
+        transport: crate::transport::TransportSettings::default(),
         scripts: crate::script::Scripts::default(),
         certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: bearer("outer"),
@@ -153,6 +161,7 @@ fn requests_inherit_auth_from_the_innermost_folder_that_sets_one() {
         variables: Vec::new(),
     };
     let collection = |inner: &Folder| Collection {
+        transport: crate::transport::TransportSettings::default(),
         scripts: crate::script::Scripts::default(),
         certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: bearer("collection"),
@@ -189,6 +198,7 @@ fn scripts_around_a_request_lead_from_outside_in_without_empty_ones() {
     };
     let login = Request::new("Login");
     let inner = Folder {
+        transport: crate::transport::TransportSettings::default(),
         scripts: scripts("inner"),
         certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: crate::auth::Auth::Inherit,
@@ -198,6 +208,7 @@ fn scripts_around_a_request_lead_from_outside_in_without_empty_ones() {
         variables: Vec::new(),
     };
     let outer = Folder {
+        transport: crate::transport::TransportSettings::default(),
         scripts: scripts("  "),
         certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: crate::auth::Auth::Inherit,
@@ -207,6 +218,7 @@ fn scripts_around_a_request_lead_from_outside_in_without_empty_ones() {
         variables: Vec::new(),
     };
     let collection = Collection {
+        transport: crate::transport::TransportSettings::default(),
         scripts: scripts("outer"),
         certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: crate::auth::Auth::Inherit,

@@ -6,6 +6,7 @@ use std::time::Duration;
 use url::Url;
 
 use crate::protocol::{HttpMethod, StatusCode};
+use crate::transport::EffectiveTransport;
 
 /// One header line. Names keep the spelling they were sent or received with;
 /// compare them case-insensitively.
@@ -41,6 +42,8 @@ pub struct ResolvedRequest {
     pub body: Option<RequestBody>,
     /// Check the server's TLS certificate (off only when the user says so).
     pub verify_tls: bool,
+    /// Redirects and time limit.
+    pub transport: EffectiveTransport,
 }
 
 impl ResolvedRequest {

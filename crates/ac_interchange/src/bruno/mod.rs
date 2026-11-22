@@ -82,6 +82,7 @@ pub fn from_files(root: &Path, files: &[BrunoFile]) -> Imported {
         .collect();
     Imported {
         collection: Collection {
+            transport: ac_domain::transport::TransportSettings::default(),
             scripts: defaults.scripts,
             id: ItemId::new(),
             name,
@@ -167,6 +168,7 @@ impl Tree {
             items.push((
                 seq,
                 Item::Folder(Folder {
+                    transport: ac_domain::transport::TransportSettings::default(),
                     scripts: defaults.scripts,
                     id: ItemId::new(),
                     items: self.items(folder_dir, files, root, skipped),

@@ -9,7 +9,7 @@ use crate::ports::{Location, OpenedCollection, StoreError};
 use crate::text::UserText;
 use crate::view::{
     AuthDraft, BodyDraft, CertificateCheckView, EnvironmentDraft, ParamDraft, ScriptsDraft,
-    VariableDraft,
+    TransportDraft, VariableDraft,
 };
 
 /// An open collection.
@@ -33,6 +33,8 @@ pub struct CollectionView {
     pub auth: AuthDraft,
     /// Certificate check for its requests.
     pub certificate_check: CertificateCheckView,
+    /// Redirects and time limit for its requests.
+    pub transport: TransportDraft,
     /// Scripts around its requests.
     pub scripts: ScriptsDraft,
     /// Files that could not be loaded.
@@ -71,6 +73,8 @@ pub enum TreeItemView {
         auth: AuthDraft,
         /// Certificate check for the requests in the folder.
         certificate_check: CertificateCheckView,
+        /// Redirects and time limit for the requests in the folder.
+        transport: TransportDraft,
         /// Scripts around the requests in the folder.
         scripts: ScriptsDraft,
     },
@@ -113,6 +117,7 @@ impl CollectionView {
             variables: VariableDraft::list(&collection.variables),
             auth: AuthDraft::from_auth(&collection.auth),
             certificate_check: CertificateCheckView::from_check(collection.certificate_check),
+            transport: TransportDraft::from_settings(&collection.transport),
             scripts: ScriptsDraft::from_scripts(&collection.scripts),
             problems: opened.problems.iter().map(StoreError::user_text).collect(),
             temporary: false,
@@ -138,6 +143,7 @@ fn tree(items: &[Item], opened: &OpenedCollection) -> Vec<TreeItemView> {
                 variables: VariableDraft::list(&folder.variables),
                 auth: AuthDraft::from_auth(&folder.auth),
                 certificate_check: CertificateCheckView::from_check(folder.certificate_check),
+                transport: TransportDraft::from_settings(&folder.transport),
                 scripts: ScriptsDraft::from_scripts(&folder.scripts),
             },
             Item::Request(request) => TreeItemView::Request {
@@ -177,6 +183,9 @@ pub struct RequestDraft {
     /// Certificate check, or inherited.
     #[serde(default)]
     pub certificate_check: CertificateCheckView,
+    /// Redirects and time limit, or inherited.
+    #[serde(default)]
+    pub transport: TransportDraft,
     /// Scripts before sending and after the response.
     #[serde(default)]
     pub scripts: ScriptsDraft,
@@ -243,6 +252,7 @@ impl RequestDraft {
             variables: VariableDraft::list(&request.variables),
             auth: AuthDraft::from_auth(&request.auth),
             certificate_check: CertificateCheckView::from_check(request.certificate_check),
+            transport: TransportDraft::from_settings(&request.transport),
             scripts: ScriptsDraft::from_scripts(&request.scripts),
             path_params: ParamDraft::from_path(&request.path_params),
             disabled_query: ParamDraft::from_query(&request.disabled_query),
@@ -259,6 +269,7 @@ impl RequestDraft {
             variables: VariableDraft::to_plain_variables(&self.variables),
             auth: self.auth.to_auth(),
             certificate_check: self.certificate_check.to_check(),
+            transport: self.transport.to_settings(),
             scripts: self.scripts.to_scripts(),
             id: self.id.parse().map_err(|_| AppError::UnknownItem)?,
             name: non_empty(&self.name)?.to_owned(),

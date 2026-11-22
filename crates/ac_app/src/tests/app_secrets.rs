@@ -58,6 +58,7 @@ fn values(pairs: &[(&str, &str)]) -> SecretValues {
 fn send(fixture: &Fixture, url: &str) -> Result<CommandAck, AppError> {
     fixture.app.execute(Command::SendRequest {
         request: crate::view::OutgoingRequest {
+            transport: crate::view::TransportDraft::default(),
             path_params: Vec::new(),
             certificate_check: crate::view::CertificateCheckView::Inherit,
             scripts: crate::view::ScriptsDraft::default(),

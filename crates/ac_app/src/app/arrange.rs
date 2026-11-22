@@ -106,6 +106,7 @@ where
             id,
             name,
             &RequestDefaults {
+                transport: folder.transport,
                 variables: folder.variables.clone(),
                 auth: folder.auth.clone(),
                 certificate_check: folder.certificate_check,

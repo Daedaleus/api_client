@@ -11,7 +11,8 @@ use crate::text::UserText;
 
 use crate::view::{
     AuthDraft, CertificateCheckView, CollectionView, EnvironmentDraft, HistoryItemView,
-    OutgoingRequest, RecipientsView, RequestDraft, RunOutcomeView, ScriptsDraft, VariableDraft,
+    OutgoingRequest, RecipientsView, RequestDraft, RunOutcomeView, ScriptsDraft, TransportDraft,
+    VariableDraft,
 };
 
 /// Something the user wants the application to do.
@@ -139,6 +140,10 @@ pub enum Command {
         /// Scripts around the requests in it.
         #[serde(default)]
         scripts: ScriptsDraft,
+        /// Redirects and time limit (`inherit` on the collection means the
+        /// defaults).
+        #[serde(default)]
+        transport: TransportDraft,
     },
     /// Import another tool's collection as a new collection and open it:
     /// a Postman collection (v2.1, v2.0) or an `OpenAPI` 3 description (JSON

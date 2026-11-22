@@ -12,7 +12,7 @@ use crate::error::StorageError;
 use crate::format::{
     COLLECTION_FILE, COLLECTION_FORMAT, CURRENT_VERSION, FOLDER_FILE, FOLDER_FORMAT,
 };
-use crate::{auth, scripts, tls, variables};
+use crate::{auth, scripts, tls, transport, variables};
 
 /// Writes name and id of the folder `dir` into its `folder.toml`, creating
 /// the file if needed.
@@ -76,11 +76,13 @@ fn write_defaults(
     let before_variables = variables::read(doc.get(variables::KEY), settings, variables::KEY)?;
     let before_auth = auth::read(doc.get(auth::KEY), settings, auth::KEY)?;
     let before_check = tls::read(doc.as_table(), settings)?;
+    let before_transport = transport::read(doc.as_table(), settings)?;
     let before_scripts = scripts::read(doc.get(scripts::KEY), settings, scripts::KEY)?;
     let root = doc.as_table_mut();
     variables::write(root, &before_variables, &defaults.variables);
     auth::write(root, &before_auth, &defaults.auth);
     tls::write(root, before_check, defaults.certificate_check);
+    transport::write(root, &before_transport, &defaults.transport);
     scripts::write(root, &before_scripts, &defaults.scripts);
     Ok(())
 }

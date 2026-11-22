@@ -96,6 +96,7 @@ impl Fixture {
         login.body = Body::Json("{}".into());
         let health = Request::new("Health");
         let auth = Folder {
+            transport: ac_domain::transport::TransportSettings::default(),
             scripts: ac_domain::script::Scripts::default(),
             certificate_check: ac_domain::tls::CertificateCheck::Inherit,
             auth: ac_domain::auth::Auth::Inherit,
@@ -105,6 +106,7 @@ impl Fixture {
             items: vec![Item::Request(login.clone())],
         };
         let collection = Collection {
+            transport: ac_domain::transport::TransportSettings::default(),
             scripts: ac_domain::script::Scripts::default(),
             certificate_check: ac_domain::tls::CertificateCheck::Inherit,
             auth: ac_domain::auth::Auth::Inherit,

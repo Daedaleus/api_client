@@ -4,6 +4,7 @@
   import CertificateCheckField from '../molecules/CertificateCheckField.svelte';
   import RowsEditor, { type RowLabels } from '../molecules/RowsEditor.svelte';
   import ScriptsEditor from '../molecules/ScriptsEditor.svelte';
+  import TransportFields from '../molecules/TransportFields.svelte';
   import { i18n } from '../../lib/i18n/i18n.svelte';
   import type { ScriptAssist } from '../../lib/script-assist';
   import type { DefaultsState } from '../../lib/workspace/defaults.svelte';
@@ -87,6 +88,7 @@
               bind:check={editing.certificateCheck}
               root={editing.isCollection}
             />
+            <TransportFields bind:transport={editing.transport} root={editing.isCollection} />
           {/if}
         </div>
         {#if defaults.error}
