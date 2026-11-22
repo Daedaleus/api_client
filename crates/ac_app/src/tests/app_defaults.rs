@@ -22,6 +22,7 @@ fn save(
     variables: Vec<VariableDraft>,
 ) -> Result<CommandAck, AppError> {
     fixture.app.execute(Command::SaveDefaults {
+        transport: crate::view::TransportDraft::default(),
         scripts: crate::view::ScriptsDraft::default(),
         certificate_check: crate::view::CertificateCheckView::Inherit,
         collection_id: fixture.collection.clone(),
@@ -44,6 +45,7 @@ async fn sent_url(
         .app
         .execute(Command::SendRequest {
             request: crate::view::OutgoingRequest {
+                transport: crate::view::TransportDraft::default(),
                 path_params: Vec::new(),
                 certificate_check: crate::view::CertificateCheckView::Inherit,
                 scripts: crate::view::ScriptsDraft::default(),
@@ -130,6 +132,7 @@ async fn without_context_only_the_own_variables_count() {
         .app
         .execute(Command::SendRequest {
             request: crate::view::OutgoingRequest {
+                transport: crate::view::TransportDraft::default(),
                 path_params: Vec::new(),
                 certificate_check: crate::view::CertificateCheckView::Inherit,
                 scripts: crate::view::ScriptsDraft::default(),
@@ -211,6 +214,7 @@ async fn requests_inherit_auth_from_folders_and_the_collection() {
         fixture
             .app
             .execute(Command::SaveDefaults {
+                transport: crate::view::TransportDraft::default(),
                 scripts: crate::view::ScriptsDraft::default(),
                 certificate_check: crate::view::CertificateCheckView::Inherit,
                 collection_id: fixture.collection.clone(),
@@ -230,6 +234,7 @@ async fn requests_inherit_auth_from_folders_and_the_collection() {
             .app
             .execute(Command::SendRequest {
                 request: crate::view::OutgoingRequest {
+                    transport: crate::view::TransportDraft::default(),
                     path_params: Vec::new(),
                     certificate_check: crate::view::CertificateCheckView::Inherit,
                     scripts: crate::view::ScriptsDraft::default(),
@@ -275,6 +280,7 @@ async fn file_paths_are_relative_to_the_collection_folder() {
         .app
         .execute(Command::SendRequest {
             request: crate::view::OutgoingRequest {
+                transport: crate::view::TransportDraft::default(),
                 path_params: Vec::new(),
                 certificate_check: crate::view::CertificateCheckView::Inherit,
                 scripts: crate::view::ScriptsDraft::default(),
@@ -313,6 +319,7 @@ async fn the_certificate_check_is_inherited_and_on_by_default() {
             .app
             .execute(Command::SendRequest {
                 request: crate::view::OutgoingRequest {
+                    transport: crate::view::TransportDraft::default(),
                     path_params: Vec::new(),
                     method: "GET".into(),
                     url: "https://x.example".into(),
@@ -336,6 +343,7 @@ async fn the_certificate_check_is_inherited_and_on_by_default() {
     fixture
         .app
         .execute(Command::SaveDefaults {
+            transport: crate::view::TransportDraft::default(),
             scripts: crate::view::ScriptsDraft::default(),
             collection_id: fixture.collection.clone(),
             item_id: fixture.auth.clone(),
@@ -361,4 +369,52 @@ async fn the_certificate_check_is_inherited_and_on_by_default() {
         .map(|request| request.verify_tls)
         .collect();
     assert_eq!(checks, [true, false, true, true]);
+}
+
+#[tokio::test]
+async fn redirects_and_time_limit_are_inherited() {
+    let fixture = Fixture::with_http(replies(3));
+    fixture
+        .app
+        .execute(Command::SaveDefaults {
+            transport: crate::view::TransportDraft {
+                redirects: crate::view::RedirectsView::Stop,
+                timeout_seconds: Some(5),
+            },
+            scripts: crate::view::ScriptsDraft::default(),
+            certificate_check: crate::view::CertificateCheckView::Inherit,
+            collection_id: fixture.collection.clone(),
+            item_id: fixture.auth.clone(),
+            variables: Vec::new(),
+            auth: AuthDraft::Inherit,
+        })
+        .unwrap();
+    let tree = fixture.tree();
+    assert!(matches!(
+        &tree.items[0],
+        crate::view::TreeItemView::Folder { transport, .. } if transport.timeout_seconds == Some(5)
+    ));
+
+    // In the folder: its settings; outside: the defaults.
+    sent_url(
+        &fixture,
+        Some(&fixture.login.clone()),
+        "https://x.example/a",
+        Vec::new(),
+        false,
+    )
+    .await;
+    sent_url(
+        &fixture,
+        Some(&fixture.health.clone()),
+        "https://x.example/b",
+        Vec::new(),
+        false,
+    )
+    .await;
+    let sent = fixture.http.sent();
+    assert!(!sent[0].transport.follow_redirects);
+    assert_eq!(sent[0].transport.timeout, Duration::from_secs(5));
+    assert!(sent[1].transport.follow_redirects);
+    assert_eq!(sent[1].transport.timeout, Duration::from_secs(30));
 }

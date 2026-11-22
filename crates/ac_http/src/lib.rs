@@ -1,7 +1,9 @@
 //! HTTP adapter: sends requests with [reqwest](https://docs.rs/reqwest).
 //!
 //! One [`ReqwestSender`] per application; it shares connections between all
-//! requests. Redirects are followed (up to 10), TLS certificates are verified.
+//! requests. By default redirects are followed (up to 10) and TLS
+//! certificates are verified; each request may say otherwise, and brings its
+//! own time limit.
 //!
 //! [`login`]: receiving the redirect of an OAuth 2 sign-in in the browser
 //! ([`LoopbackLogin`]).
@@ -21,16 +23,21 @@ use reqwest::multipart::Form;
 /// Sent as `User-Agent` unless a request sets its own.
 pub const USER_AGENT: &str = concat!("api_client/", env!("CARGO_PKG_VERSION"));
 
-/// Time allowed for a whole request, including reading the body.
+/// Time allowed for a whole request, including reading the body, when the
+/// request brings none (it always does when sent by the app).
 pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
 
-/// [`HttpSender`] backed by shared reqwest clients: one that checks TLS
-/// certificates (the default) and one that does not, for requests whose
-/// user switched the check off.
+/// [`HttpSender`] backed by shared reqwest clients, one per combination of
+/// certificate check and redirect policy (reqwest sets both per client).
 #[derive(Debug, Clone)]
 pub struct ReqwestSender {
-    client: reqwest::Client,
-    unchecked: reqwest::Client,
+    /// Indexed by [`client_index`].
+    clients: [reqwest::Client; 4],
+}
+
+/// Which client fits a request.
+const fn client_index(verify_tls: bool, follow_redirects: bool) -> usize {
+    (verify_tls as usize) * 2 + follow_redirects as usize
 }
 
 impl ReqwestSender {
@@ -39,14 +46,25 @@ impl ReqwestSender {
     /// # Errors
     /// If the TLS backend cannot be initialised.
     pub fn new(timeout: Duration) -> Result<Self, reqwest::Error> {
-        let builder = || {
+        let build = |verify_tls: bool, follow_redirects: bool| {
             reqwest::Client::builder()
                 .user_agent(USER_AGENT)
                 .timeout(timeout)
+                .danger_accept_invalid_certs(!verify_tls)
+                .redirect(if follow_redirects {
+                    reqwest::redirect::Policy::default()
+                } else {
+                    reqwest::redirect::Policy::none()
+                })
+                .build()
         };
         Ok(Self {
-            client: builder().build()?,
-            unchecked: builder().danger_accept_invalid_certs(true).build()?,
+            clients: [
+                build(false, false)?,
+                build(false, true)?,
+                build(true, false)?,
+                build(true, true)?,
+            ],
         })
     }
 }
@@ -55,12 +73,11 @@ impl HttpSender for ReqwestSender {
     async fn send(&self, request: ResolvedRequest) -> Result<Response, TransportError> {
         let method = reqwest::Method::from_bytes(request.method.as_str().as_bytes())
             .map_err(|error| TransportError::Other(error.to_string()))?;
-        let client = if request.verify_tls {
-            &self.client
-        } else {
-            &self.unchecked
-        };
-        let mut builder = client.request(method, request.url);
+        let client =
+            &self.clients[client_index(request.verify_tls, request.transport.follow_redirects)];
+        let mut builder = client
+            .request(method, request.url)
+            .timeout(request.transport.timeout);
         for header in request.headers {
             builder = builder.header(header.name, header.value);
         }

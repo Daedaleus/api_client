@@ -9,6 +9,7 @@ import type {
   AuthDraft,
   CertificateCheckView,
   ScriptsDraft,
+  TransportDraft,
   TreeItemView,
   UserText,
   VariableDraft,
@@ -31,6 +32,8 @@ export interface DefaultsEdit {
   auth: AuthDraft;
   /** The certificate check. */
   certificateCheck: CertificateCheckView;
+  /** Redirects and time limit. */
+  transport: TransportDraft;
   /** A copy of the scripts around its requests. */
   scripts: ScriptsDraft;
 }
@@ -63,6 +66,7 @@ export class DefaultsState {
       variables: $state.snapshot(target.variables),
       auth: $state.snapshot(target.auth),
       certificateCheck: target.certificateCheck,
+      transport: $state.snapshot(target.transport),
       scripts: $state.snapshot(target.scripts),
     };
   }
@@ -86,6 +90,7 @@ export class DefaultsState {
         variables: $state.snapshot(editing.variables),
         auth: $state.snapshot(editing.auth),
         certificateCheck: editing.certificateCheck,
+        transport: $state.snapshot(editing.transport),
         scripts: $state.snapshot(editing.scripts),
       });
       if (ack.type !== 'collectionChanged') throw new Error(`unexpected answer ${ack.type}`);

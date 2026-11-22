@@ -6,6 +6,7 @@ use ac_domain::collection::ItemId;
 use ac_domain::environment::{Environment, Variable};
 use ac_domain::scope::Scope;
 use ac_domain::tls::{CertificateCheck, checks_certificates};
+use ac_domain::transport::{EffectiveTransport, TransportSettings};
 
 use super::App;
 use super::collections::{item_id_from, location, writable};
@@ -106,6 +107,16 @@ impl Context {
         match self.request {
             Some(request) => collection.checks_certificates_for(request, own),
             None => checks_certificates([own, collection.certificate_check]),
+        }
+    }
+
+    /// Redirects and time limit: `own`, or inherited from the folders around
+    /// the request and the collection.
+    pub fn transport(&self, own: &TransportSettings) -> EffectiveTransport {
+        let collection = &self.opened.collection;
+        match self.request {
+            Some(request) => collection.transport_for(request, own),
+            None => ac_domain::transport::effective([own, &collection.transport]),
         }
     }
 

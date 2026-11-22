@@ -16,6 +16,7 @@
 //! - [`scope`]: which value wins when variables are defined in several
 //!   places (collection, environment, folders, request).
 //! - [`tls`]: whether server certificates are checked (inherited).
+//! - [`transport`]: redirects and time limit of requests (inherited).
 //! - [`exchange`]: one HTTP exchange – the request as sent and the response
 //!   as received.
 
@@ -28,3 +29,4 @@ pub mod protocol;
 pub mod scope;
 pub mod script;
 pub mod tls;
+pub mod transport;

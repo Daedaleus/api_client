@@ -63,6 +63,19 @@ scripts set ([which value wins](environments.md#which-value-wins)).
 folder or collection) accepts any certificate – only for test servers with
 self-signed certificates. A warning stays visible while it is off.
 
+**Redirects:** followed by default (up to 10), and the last response is
+shown. *Do not follow* shows the redirect response itself (3xx with its
+`Location` header).
+
+**Time limit:** how many seconds the whole request may take, including
+reading the response; 30 by default. A request that takes longer fails with
+a time-out.
+
+All three settings are inherited: a request set to *Inherit* (or with an
+empty time limit) uses the innermost folder that sets it, else the
+collection, else the default. Folders and the collection set them in their
+*Settings* section.
+
 ## Scripts
 
 TypeScript or JavaScript before the request and after the response, with

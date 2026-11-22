@@ -9,6 +9,7 @@ use ac_domain::environment::{UnresolvedVariable, interpolate};
 use ac_domain::exchange::{Header, ResolvedRequest};
 use ac_domain::params::{PathParam, fill_path_params};
 use ac_domain::protocol::{HttpMethod, auth_scheme, header, is_token};
+use ac_domain::transport::EffectiveTransport;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64;
 use url::Url;
@@ -36,6 +37,8 @@ pub(crate) struct Entered<'a> {
     pub files_base: Option<&'a Path>,
     /// Check the server's TLS certificate.
     pub verify_tls: bool,
+    /// Redirects and time limit that apply.
+    pub transport: EffectiveTransport,
 }
 
 /// A request ready to send – once an OAuth 2 token, if any, is added.
@@ -94,6 +97,7 @@ pub(crate) fn resolve_request(
     };
     Ok(Prepared {
         request: ResolvedRequest {
+            transport: entered.transport,
             method,
             url,
             headers,

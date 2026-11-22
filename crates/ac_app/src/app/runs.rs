@@ -94,6 +94,13 @@ impl<
                     None => checks_certificates([own]),
                 }
             },
+            transport: {
+                let own = outgoing.transport.to_settings();
+                match &context {
+                    Some(context) => context.transport(&own),
+                    None => ac_domain::transport::effective([&own]),
+                }
+            },
         };
         let unlocked = context
             .as_ref()

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::view::{
     AuthDraft, BodyDraft, CertificateCheckView, HeaderDraft, ParamDraft, ScriptsDraft, SendContext,
-    VariableDraft,
+    TransportDraft, VariableDraft,
 };
 
 /// A request as entered in the editor, with where its variables come from.
@@ -37,6 +37,10 @@ pub struct OutgoingRequest {
     /// Scripts before sending and after the response.
     #[serde(default)]
     pub scripts: ScriptsDraft,
+    /// The request's own redirects and time limit; `inherit` takes those of
+    /// its folders and collection.
+    #[serde(default)]
+    pub transport: TransportDraft,
     /// Values of the path variables (`:name`) in the URL.
     #[serde(default)]
     pub path_params: Vec<ParamDraft>,
@@ -59,6 +63,7 @@ impl OutgoingRequest {
             auth: AuthDraft::Inherit,
             certificate_check: CertificateCheckView::Inherit,
             scripts: ScriptsDraft::default(),
+            transport: TransportDraft::default(),
             path_params: Vec::new(),
             context: None,
         }

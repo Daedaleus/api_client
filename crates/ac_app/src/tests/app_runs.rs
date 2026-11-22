@@ -53,6 +53,7 @@ fn run_id(ack: &CommandAck) -> RunId {
 fn send(method: &str, url: &str) -> Command {
     Command::SendRequest {
         request: crate::view::OutgoingRequest {
+            transport: crate::view::TransportDraft::default(),
             path_params: Vec::new(),
             certificate_check: crate::view::CertificateCheckView::Inherit,
             scripts: crate::view::ScriptsDraft::default(),
@@ -72,6 +73,7 @@ async fn headers_and_body_are_sent() {
     let (app, fake) = app(FakeHttpSender::new().reply(Ok(response(201, "text/plain", ""))));
     app.execute(Command::SendRequest {
         request: crate::view::OutgoingRequest {
+            transport: crate::view::TransportDraft::default(),
             path_params: Vec::new(),
             certificate_check: crate::view::CertificateCheckView::Inherit,
             scripts: crate::view::ScriptsDraft::default(),

@@ -50,6 +50,7 @@ export class RequestTab {
       variables: [],
       auth: { kind: 'inherit' },
       certificateCheck: 'inherit',
+      transport: { redirects: 'inherit', timeoutSeconds: null },
       scripts: { preRequest: '', postResponse: '' },
       readOnly: false,
     };

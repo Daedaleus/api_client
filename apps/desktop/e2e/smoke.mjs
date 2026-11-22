@@ -49,6 +49,7 @@
 //  21. the open tabs are remembered for the next start (without secrets),
 //  22. Ctrl+K finds a request and opens it,
 //  23. typing {{ in the URL suggests the variables that apply,
+//  24. redirects are followed unless the request settings say otherwise,
 // and the program is still running after each send.
 //
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
@@ -190,6 +191,11 @@ const largeBodies = { '/large/0.9': largeJson(900_000), '/large/10': largeJson(1
 server = http.createServer((request, response) => {
   response.setHeader('Content-Type', 'application/json');
   response.setHeader('X-Test', 'e2e');
+  if (request.url === '/redirect') {
+    response.writeHead(302, { Location: '/echo?redirected=1' });
+    response.end();
+    return;
+  }
   if (request.url === '/spec/openapi.json') {
     // A description with a relative server, as the Swagger Petstore has.
     response.end(
@@ -1478,5 +1484,31 @@ const suggested = await waitFor(
   'variable suggestions',
 );
 check(suggested.includes('baseUrl'), `variables suggested after {{ (${suggested.slice(0, 60)}…)`);
+
+// --- 24. Redirects ---------------------------------------------------------------
+
+// Followed by default; with "do not follow" in the request settings the 302
+// itself is shown.
+// In a new tab of its own: opening "Health" in the previous step finishes
+// asynchronously and must not switch tabs under this step.
+await sleep(1000);
+await pressCtrl('n', 'KeyN');
+await waitFor(`document.querySelector('.url-bar__input')?.value === ''`, 'new tab');
+await evaluate(setValue('.url-bar__input', `${origin}/redirect`));
+await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);
+await echoWith('redirected=1', 'redirect followed');
+check(true, 'redirect followed by default');
+await evaluate(`document.querySelectorAll('.request-editor__section')[5].click()`);
+await waitFor(`!!document.querySelector('.transport-fields__control')`, 'transport settings');
+await evaluate(setValue('select.transport-fields__control', 'stop', 'change'));
+await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);
+const redirectStatus = await waitFor(
+  `(() => { const status = document.querySelector('.response__status')?.textContent ?? ''; return status.includes('302') ? status : null; })()`,
+  'redirect response',
+);
+check(
+  redirectStatus.includes('302'),
+  `redirect not followed when switched off (${redirectStatus.trim()})`,
+);
 
 finish(null);

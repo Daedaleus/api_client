@@ -267,6 +267,7 @@ async fn tests_of_both_scripts_reach_the_view_in_order() {
 /// Gives the collection (`item_id` = collection) or a folder scripts.
 fn save_scripts(fixture: &Fixture, item_id: &str, pre: &str, post: &str) {
     fixture.run(Command::SaveDefaults {
+        transport: crate::view::TransportDraft::default(),
         collection_id: fixture.collection.clone(),
         item_id: item_id.into(),
         variables: Vec::new(),

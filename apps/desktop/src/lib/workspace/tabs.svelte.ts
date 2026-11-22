@@ -134,6 +134,7 @@ export class TabsState {
       variables: tab.draft.variables,
       auth: tab.draft.auth,
       certificateCheck: tab.draft.certificateCheck,
+      transport: tab.draft.transport,
       scripts: tab.draft.scripts,
       pathParams: tab.draft.pathParams,
       context,

@@ -7,6 +7,7 @@
   import RowsEditor, { type RowLabels } from '../molecules/RowsEditor.svelte';
   import ParamsEditor from '../molecules/ParamsEditor.svelte';
   import ScriptsEditor from '../molecules/ScriptsEditor.svelte';
+  import TransportFields from '../molecules/TransportFields.svelte';
   import { fillPathParams, pathParamNames, queryParams } from '../../lib/params';
   import UrlBar from '../molecules/UrlBar.svelte';
   import { i18n } from '../../lib/i18n/i18n.svelte';
@@ -208,6 +209,7 @@
       <AuthEditor bind:auth={tab.draft.auth} />
     {:else if section === 'settings'}
       <CertificateCheckField bind:check={tab.draft.certificateCheck} />
+      <TransportFields bind:transport={tab.draft.transport} />
     {:else if section === 'scripts'}
       <ScriptsEditor bind:scripts={tab.draft.scripts} {assist} />
     {:else}

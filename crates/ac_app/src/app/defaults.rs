@@ -10,7 +10,16 @@ use crate::command::CommandAck;
 use crate::error::AppError;
 use crate::ports::{BrowserLogin, CollectionStore, HttpSender, ScriptRunner, SecretVault};
 use crate::ports::{HistoryStore, ScriptAssist};
-use crate::view::{AuthDraft, CertificateCheckView, ScriptsDraft, VariableDraft};
+use crate::view::{AuthDraft, CertificateCheckView, ScriptsDraft, TransportDraft, VariableDraft};
+
+/// What the defaults dialog saves for the collection or a folder.
+pub(super) struct DefaultsDraft<'a> {
+    pub variables: &'a [VariableDraft],
+    pub auth: &'a AuthDraft,
+    pub certificate_check: CertificateCheckView,
+    pub scripts: &'a ScriptsDraft,
+    pub transport: TransportDraft,
+}
 
 impl<
     H: HttpSender,
@@ -26,18 +35,16 @@ impl<
         &self,
         collection_id: &str,
         item_id: &str,
-        variables: &[VariableDraft],
-        auth: &AuthDraft,
-        certificate_check: CertificateCheckView,
-        scripts: &ScriptsDraft,
+        draft: &DefaultsDraft<'_>,
     ) -> Result<CommandAck, AppError> {
         let opened = self.current(collection_id)?;
         let id = item_id_from(item_id)?;
         let defaults = RequestDefaults {
-            scripts: scripts.to_scripts(),
-            variables: VariableDraft::to_plain_variables(variables),
-            auth: auth.to_auth(),
-            certificate_check: certificate_check.to_check(),
+            scripts: draft.scripts.to_scripts(),
+            transport: draft.transport.to_settings(),
+            variables: VariableDraft::to_plain_variables(draft.variables),
+            auth: draft.auth.to_auth(),
+            certificate_check: draft.certificate_check.to_check(),
         };
         if id == opened.collection.id {
             writable(&opened, id)?;

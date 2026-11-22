@@ -12,6 +12,7 @@ use crate::params::{PathParam, QueryParam};
 use crate::protocol::HttpMethod;
 use crate::script::Scripts;
 use crate::tls::CertificateCheck;
+use crate::transport::{EffectiveTransport, TransportSettings};
 
 /// Stable identity of a collection, folder or request. Survives renaming and
 /// moving, so references (open tabs, history) stay valid.
@@ -80,6 +81,9 @@ pub struct Collection {
     pub auth: Auth,
     /// Certificate check for its requests (`Inherit` here means on).
     pub certificate_check: CertificateCheck,
+    /// Redirects and time limit for its requests (`Inherit` here means the
+    /// defaults).
+    pub transport: TransportSettings,
     /// Scripts around every request of the collection.
     pub scripts: Scripts,
 }
@@ -112,6 +116,17 @@ impl Collection {
             .chain(folders.iter().rev().map(|folder| folder.certificate_check))
             .chain(std::iter::once(self.certificate_check));
         crate::tls::checks_certificates(chain)
+    }
+
+    /// Redirects and time limit for the request `id`: its own settings, or
+    /// those of the innermost folder or the collection that has them.
+    #[must_use]
+    pub fn transport_for(&self, id: ItemId, own: &TransportSettings) -> EffectiveTransport {
+        let folders = self.folders_around(id);
+        let chain = std::iter::once(own)
+            .chain(folders.iter().rev().map(|folder| &folder.transport))
+            .chain(std::iter::once(&self.transport));
+        crate::transport::effective(chain)
     }
 
     /// The scripts around the request `id`, outermost first: the
@@ -174,6 +189,8 @@ pub struct RequestDefaults {
     pub auth: Auth,
     /// Certificate check (see [`crate::tls`]).
     pub certificate_check: CertificateCheck,
+    /// Redirects and time limit (see [`crate::transport`]).
+    pub transport: TransportSettings,
     /// Scripts around the requests (see [`Collection::scripts_around`]).
     pub scripts: Scripts,
 }
@@ -193,6 +210,8 @@ pub struct Folder {
     pub auth: Auth,
     /// Certificate check for the requests in it, or inherited.
     pub certificate_check: CertificateCheck,
+    /// Redirects and time limit for the requests in it, or inherited.
+    pub transport: TransportSettings,
     /// Scripts around the requests in it and its subfolders.
     pub scripts: Scripts,
 }
@@ -247,6 +266,8 @@ pub struct Request {
     pub auth: Auth,
     /// Certificate check, or inherited from the folders and collection.
     pub certificate_check: CertificateCheck,
+    /// Redirects and time limit, or inherited from the folders and collection.
+    pub transport: TransportSettings,
     /// Scripts before sending and after the response.
     pub scripts: Scripts,
     /// Values of the path variables (`:name`) in the URL.
@@ -269,6 +290,7 @@ impl Request {
             variables: Vec::new(),
             auth: Auth::Inherit,
             certificate_check: CertificateCheck::Inherit,
+            transport: TransportSettings::default(),
             scripts: Scripts::default(),
             path_params: Vec::new(),
             disabled_query: Vec::new(),
