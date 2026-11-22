@@ -98,6 +98,7 @@ pub(crate) fn from_value(root: &Value, origin: Option<&Url>) -> Option<Imported>
     }
     Some(Imported {
         collection: Collection {
+            scripts: ac_domain::script::Scripts::default(),
             id: ItemId::new(),
             items: folders.into_items(),
             variables: vec![Variable::plain(BASE_URL, base_url)],
@@ -192,6 +193,7 @@ impl Folders {
             .filter(|(_, items)| !items.is_empty())
             .map(|(name, items)| {
                 Item::Folder(Folder {
+                    scripts: ac_domain::script::Scripts::default(),
                     id: ItemId::new(),
                     name,
                     items,

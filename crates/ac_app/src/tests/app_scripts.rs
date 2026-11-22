@@ -53,7 +53,7 @@ async fn the_pre_request_script_changes_the_request_before_variables_are_filled_
         })),
     );
     let request = outgoing(&fixture, "{{baseUrl}}/old", "req.method = 'POST'", "");
-    let execution = fixture.app.run_with_scripts(&request, None).await;
+    let execution = fixture.app.run_with_scripts(&request).await;
 
     let job = &fixture.scripts.jobs()[0];
     assert_eq!(job.phase, ScriptPhase::PreRequest);
@@ -94,11 +94,8 @@ async fn a_failing_pre_request_script_stops_the_run() {
         })),
     );
     let request = outgoing(&fixture, "{{baseUrl}}/x", "nope(", "");
-    let RunOutcomeView::Failed { error, logs, .. } = fixture
-        .app
-        .run_with_scripts(&request, None)
-        .await
-        .into_view()
+    let RunOutcomeView::Failed { error, logs, .. } =
+        fixture.app.run_with_scripts(&request).await.into_view()
     else {
         panic!("expected a failure");
     };
@@ -125,7 +122,7 @@ async fn a_failing_pre_request_script_stops_the_run() {
     );
     let RunOutcomeView::Failed { error, logs, .. } = fixture
         .app
-        .run_with_scripts(&outgoing(&fixture, "x", "req.url = ''", ""), None)
+        .run_with_scripts(&outgoing(&fixture, "x", "req.url = ''", ""))
         .await
         .into_view()
     else {
@@ -153,11 +150,7 @@ async fn the_post_response_script_reads_the_response_and_sets_variables_for_late
         "",
         "env.set('token', res.json().token)",
     );
-    let RunOutcomeView::Completed(view) = fixture
-        .app
-        .run_with_scripts(&request, None)
-        .await
-        .into_view()
+    let RunOutcomeView::Completed(view) = fixture.app.run_with_scripts(&request).await.into_view()
     else {
         panic!("expected a response");
     };
@@ -173,7 +166,7 @@ async fn the_post_response_script_reads_the_response_and_sets_variables_for_late
 
     // The next request of the collection sees the variable, strongest of all.
     let later = outgoing(&fixture, "{{baseUrl}}/me?t={{token}}", "", "");
-    fixture.app.run_with_scripts(&later, None).await;
+    fixture.app.run_with_scripts(&later).await;
     assert_eq!(
         fixture.http.sent()[1].url.as_str(),
         "https://dev.example.com/me?t=t"
@@ -193,11 +186,7 @@ async fn a_failing_post_response_script_keeps_the_response() {
         FakeScriptRunner::new().result(Err(ScriptError::TimedOut { seconds: 5 })),
     );
     let request = outgoing(&fixture, "{{baseUrl}}/x", "", "while (true) {}");
-    let RunOutcomeView::Completed(view) = fixture
-        .app
-        .run_with_scripts(&request, None)
-        .await
-        .into_view()
+    let RunOutcomeView::Completed(view) = fixture.app.run_with_scripts(&request).await.into_view()
     else {
         panic!("expected a response");
     };
@@ -258,11 +247,7 @@ async fn tests_of_both_scripts_reach_the_view_in_order() {
         "test('pre', () => {})",
         "test('post', () => {})",
     );
-    let RunOutcomeView::Completed(view) = fixture
-        .app
-        .run_with_scripts(&request, None)
-        .await
-        .into_view()
+    let RunOutcomeView::Completed(view) = fixture.app.run_with_scripts(&request).await.into_view()
     else {
         panic!("expected a response");
     };
@@ -273,4 +258,151 @@ async fn tests_of_both_scripts_reach_the_view_in_order() {
         .collect();
     assert_eq!(names, [("pre", true), ("post", false)]);
     assert_eq!(view.tests[1].message.as_deref(), Some("expected 1 to be 2"));
+}
+
+/// Gives the collection (`item_id` = collection) or a folder scripts.
+fn save_scripts(fixture: &Fixture, item_id: &str, pre: &str, post: &str) {
+    fixture.run(Command::SaveDefaults {
+        collection_id: fixture.collection.clone(),
+        item_id: item_id.into(),
+        variables: Vec::new(),
+        auth: crate::view::AuthDraft::Inherit,
+        certificate_check: crate::view::CertificateCheckView::Inherit,
+        scripts: ScriptsDraft {
+            pre_request: pre.into(),
+            post_response: post.into(),
+        },
+    });
+}
+
+/// The login request (in the folder Auth) with its own scripts.
+fn login(fixture: &Fixture, pre: &str, post: &str) -> OutgoingRequest {
+    let mut request = outgoing(fixture, "https://example.com/login", pre, post);
+    if let Some(context) = &mut request.context {
+        context.request_id = Some(fixture.login.clone());
+    }
+    request
+}
+
+#[tokio::test]
+async fn scripts_of_the_collection_and_folders_run_around_the_request() {
+    let fixture = Fixture::with_scripts(
+        FakeHttpSender::new()
+            .reply(Ok(response(200, "text/plain", "ok")))
+            .reply(Ok(response(200, "text/plain", "ok")))
+            .reply(Ok(response(200, "text/plain", "ok"))),
+        FakeScriptRunner::new(),
+    );
+    save_scripts(
+        &fixture,
+        &fixture.collection,
+        "log('c pre')",
+        "log('c post')",
+    );
+    save_scripts(&fixture, &fixture.auth, "log('f pre')", "log('f post')");
+    let tree = fixture.tree();
+    assert_eq!(tree.scripts.pre_request, "log('c pre')");
+    assert!(matches!(
+        &tree.items[0],
+        crate::view::TreeItemView::Folder { scripts, .. } if scripts.post_response == "log('f post')"
+    ));
+
+    let execution = fixture
+        .app
+        .run_with_scripts(&login(&fixture, "log('r pre')", "log('r post')"))
+        .await;
+    assert!(execution.response.is_ok());
+    let order: Vec<(ScriptPhase, String)> = fixture
+        .scripts
+        .jobs()
+        .into_iter()
+        .map(|job| (job.phase, job.source))
+        .collect();
+    let pre = ScriptPhase::PreRequest;
+    let post = ScriptPhase::PostResponse;
+    assert_eq!(
+        order,
+        [
+            (pre, "log('c pre')".to_owned()),
+            (pre, "log('f pre')".to_owned()),
+            (pre, "log('r pre')".to_owned()),
+            (post, "log('r post')".to_owned()),
+            (post, "log('f post')".to_owned()),
+            (post, "log('c post')".to_owned()),
+        ]
+    );
+
+    // A request outside the folder gets only the collection's scripts;
+    // one not saved yet (no request id) too.
+    let mut health = outgoing(&fixture, "https://example.com/health", "", "");
+    let unsaved = health.clone();
+    if let Some(context) = &mut health.context {
+        context.request_id = Some(fixture.health.clone());
+    }
+    for request in [health, unsaved] {
+        let before = fixture.scripts.jobs().len();
+        let _ = fixture.app.run_with_scripts(&request).await;
+        let sources: Vec<String> = fixture.scripts.jobs()[before..]
+            .iter()
+            .map(|job| job.source.clone())
+            .collect();
+        assert_eq!(sources, ["log('c pre')", "log('c post')"]);
+    }
+}
+
+#[tokio::test]
+async fn a_failing_folder_script_names_its_folder() {
+    let fixture = Fixture::with_scripts(
+        FakeHttpSender::new().reply(Ok(response(200, "text/plain", "ok"))),
+        FakeScriptRunner::new().result(Err(ScriptError::Failed("boom".into()))),
+    );
+    save_scripts(&fixture, &fixture.auth, "throw 'boom'", "");
+    let execution = fixture
+        .app
+        .run_with_scripts(&login(&fixture, "log('never')", ""))
+        .await;
+    let error = execution.response.unwrap_err();
+    assert_eq!(error.key, keys::SCRIPT_PRE_REQUEST_OF);
+    assert_eq!(error.args["owner"], "Auth");
+    assert_eq!(error.args["detail"], "boom");
+    // Neither the request's script ran nor was anything sent.
+    assert_eq!(fixture.scripts.jobs().len(), 1);
+    assert_eq!(
+        fixture.http.sent(),
+        [] as [ac_domain::exchange::ResolvedRequest; 0]
+    );
+
+    // After the response: the collection's script fails last.
+    let fixture = Fixture::with_scripts(
+        FakeHttpSender::new().reply(Ok(response(200, "text/plain", "ok"))),
+        FakeScriptRunner::new()
+            .result(Ok(ScriptOutcome::default()))
+            .result(Err(ScriptError::Failed("late".into()))),
+    );
+    save_scripts(&fixture, &fixture.collection, "", "throw 'late'");
+    let execution = fixture
+        .app
+        .run_with_scripts(&login(&fixture, "", "log('own')"))
+        .await;
+    assert!(execution.response.is_ok());
+    let error = execution.script_error.unwrap();
+    assert_eq!(error.key, keys::SCRIPT_POST_RESPONSE_OF);
+    assert_eq!(error.args["owner"], "Shop");
+}
+
+#[tokio::test]
+async fn sending_waits_for_folder_scripts_before_checking_the_request() {
+    let fixture = Fixture::with_scripts(
+        FakeHttpSender::new().reply(Ok(response(200, "text/plain", "ok"))),
+        FakeScriptRunner::new(),
+    );
+    save_scripts(&fixture, &fixture.collection, "req.url = 'https://x'", "");
+    // Invalid as entered; the collection's script could still fix it, so
+    // the command is accepted and the run reports.
+    let mut request = outgoing(&fixture, "", "", "");
+    request.scripts = ScriptsDraft::default();
+    assert!(matches!(
+        fixture.app.execute(Command::SendRequest { request }),
+        Ok(crate::command::CommandAck::RunStarted { .. })
+    ));
 }

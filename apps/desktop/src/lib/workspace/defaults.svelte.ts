@@ -1,5 +1,6 @@
 // What a collection or one of its folders passes on to its requests –
-// variables and authentication – edited in a dialog. (A request's own are
+// variables, authentication, certificate check and scripts – edited in a
+// dialog. (A request's own are
 // part of the request and saved with it.)
 
 import type { Api } from '../api';
@@ -7,6 +8,7 @@ import { toUserText } from '../errors';
 import type {
   AuthDraft,
   CertificateCheckView,
+  ScriptsDraft,
   TreeItemView,
   UserText,
   VariableDraft,
@@ -29,6 +31,8 @@ export interface DefaultsEdit {
   auth: AuthDraft;
   /** The certificate check. */
   certificateCheck: CertificateCheckView;
+  /** A copy of the scripts around its requests. */
+  scripts: ScriptsDraft;
 }
 
 export class DefaultsState {
@@ -59,6 +63,7 @@ export class DefaultsState {
       variables: $state.snapshot(target.variables),
       auth: $state.snapshot(target.auth),
       certificateCheck: target.certificateCheck,
+      scripts: $state.snapshot(target.scripts),
     };
   }
 
@@ -81,6 +86,7 @@ export class DefaultsState {
         variables: $state.snapshot(editing.variables),
         auth: $state.snapshot(editing.auth),
         certificateCheck: editing.certificateCheck,
+        scripts: $state.snapshot(editing.scripts),
       });
       if (ack.type !== 'collectionChanged') throw new Error(`unexpected answer ${ack.type}`);
       this.#collections.apply(ack.collection);

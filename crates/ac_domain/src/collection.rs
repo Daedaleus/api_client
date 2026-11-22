@@ -79,6 +79,8 @@ pub struct Collection {
     pub auth: Auth,
     /// Certificate check for its requests (`Inherit` here means on).
     pub certificate_check: CertificateCheck,
+    /// Scripts around every request of the collection.
+    pub scripts: Scripts,
 }
 
 impl Collection {
@@ -109,6 +111,22 @@ impl Collection {
             .chain(folders.iter().rev().map(|folder| folder.certificate_check))
             .chain(std::iter::once(self.certificate_check));
         crate::tls::checks_certificates(chain)
+    }
+
+    /// The scripts around the request `id`, outermost first: the
+    /// collection's, then those of its folders, each with its owner's name.
+    /// They run in this order before the request's own pre-request script
+    /// and in reverse after its post-response script.
+    #[must_use]
+    pub fn scripts_around(&self, id: ItemId) -> Vec<(&str, &Scripts)> {
+        std::iter::once((self.name.as_str(), &self.scripts))
+            .chain(
+                self.folders_around(id)
+                    .into_iter()
+                    .map(|folder| (folder.name.as_str(), &folder.scripts)),
+            )
+            .filter(|(_, scripts)| !scripts.is_empty())
+            .collect()
     }
 
     /// The folders around the item `id`, outermost first; empty for a
@@ -155,6 +173,8 @@ pub struct RequestDefaults {
     pub auth: Auth,
     /// Certificate check (see [`crate::tls`]).
     pub certificate_check: CertificateCheck,
+    /// Scripts around the requests (see [`Collection::scripts_around`]).
+    pub scripts: Scripts,
 }
 
 /// A folder of a collection.
@@ -172,6 +192,8 @@ pub struct Folder {
     pub auth: Auth,
     /// Certificate check for the requests in it, or inherited.
     pub certificate_check: CertificateCheck,
+    /// Scripts around the requests in it and its subfolders.
+    pub scripts: Scripts,
 }
 
 /// An entry of the request tree.

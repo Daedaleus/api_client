@@ -131,4 +131,20 @@ impl ScriptError {
         };
         UserText::new(key).with("detail", self.to_string())
     }
+
+    /// The text to show the user for a script of the folder or collection
+    /// `owner` (its name); `None` is the request's own script.
+    #[must_use]
+    pub fn user_text_of(&self, phase: ScriptPhase, owner: Option<&str>) -> UserText {
+        let Some(owner) = owner else {
+            return self.user_text(phase);
+        };
+        let key = match phase {
+            ScriptPhase::PreRequest => keys::SCRIPT_PRE_REQUEST_OF,
+            ScriptPhase::PostResponse => keys::SCRIPT_POST_RESPONSE_OF,
+        };
+        UserText::new(key)
+            .with("owner", owner)
+            .with("detail", self.to_string())
+    }
 }

@@ -11,7 +11,7 @@ use crate::text::UserText;
 
 use crate::view::{
     AuthDraft, CertificateCheckView, CollectionView, EnvironmentDraft, OutgoingRequest,
-    RecipientsView, RequestDraft, VariableDraft,
+    RecipientsView, RequestDraft, ScriptsDraft, VariableDraft,
 };
 
 /// Something the user wants the application to do.
@@ -114,6 +114,9 @@ pub enum Command {
         auth: AuthDraft,
         /// The certificate check (`inherit` on the collection means on).
         certificate_check: CertificateCheckView,
+        /// Scripts around the requests in it.
+        #[serde(default)]
+        scripts: ScriptsDraft,
     },
     /// Import another tool's collection as a new collection and open it:
     /// a Postman collection (v2.1, v2.0) or an `OpenAPI` 3 description (JSON

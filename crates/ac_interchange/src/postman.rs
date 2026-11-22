@@ -35,6 +35,7 @@ pub(crate) fn from_value(root: &Value) -> Option<Imported> {
     scripts(root, &name, &mut skipped);
     let auth = auth(root.get("auth"), &name, &mut skipped);
     let collection = Collection {
+        scripts: ac_domain::script::Scripts::default(),
         id: ItemId::new(),
         items: items_of(items, &mut skipped),
         variables: variables(root.get("variable")),
@@ -61,6 +62,7 @@ fn item_of(item: &Value, skipped: &mut Vec<Skipped>) -> Item {
     scripts(item, &name, skipped);
     if let Some(children) = item.get("item") {
         return Item::Folder(Folder {
+            scripts: ac_domain::script::Scripts::default(),
             id: ItemId::new(),
             items: items_of(children, skipped),
             variables: variables(item.get("variable")),

@@ -189,12 +189,14 @@ impl<
                 variables,
                 auth,
                 certificate_check,
+                scripts,
             } => self.save_defaults(
                 &collection_id,
                 &item_id,
                 &variables,
                 &auth,
                 certificate_check,
+                &scripts,
             ),
             Command::ImportCollection { file, path } => {
                 self.import_collection(&file, path.as_deref())

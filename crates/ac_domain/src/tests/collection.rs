@@ -45,6 +45,7 @@ fn items_are_found_anywhere_in_the_tree() {
     let nested = Request::new("Nested");
     let top = Request::new("Top");
     let folder = Folder {
+        scripts: crate::script::Scripts::default(),
         certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: crate::auth::Auth::Inherit,
         variables: Vec::new(),
@@ -53,6 +54,7 @@ fn items_are_found_anywhere_in_the_tree() {
         items: vec![Item::Request(nested.clone())],
     };
     let collection = Collection {
+        scripts: crate::script::Scripts::default(),
         certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: crate::auth::Auth::Inherit,
         variables: Vec::new(),
@@ -70,6 +72,7 @@ fn items_are_found_anywhere_in_the_tree() {
 fn items_expose_id_and_name() {
     let request = Request::new("Login");
     let folder = Folder {
+        scripts: crate::script::Scripts::default(),
         certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: crate::auth::Auth::Inherit,
         variables: Vec::new(),
@@ -88,6 +91,7 @@ fn items_expose_id_and_name() {
 fn folders_around_an_item_lead_from_outside_in() {
     let login = Request::new("Login");
     let inner = Folder {
+        scripts: crate::script::Scripts::default(),
         certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: crate::auth::Auth::Inherit,
         id: ItemId::new(),
@@ -96,6 +100,7 @@ fn folders_around_an_item_lead_from_outside_in() {
         variables: Vec::new(),
     };
     let outer = Folder {
+        scripts: crate::script::Scripts::default(),
         certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: crate::auth::Auth::Inherit,
         id: ItemId::new(),
@@ -105,6 +110,7 @@ fn folders_around_an_item_lead_from_outside_in() {
     };
     let health = Request::new("Health");
     let collection = Collection {
+        scripts: crate::script::Scripts::default(),
         certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: crate::auth::Auth::Inherit,
         id: ItemId::new(),
@@ -129,6 +135,7 @@ fn requests_inherit_auth_from_the_innermost_folder_that_sets_one() {
     };
     let login = Request::new("Login");
     let mut inner = Folder {
+        scripts: crate::script::Scripts::default(),
         certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: crate::auth::Auth::Inherit,
         id: ItemId::new(),
@@ -137,6 +144,7 @@ fn requests_inherit_auth_from_the_innermost_folder_that_sets_one() {
         variables: Vec::new(),
     };
     let outer = |inner: &Folder| Folder {
+        scripts: crate::script::Scripts::default(),
         certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: bearer("outer"),
         id: ItemId::new(),
@@ -145,6 +153,7 @@ fn requests_inherit_auth_from_the_innermost_folder_that_sets_one() {
         variables: Vec::new(),
     };
     let collection = |inner: &Folder| Collection {
+        scripts: crate::script::Scripts::default(),
         certificate_check: crate::tls::CertificateCheck::Inherit,
         auth: bearer("collection"),
         id: ItemId::new(),
@@ -170,4 +179,46 @@ fn requests_inherit_auth_from_the_innermost_folder_that_sets_one() {
         collection(&inner).auth_for(ItemId::new(), &inherit),
         bearer("collection")
     );
+}
+
+#[test]
+fn scripts_around_a_request_lead_from_outside_in_without_empty_ones() {
+    let scripts = |text: &str| crate::script::Scripts {
+        pre_request: text.into(),
+        post_response: String::new(),
+    };
+    let login = Request::new("Login");
+    let inner = Folder {
+        scripts: scripts("inner"),
+        certificate_check: crate::tls::CertificateCheck::Inherit,
+        auth: crate::auth::Auth::Inherit,
+        id: ItemId::new(),
+        name: "v2".into(),
+        items: vec![Item::Request(login.clone())],
+        variables: Vec::new(),
+    };
+    let outer = Folder {
+        scripts: scripts("  "),
+        certificate_check: crate::tls::CertificateCheck::Inherit,
+        auth: crate::auth::Auth::Inherit,
+        id: ItemId::new(),
+        name: "Auth".into(),
+        items: vec![Item::Folder(inner)],
+        variables: Vec::new(),
+    };
+    let collection = Collection {
+        scripts: scripts("outer"),
+        certificate_check: crate::tls::CertificateCheck::Inherit,
+        auth: crate::auth::Auth::Inherit,
+        id: ItemId::new(),
+        name: "Shop".into(),
+        items: vec![Item::Folder(outer)],
+        variables: Vec::new(),
+    };
+    let around: Vec<(&str, &str)> = collection
+        .scripts_around(login.id)
+        .into_iter()
+        .map(|(owner, scripts)| (owner, scripts.pre_request.as_str()))
+        .collect();
+    assert_eq!(around, [("Shop", "outer"), ("v2", "inner")]);
 }

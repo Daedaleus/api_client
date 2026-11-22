@@ -3,10 +3,18 @@
   import AuthEditor from '../molecules/AuthEditor.svelte';
   import CertificateCheckField from '../molecules/CertificateCheckField.svelte';
   import RowsEditor, { type RowLabels } from '../molecules/RowsEditor.svelte';
+  import ScriptsEditor from '../molecules/ScriptsEditor.svelte';
   import { i18n } from '../../lib/i18n/i18n.svelte';
+  import type { ScriptAssist } from '../../lib/script-assist';
   import type { DefaultsState } from '../../lib/workspace/defaults.svelte';
 
-  let { defaults }: { defaults: DefaultsState } = $props();
+  interface Props {
+    defaults: DefaultsState;
+    /** Checker and completion for the scripts. */
+    assist?: ScriptAssist | undefined;
+  }
+
+  let { defaults, assist }: Props = $props();
 
   const LABELS: RowLabels = {
     enabled: 'env.variable_enabled',
@@ -17,8 +25,8 @@
     empty: 'env.no_variables',
   };
 
-  type Section = 'variables' | 'auth' | 'settings';
-  const SECTIONS: Section[] = ['variables', 'auth', 'settings'];
+  type Section = 'variables' | 'auth' | 'scripts' | 'settings';
+  const SECTIONS: Section[] = ['variables', 'auth', 'scripts', 'settings'];
   let section = $state<Section>('variables');
 
   function submit(event: SubmitEvent) {
@@ -71,6 +79,9 @@
             <RowsEditor bind:rows={editing.variables} labels={LABELS} />
           {:else if section === 'auth'}
             <AuthEditor bind:auth={editing.auth} root={editing.isCollection} />
+          {:else if section === 'scripts'}
+            <p class="defaults-dialog__note">{i18n.t('scripts.hint_around')}</p>
+            <ScriptsEditor bind:scripts={editing.scripts} {assist} />
           {:else}
             <CertificateCheckField
               bind:check={editing.certificateCheck}
