@@ -24,7 +24,7 @@ use super::runs::scope;
 use crate::error::AppError;
 use crate::ports::{
     BrowserLogin, CollectionStore, HistoryStore, HttpSender, ScriptAssist, ScriptJob,
-    ScriptRequest, ScriptResponse, ScriptRunner, SecretVault, TestResult,
+    ScriptRequest, ScriptResponse, ScriptRunner, SecretVault, SettingsStore, TestResult,
 };
 use crate::resolve::Prepared;
 use crate::text::UserText;
@@ -88,7 +88,7 @@ impl Execution {
     }
 }
 
-impl<H, S, V, B, R, A, Y> App<H, S, V, B, R, A, Y>
+impl<H, S, V, B, R, A, Y, Z> App<H, S, V, B, R, A, Y, Z>
 where
     H: HttpSender,
     S: CollectionStore,
@@ -97,6 +97,7 @@ where
     R: ScriptRunner,
     A: ScriptAssist,
     Y: HistoryStore,
+    Z: SettingsStore,
 {
     /// Runs `outgoing` with its scripts and those around it.
     pub(super) async fn run_with_scripts(&self, outgoing: &OutgoingRequest) -> Execution {

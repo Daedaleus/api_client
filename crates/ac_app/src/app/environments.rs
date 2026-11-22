@@ -16,7 +16,7 @@ use crate::error::AppError;
 use crate::ports::{
     BrowserLogin, CollectionStore, HttpSender, OpenedCollection, ScriptRunner, SecretVault,
 };
-use crate::ports::{HistoryStore, ScriptAssist};
+use crate::ports::{HistoryStore, ScriptAssist, SettingsStore};
 use crate::view::collection::non_empty;
 use crate::view::{EnvironmentDraft, SendContext};
 
@@ -28,7 +28,8 @@ impl<
     R: ScriptRunner,
     A: ScriptAssist,
     Y: HistoryStore,
-> App<H, S, V, B, R, A, Y>
+    Z: SettingsStore,
+> App<H, S, V, B, R, A, Y, Z>
 {
     pub(super) fn create_environment(
         &self,

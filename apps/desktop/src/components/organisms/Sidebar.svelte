@@ -47,6 +47,11 @@
         label={i18n.t('menu.open_collection')}
         onclick={() => workspace.openCollection()}
       />
+      <IconButton
+        icon="settings"
+        label={i18n.t('settings.title')}
+        onclick={() => workspace.settings.open()}
+      />
       <MenuButton
         text={i18n.t('menu.new')}
         label={i18n.t('menu.new_title')}
@@ -140,8 +145,10 @@
     border-right: 1px solid var(--color-border);
   }
 
+  /* Wraps instead of making the sidebar scroll sideways when it is narrow. */
   .sidebar__toolbar {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--space-s);
   }

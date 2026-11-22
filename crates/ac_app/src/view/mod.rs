@@ -24,6 +24,7 @@ pub mod request_body;
 pub mod response;
 pub mod run_report;
 pub mod scripts;
+pub mod settings;
 pub mod transport;
 pub mod variable;
 
@@ -42,5 +43,6 @@ pub use request_body::{BodyDraft, FormFieldDraft, MultipartFieldDraft};
 pub use response::{HeaderView, ResponseView, RunOutcomeView, StatusClassView, TestResultView};
 pub use run_report::{RunReport, RunResult, RunResultOutcome};
 pub use scripts::ScriptsDraft;
+pub use settings::{ProxyView, SettingsView};
 pub use transport::{RedirectsView, TransportDraft};
 pub use variable::{SendContext, VariableDraft};

@@ -50,6 +50,7 @@
 //  22. Ctrl+K finds a request and opens it,
 //  23. typing {{ in the URL suggests the variables that apply,
 //  24. redirects are followed unless the request settings say otherwise,
+//  25. a proxy set in the app settings is saved and carries the requests,
 // and the program is still running after each send.
 //
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
@@ -189,6 +190,13 @@ function largeJson(bytes) {
 const largeBodies = { '/large/0.9': largeJson(900_000), '/large/10': largeJson(10_000_000) };
 
 server = http.createServer((request, response) => {
+  // Also a proxy (step 25): a request in absolute form is answered as if
+  // it had come directly.
+  if (request.url.startsWith('http://')) {
+    const target = new URL(request.url);
+    request.url = target.pathname + target.search;
+    response.setHeader('X-Via-Proxy', target.host);
+  }
   response.setHeader('Content-Type', 'application/json');
   response.setHeader('X-Test', 'e2e');
   if (request.url === '/redirect') {
@@ -278,6 +286,7 @@ app = spawn(program, [], {
     API_CLIENT_IDENTITY_FILE: identityFile,
     // The request history goes there too, never into the user's.
     API_CLIENT_DATA_DIR: webviewData,
+    API_CLIENT_CONFIG_DIR: webviewData,
     // The browser for OAuth 2 sign-ins: a script that follows the redirect.
     BROWSER: `'${process.execPath}' '${path.join(ROOT, 'apps', 'desktop', 'e2e', 'fake-browser.mjs')}'`,
     WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${debugPort}`,
@@ -1510,5 +1519,41 @@ check(
   redirectStatus.includes('302'),
   `redirect not followed when switched off (${redirectStatus.trim()})`,
 );
+
+// --- 25. App settings: proxy -------------------------------------------------------
+
+// A manual proxy in the settings dialog: a request for a host that does not
+// exist goes through the test server acting as proxy; the settings file is
+// written to the (test) configuration folder.
+await evaluate(
+  `[...document.querySelectorAll('.sidebar__toolbar .icon-button')].find((button) => button.getAttribute('aria-label') === 'Einstellungen' || button.getAttribute('aria-label') === 'Settings').click()`,
+);
+await waitFor(`!!document.querySelector('.settings-dialog')`, 'settings dialog');
+await evaluate(`(() => {
+  const select = [...document.querySelectorAll('.settings-dialog select')].find((element) => [...element.options].some((option) => option.value === 'manual'));
+  select.value = 'manual';
+  select.dispatchEvent(new Event('change', { bubbles: true }));
+})()`);
+await waitFor(
+  `document.querySelectorAll('.settings-dialog input[type=text]').length === 2`,
+  'proxy fields',
+);
+await evaluate(`(() => {
+  const url = document.querySelectorAll('.settings-dialog input[type=text]')[0];
+  url.value = ${JSON.stringify(origin)};
+  url.dispatchEvent(new Event('input', { bubbles: true }));
+  document.querySelector('.settings-dialog [type=submit]').click();
+})()`);
+await waitFor(`!document.querySelector('.settings-dialog')`, 'settings saved');
+const settingsText = readFileSync(path.join(webviewData, 'settings.toml'), 'utf8');
+check(
+  settingsText.includes('mode = "manual"') && settingsText.includes(origin),
+  'proxy saved to settings.toml',
+);
+await evaluate(setValue('.url-bar__input', 'http://api.example.invalid/echo?proxied=1'));
+await evaluate(`document.querySelectorAll('.request-editor__section')[0].click()`);
+await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);
+await echoWith('proxied=1', 'request through the proxy');
+check(true, 'request went through the configured proxy');
 
 finish(null);

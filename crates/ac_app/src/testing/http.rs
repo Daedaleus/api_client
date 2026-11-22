@@ -8,7 +8,8 @@ use ac_domain::exchange::{Header, ResolvedRequest, Response};
 use ac_domain::protocol::StatusCode;
 
 use super::lock;
-use crate::ports::{HttpSender, TransportError};
+use crate::ports::{HttpSender, SettingsError, TransportError};
+use crate::settings::{NetworkSettings, ProxySetting};
 
 /// An [`HttpSender`] that answers with queued replies and records what was
 /// sent. Without a queued reply it fails with [`TransportError::Other`].
@@ -16,6 +17,7 @@ use crate::ports::{HttpSender, TransportError};
 pub struct FakeHttpSender {
     replies: Mutex<VecDeque<Result<Response, TransportError>>>,
     sent: Mutex<Vec<ResolvedRequest>>,
+    network: Mutex<Option<NetworkSettings>>,
 }
 
 impl FakeHttpSender {
@@ -37,6 +39,12 @@ impl FakeHttpSender {
     pub fn sent(&self) -> Vec<ResolvedRequest> {
         lock(&self.sent).clone()
     }
+
+    /// The network settings applied last, if any.
+    #[must_use]
+    pub fn network(&self) -> Option<NetworkSettings> {
+        lock(&self.network).clone()
+    }
 }
 
 impl HttpSender for FakeHttpSender {
@@ -49,6 +57,20 @@ impl HttpSender for FakeHttpSender {
             .pop_front()
             .unwrap_or_else(|| Err(TransportError::Other("no reply queued".into())));
         std::future::ready(reply)
+    }
+
+    /// Refuses a manual proxy whose URL is not `http(s)://` or `socks5://`
+    /// (like the real sender would), else remembers the settings.
+    fn configure(&self, network: &NetworkSettings) -> Result<(), SettingsError> {
+        if let ProxySetting::Manual { url, .. } = &network.proxy
+            && !["http://", "https://", "socks5://"]
+                .iter()
+                .any(|scheme| url.starts_with(scheme))
+        {
+            return Err(SettingsError(format!("invalid proxy URL {url}")));
+        }
+        *lock(&self.network) = Some(network.clone());
+        Ok(())
     }
 }
 

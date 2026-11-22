@@ -24,6 +24,7 @@ type TestApp = App<
     FakeScriptRunner,
     crate::ports::NoAssist,
     crate::ports::NoHistory,
+    crate::ports::DefaultSettings,
 >;
 
 fn app(fake: FakeHttpSender) -> (TestApp, Arc<FakeHttpSender>) {
@@ -37,6 +38,7 @@ fn app(fake: FakeHttpSender) -> (TestApp, Arc<FakeHttpSender>) {
             scripts: FakeScriptRunner::new(),
             assist: crate::ports::NoAssist,
             history: crate::ports::NoHistory,
+            settings: crate::ports::DefaultSettings,
         },
         Handle::current(),
     );

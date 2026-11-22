@@ -31,10 +31,12 @@
 //! - `tree`: reading the text files of a folder tree (folder imports).
 //! - [`store`]: [`FileStore`], the `CollectionStore` port of `ac_app`.
 //! - [`history`]: [`FileHistory`], the `HistoryStore` port (request history).
+//! - [`app_settings`]: [`FileSettings`], the `SettingsStore` port (the app's own settings).
 //! - [`names`]: file and folder names from display names.
 //! - `order`: keeping `order` lists in step with their folder.
 //! - `document`: reading and updating TOML values in place, atomic writes.
 
+pub mod app_settings;
 pub mod arrange;
 mod auth;
 mod body;
@@ -63,6 +65,7 @@ mod transport;
 mod tree;
 mod variables;
 
+pub use app_settings::FileSettings;
 pub use create::{create_collection, create_folder, create_request};
 pub use environment_file::{create_environment, read_environment, save_environment};
 pub use error::{LoadProblem, StorageError};

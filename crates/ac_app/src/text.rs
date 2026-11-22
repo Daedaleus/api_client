@@ -114,6 +114,9 @@ pub mod keys {
     pub const SCRIPT_ASSIST: &str = "error.script_assist";
     /// The request history cannot be read or written. Placeholder: `detail`.
     pub const HISTORY: &str = "error.history";
+    /// The app's settings cannot be read, written or applied. Placeholder:
+    /// `detail`.
+    pub const SETTINGS: &str = "error.settings";
 
     /// A file or folder cannot be read or written. Arguments: `path`, `detail`.
     pub const STORE_IO: &str = "error.store_io";
@@ -144,7 +147,7 @@ pub mod keys {
 
     /// All keys with the names of their placeholders, checked against the
     /// translation file by a test.
-    pub const ALL: [(&str, &[&str]); 48] = [
+    pub const ALL: [(&str, &[&str]); 49] = [
         (URL_EMPTY, &[]),
         (URL_INVALID, &["reason"]),
         (URL_SCHEME, &["scheme"]),
@@ -180,6 +183,7 @@ pub mod keys {
         (SCRIPT_POST_RESPONSE_OF, &["owner", "detail"]),
         (SCRIPT_ASSIST, &["detail"]),
         (HISTORY, &["detail"]),
+        (SETTINGS, &["detail"]),
         (STORE_IO, &["path", "detail"]),
         (STORE_DAMAGED, &["path", "detail"]),
         (STORE_READ_ONLY, &["path"]),

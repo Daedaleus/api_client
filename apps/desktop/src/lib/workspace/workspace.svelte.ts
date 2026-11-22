@@ -34,6 +34,7 @@ import { baseName, dropPlace, foldersAround, locate, moveTargets } from './tree'
 import { TreeDrag } from './drag.svelte';
 import { isSession, sessionOf } from './session';
 import { HistoryState } from './history.svelte';
+import { SettingsState } from './settings.svelte';
 import { CurlState } from './curl.svelte';
 import { DefaultsState } from './defaults.svelte';
 
@@ -63,6 +64,8 @@ export class Workspace {
   readonly drag = new TreeDrag();
   /** Requests sent before (sidebar). */
   readonly history: HistoryState;
+  /** The app's own settings (dialog). */
+  readonly settings: SettingsState;
   /** The quick search (Ctrl+K) is open. */
   searching = $state(false);
   /** The filter above the sidebar tree. */
@@ -85,6 +88,7 @@ export class Workspace {
     this.defaults = new DefaultsState(api, this.collections);
     this.curl = new CurlState(api, this.tabs);
     this.history = new HistoryState(api, this.tabs, this.dialogs);
+    this.settings = new SettingsState(api);
   }
 
   /** The collection a tab's request belongs to (none for scratch tabs). */
@@ -103,6 +107,9 @@ export class Workspace {
   /** Opens the collections and then the tabs of the last session. */
   async restore(): Promise<void> {
     await this.collections.restore();
+    // Settings that could not be applied at start are pointed out.
+    const problem = await this.settings.startupProblem();
+    if (problem) this.collections.error = problem;
     const session = readJson(this.#storage, SESSION_KEY, null, isSession);
     if (session) {
       await this.tabs.restore(session, (id) => this.collections.find(id) !== undefined);

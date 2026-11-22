@@ -20,7 +20,7 @@ use crate::event::AppEvent;
 use crate::history::Masking;
 use crate::oauth::authorize;
 use crate::ports::{BrowserLogin, CollectionStore, HttpSender, ScriptRunner, SecretVault};
-use crate::ports::{HistoryStore, ScriptAssist};
+use crate::ports::{HistoryStore, ScriptAssist, SettingsStore};
 use crate::resolve::{Entered, Prepared, resolve_request};
 use crate::text::UserText;
 use crate::view::{HeaderDraft, OutgoingRequest, ParamDraft, VariableDraft};
@@ -33,7 +33,8 @@ impl<
     R: ScriptRunner,
     A: ScriptAssist,
     Y: HistoryStore,
-> App<H, S, V, B, R, A, Y>
+    Z: SettingsStore,
+> App<H, S, V, B, R, A, Y, Z>
 {
     /// Starts a run: checked at once unless a pre-request script may still
     /// change the request, then scripts and sending in the background.
@@ -138,7 +139,7 @@ pub(super) fn scope<'a>(
     .then(runtime)
 }
 
-impl<H: HttpSender, S, V, B: BrowserLogin, R, A, Y> Inner<H, S, V, B, R, A, Y> {
+impl<H: HttpSender, S, V, B: BrowserLogin, R, A, Y, Z> Inner<H, S, V, B, R, A, Y, Z> {
     /// Sends a prepared request, fetching its OAuth 2 token first if it
     /// needs one.
     pub(super) async fn send(&self, prepared: Prepared) -> Result<Response, UserText> {

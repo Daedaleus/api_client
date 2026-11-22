@@ -11,7 +11,7 @@ use crate::error::AppError;
 use crate::ports::{
     BrowserLogin, CollectionStore, HttpSender, ScriptRunner, SecretError, SecretValues, SecretVault,
 };
-use crate::ports::{HistoryStore, ScriptAssist};
+use crate::ports::{HistoryStore, ScriptAssist, SettingsStore};
 use crate::view::RecipientsView;
 
 impl<
@@ -22,7 +22,8 @@ impl<
     R: ScriptRunner,
     A: ScriptAssist,
     Y: HistoryStore,
-> App<H, S, V, B, R, A, Y>
+    Z: SettingsStore,
+> App<H, S, V, B, R, A, Y, Z>
 {
     pub(super) fn query_recipients(&self, collection_id: &str) -> Result<QueryResult, AppError> {
         let opened = self.current(collection_id)?;

@@ -11,8 +11,8 @@ use crate::text::UserText;
 
 use crate::view::{
     AuthDraft, CertificateCheckView, CollectionView, EnvironmentDraft, HistoryItemView,
-    OutgoingRequest, RecipientsView, RequestDraft, RunOutcomeView, ScriptsDraft, TransportDraft,
-    VariableDraft,
+    OutgoingRequest, RecipientsView, RequestDraft, RunOutcomeView, ScriptsDraft, SettingsView,
+    TransportDraft, VariableDraft,
 };
 
 /// Something the user wants the application to do.
@@ -175,6 +175,12 @@ pub enum Command {
     },
     /// Remove every entry of the request history.
     ClearHistory,
+    /// Apply and save the app's settings (checked first: nothing is saved
+    /// if they cannot be applied).
+    SaveSettings {
+        /// The settings.
+        settings: SettingsView,
+    },
 }
 
 /// Identifies one sending of a request, so the UI can match the result.
@@ -218,6 +224,8 @@ pub enum CommandAck {
     },
     /// The request history was cleared.
     HistoryCleared,
+    /// The app's settings were applied and saved.
+    SettingsSaved,
 }
 
 /// Something the UI wants to read.
@@ -250,6 +258,8 @@ pub enum Query {
     },
     /// The request history, newest first.
     History,
+    /// The app's settings.
+    Settings,
     /// One entry of the request history, to open as a new tab.
     HistoryEntry {
         /// The entry.
@@ -291,6 +301,13 @@ pub enum QueryResult {
     Curl {
         /// For a POSIX shell, one option per line.
         command: String,
+    },
+    /// The app's settings.
+    Settings {
+        /// The settings.
+        settings: SettingsView,
+        /// Why the saved settings could not be applied at start, if so.
+        problem: Option<UserText>,
     },
     /// The request history, newest first.
     History {

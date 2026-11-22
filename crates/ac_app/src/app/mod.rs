@@ -14,6 +14,7 @@
 //! - `arrange`: duplicating and moving requests and folders.
 //! - `assist`: checking and completing scripts in the editor.
 //! - `history`: recording sent requests; listing, opening, clearing them.
+//! - `settings`: the app's own settings (network), applied to the sender.
 
 mod arrange;
 mod assist;
@@ -27,6 +28,7 @@ mod runner;
 mod runs;
 mod script_runs;
 mod secrets;
+mod settings;
 
 use defaults::DefaultsDraft;
 pub use runner::RunPlan;
@@ -45,14 +47,15 @@ use crate::error::AppError;
 use crate::event::AppEvent;
 use crate::oauth::TokenCache;
 use crate::ports::{BrowserLogin, CollectionStore, HttpSender, ScriptRunner, SecretVault};
-use crate::ports::{HistoryStore, ScriptAssist};
+use crate::ports::{HistoryStore, ScriptAssist, SettingsStore};
+use crate::text::UserText;
 use script_runs::RuntimeVariables;
 
 /// Events kept for slow subscribers before they start missing some.
 const EVENT_CAPACITY: usize = 64;
 
 /// The adapters the application works with.
-pub struct Ports<H, S, V, B, R, A, Y> {
+pub struct Ports<H, S, V, B, R, A, Y, Z> {
     /// Sends HTTP requests.
     pub http: H,
     /// Reads and writes collections.
@@ -67,17 +70,23 @@ pub struct Ports<H, S, V, B, R, A, Y> {
     pub assist: A,
     /// Keeps the request history.
     pub history: Y,
+    /// Keeps the app's own settings.
+    pub settings: Z,
 }
 
 /// The application: send [`Command`]s and [`Query`]s, receive
 /// [`AppEvent`]s.
 ///
 /// Cheap to clone; clones share state.
-pub struct App<H, S, V, B, R, A, Y> {
-    inner: Arc<Inner<H, S, V, B, R, A, Y>>,
+pub struct App<H, S, V, B, R, A, Y, Z> {
+    #[expect(
+        clippy::type_complexity,
+        reason = "one type parameter per port, so tests can plug in doubles"
+    )]
+    inner: Arc<Inner<H, S, V, B, R, A, Y, Z>>,
 }
 
-struct Inner<H, S, V, B, R, A, Y> {
+struct Inner<H, S, V, B, R, A, Y, Z> {
     http: H,
     store: S,
     vault: V,
@@ -85,6 +94,7 @@ struct Inner<H, S, V, B, R, A, Y> {
     scripts: R,
     assist: A,
     history: Y,
+    settings: Z,
     /// Variables set by scripts, in memory only.
     runtime_variables: Mutex<RuntimeVariables>,
     /// Background work runs here, whichever thread calls `execute` – UIs
@@ -100,9 +110,11 @@ struct Inner<H, S, V, B, R, A, Y> {
     open: Mutex<Vec<(ItemId, PathBuf)>>,
     /// Open collections that are not saved yet (in a temporary folder).
     temporary: Mutex<HashSet<ItemId>>,
+    /// Why the saved settings could not be applied at start, if so.
+    settings_problem: Mutex<Option<UserText>>,
 }
 
-impl<H, S, V, B, R, A, Y> Clone for App<H, S, V, B, R, A, Y> {
+impl<H, S, V, B, R, A, Y, Z> Clone for App<H, S, V, B, R, A, Y, Z> {
     fn clone(&self) -> Self {
         Self {
             inner: Arc::clone(&self.inner),
@@ -118,12 +130,13 @@ impl<
     R: ScriptRunner,
     A: ScriptAssist,
     Y: HistoryStore,
-> App<H, S, V, B, R, A, Y>
+    Z: SettingsStore,
+> App<H, S, V, B, R, A, Y, Z>
 {
     /// Creates the application with its adapters; background work runs on
     /// `runtime`.
     #[must_use]
-    pub fn new(ports: Ports<H, S, V, B, R, A, Y>, runtime: Handle) -> Self {
+    pub fn new(ports: Ports<H, S, V, B, R, A, Y, Z>, runtime: Handle) -> Self {
         let (events, _) = broadcast::channel(EVENT_CAPACITY);
         Self {
             inner: Arc::new(Inner {
@@ -134,6 +147,7 @@ impl<
                 scripts: ports.scripts,
                 assist: ports.assist,
                 history: ports.history,
+                settings: ports.settings,
                 runtime_variables: Mutex::default(),
                 runtime,
                 events,
@@ -141,6 +155,7 @@ impl<
                 tokens: TokenCache::default(),
                 open: Mutex::new(Vec::new()),
                 temporary: Mutex::default(),
+                settings_problem: Mutex::default(),
             }),
         }
     }
@@ -235,6 +250,7 @@ impl<
                 recipients,
             } => self.set_recipients(&collection_id, &recipients),
             Command::ClearHistory => self.clear_history(),
+            Command::SaveSettings { settings } => self.save_settings(&settings),
         }
     }
 
@@ -253,8 +269,17 @@ impl<
             Query::Curl { request } => self.query_curl(&request),
             Query::ParseCurl { text } => interchange::parse_curl(&text),
             Query::History => self.query_history(),
+            Query::Settings => self.query_settings(),
             Query::HistoryEntry { id } => self.query_history_entry(&id),
         }
+    }
+
+    fn settings_problem(&self) -> MutexGuard<'_, Option<UserText>> {
+        // Replaced whole; a panic leaves a usable value.
+        self.inner
+            .settings_problem
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
     }
 
     fn temporary(&self) -> MutexGuard<'_, HashSet<ItemId>> {

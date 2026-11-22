@@ -14,11 +14,11 @@ use crate::command::CommandAck;
 use crate::error::AppError;
 use crate::ports::{
     BrowserLogin, CollectionStore, HistoryStore, HttpSender, ScriptAssist, ScriptRunner,
-    SecretVault,
+    SecretVault, SettingsStore,
 };
 use crate::view::collection::non_empty;
 
-impl<H, S, V, B, R, A, Y> App<H, S, V, B, R, A, Y>
+impl<H, S, V, B, R, A, Y, Z> App<H, S, V, B, R, A, Y, Z>
 where
     H: HttpSender,
     S: CollectionStore,
@@ -27,6 +27,7 @@ where
     R: ScriptRunner,
     A: ScriptAssist,
     Y: HistoryStore,
+    Z: SettingsStore,
 {
     /// Copies the request or folder `item_id` as `name`, right after it.
     pub(super) fn duplicate_item(

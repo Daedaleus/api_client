@@ -140,6 +140,8 @@ pub fn run(
             assist: ac_app::ports::NoAssist,
             // Runs in CI are not the user's history.
             history: ac_app::ports::NoHistory,
+            // The CLI takes no settings from the desktop app.
+            settings: ac_app::ports::DefaultSettings,
         },
         runtime.handle().clone(),
     );
