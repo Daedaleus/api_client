@@ -6,6 +6,8 @@
     variant?: 'primary' | 'secondary';
     disabled?: boolean;
     onclick?: () => void;
+    /** Tooltip, e.g. with the keyboard shortcut. */
+    title?: string | undefined;
     children: Snippet;
   }
 
@@ -14,11 +16,12 @@
     variant = 'secondary',
     disabled = false,
     onclick,
+    title,
     children,
   }: Props = $props();
 </script>
 
-<button {type} {disabled} {onclick} class="button button--{variant}">
+<button {type} {disabled} {onclick} {title} class="button button--{variant}">
   {@render children()}
 </button>
 

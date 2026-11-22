@@ -11,6 +11,7 @@
   import Sidebar from '../components/organisms/Sidebar.svelte';
   import TabBar from '../components/organisms/TabBar.svelte';
   import type { Api } from '../lib/api';
+  import { shortcutFor } from '../lib/shortcuts';
   import { Workspace } from '../lib/workspace/workspace.svelte';
 
   interface Props {
@@ -40,16 +41,30 @@
   });
 
   function keydown(event: KeyboardEvent) {
+    const action = shortcutFor(event);
+    if (action === null) return;
     const tab = workspace.tabs.active;
-    const command = event.ctrlKey || event.metaKey;
-    const key = event.key.toLowerCase();
-    if (command && key === 's' && tab?.saved) {
-      event.preventDefault();
-      void workspace.save(tab);
-    } else if (command && key === 'n' && !event.shiftKey && !event.altKey) {
-      event.preventDefault();
-      workspace.tabs.openScratch();
+    switch (action) {
+      case 'save':
+        if (!tab?.saved) return;
+        void workspace.save(tab);
+        break;
+      case 'newRequest':
+        workspace.tabs.openScratch();
+        break;
+      case 'send':
+        if (!tab || tab.sending) return;
+        void workspace.send(tab);
+        break;
+      case 'environment': {
+        // Only saved requests of a collection have an environment picker.
+        const picker = document.querySelector<HTMLSelectElement>('.environment-picker__select');
+        if (!picker) return;
+        picker.focus();
+        break;
+      }
     }
+    event.preventDefault();
   }
 </script>
 

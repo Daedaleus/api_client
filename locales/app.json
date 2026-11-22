@@ -241,6 +241,9 @@
   "menu.import_curl": { "de": "cURL-Befehl einfügen …", "en": "Paste cURL command …" },
   "menu.more": { "de": "Aktionen für „{name}“", "en": "Actions for “{name}”" },
   "shortcut.new_request": { "de": "Strg+N", "en": "Ctrl+N" },
+  "shortcut.send": { "de": "Strg+Enter", "en": "Ctrl+Enter" },
+  "shortcut.environment": { "de": "Strg+E", "en": "Ctrl+E" },
+  "shortcut.hint": { "de": "{action} ({keys})", "en": "{action} ({keys})" },
   "import.title_postman": {
     "de": "Postman-Collection importieren",
     "en": "Import a Postman collection"

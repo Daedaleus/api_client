@@ -36,6 +36,8 @@
 //      the URL, the post-response script logs and sets a variable for the
 //      next request and runs tests (one failing on purpose), a syntax error
 //      stops the request and names its line,
+//  16. Ctrl+Enter sends from the script editor, Ctrl+E focuses the
+//      environment picker,
 // and the program is still running after each send.
 //
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
@@ -1208,5 +1210,52 @@ check(
   `syntax error of the pre-request script reported (${JSON.stringify(scriptFailure)})`,
 );
 check(exitCode === null, 'program still running after scripts');
+
+// --- 16. Keyboard shortcuts -----------------------------------------------------------
+
+/** Presses Ctrl + `key` as a real key press (not a synthetic DOM event). */
+async function pressCtrl(key, code) {
+  for (const type of ['rawKeyDown', 'keyUp']) {
+    await new Promise((resolve) => {
+      const id = ++nextId;
+      waiting.set(id, resolve);
+      socket.send(
+        JSON.stringify({
+          id,
+          method: 'Input.dispatchKeyEvent',
+          // Modifier 2 = Ctrl.
+          params: {
+            type,
+            modifiers: 2,
+            key,
+            code,
+            windowsVirtualKeyCode: key === 'Enter' ? 13 : key.toUpperCase().charCodeAt(0),
+          },
+        }),
+      );
+    });
+  }
+}
+
+// Ctrl+Enter in the script editor sends instead of adding a line.
+await evaluate(setValue('.url-bar__input', `${echoUrl}?keys=1`));
+await evaluate(setScript(0, 'log(1);'));
+await pressCtrl('Enter', 'Enter');
+await echoWith('keys=1', 'echo sent with Ctrl+Enter');
+const scriptAfter = await evaluate(
+  `document.querySelectorAll('.scripts-editor .cm-content')[0].textContent`,
+);
+check(
+  scriptAfter === 'log(1);',
+  `Ctrl+Enter sent from the script editor without a new line (${JSON.stringify(scriptAfter)})`,
+);
+// The environment picker belongs to requests of a collection.
+await waitFor(clickTreeEntry('Health'), 'request "Health" in the collection tree');
+await waitFor(`!!document.querySelector('.environment-picker__select')`, 'environment picker');
+await pressCtrl('e', 'KeyE');
+check(
+  await evaluate(`document.activeElement?.classList.contains('environment-picker__select')`),
+  'Ctrl+E focuses the environment picker',
+);
 
 finish(null);

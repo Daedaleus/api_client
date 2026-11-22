@@ -57,7 +57,15 @@
         bind:value={url}
       />
     </label>
-    <Button type="submit" variant="primary" disabled={sending}>
+    <Button
+      type="submit"
+      variant="primary"
+      disabled={sending}
+      title={i18n.t('shortcut.hint', {
+        action: i18n.t('request.send'),
+        keys: i18n.t('shortcut.send'),
+      })}
+    >
       {sending ? i18n.t('request.sending') : i18n.t('request.send')}
     </Button>
   </div>

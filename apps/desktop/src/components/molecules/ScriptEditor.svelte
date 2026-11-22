@@ -53,7 +53,8 @@
       // Tab is left to move the focus (keyboard users must get out again).
       keymap.of([
         ...closeBracketsKeymap,
-        ...defaultKeymap,
+        // Ctrl+Enter sends the request (workspace shortcut), not a new line.
+        ...defaultKeymap.filter((binding) => binding.key !== 'Mod-Enter'),
         ...historyKeymap,
         ...completionKeymap,
         ...lintKeymap,
