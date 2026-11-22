@@ -34,17 +34,20 @@ fn the_port_reads_and_changes_collection_files() {
     store
         .create_request(&root, &Request::new("Status"))
         .unwrap();
-    let folder = store.create_folder(&root, "Orders").unwrap();
+    let (orders, folder) = store.create_folder(&root, "Orders").unwrap();
+    assert_eq!(orders, root.join("orders"));
     store
-        .rename_folder(&root.join("orders"), folder, "Orders and payments")
+        .rename_folder(&orders, folder, "Orders and payments")
         .unwrap();
+    // Moved to the top of the collection.
+    store.move_item(&orders, &root, 0).unwrap();
     store.remove(&root.join("auth")).unwrap();
     assert!(root.join(".trashed-auth").is_dir());
 
     let reopened = store.open(&root).unwrap();
     assert_eq!(
         tree_names(&reopened.collection.items),
-        ["Products/", "Ping", "Status", "Orders and payments/"]
+        ["Orders and payments/", "Products/", "Ping", "Status"]
     );
     assert!(matches!(
         reopened.collection.find(folder),

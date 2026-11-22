@@ -11,9 +11,11 @@
 //! - `runner`: running a collection's requests one after another (CLI).
 //! - `interchange`: cURL export and import.
 //! - `defaults`: what the collection and its folders pass on to requests.
+//! - `arrange`: duplicating and moving requests and folders.
 //! - `assist`: checking and completing scripts in the editor.
 //! - `history`: recording sent requests; listing, opening, clearing them.
 
+mod arrange;
 mod assist;
 mod collections;
 mod defaults;
@@ -173,6 +175,17 @@ impl<
                 parent_id,
                 name,
             } => self.create_folder(&collection_id, &parent_id, &name),
+            Command::DuplicateItem {
+                collection_id,
+                item_id,
+                name,
+            } => self.duplicate_item(&collection_id, &item_id, &name),
+            Command::MoveItem {
+                collection_id,
+                item_id,
+                parent_id,
+                index,
+            } => self.move_item(&collection_id, &item_id, &parent_id, index),
             Command::RenameItem {
                 collection_id,
                 item_id,

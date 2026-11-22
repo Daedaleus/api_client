@@ -170,31 +170,7 @@ impl Loader {
 
     /// Names of folders and request files in `dir`, sorted case-insensitively.
     fn names(dir: &Path, is_root: bool) -> Result<Vec<String>, StorageError> {
-        let reading = std::fs::read_dir(dir).map_err(|error| StorageError::io(dir, error))?;
-        let mut names = Vec::new();
-        for entry in reading {
-            let entry = entry.map_err(|error| StorageError::io(dir, error))?;
-            let name = entry.file_name().to_string_lossy().into_owned();
-            let path = entry.path();
-            let settings = if is_root {
-                COLLECTION_FILE
-            } else {
-                FOLDER_FILE
-            };
-            let wanted = if path.is_dir() {
-                !(is_root && RESERVED_ROOT_FOLDERS.contains(&name.as_str()))
-            } else {
-                name != settings
-                    && path
-                        .extension()
-                        .is_some_and(|extension| extension == EXTENSION)
-            };
-            if wanted && is_visible(&name) {
-                names.push(name);
-            }
-        }
-        names.sort_by_key(|name| name.to_lowercase());
-        Ok(names)
+        entry_names(dir, is_root)
     }
 
     fn folder(&mut self, dir: &Path) -> Item {
@@ -339,6 +315,36 @@ impl Loader {
             id
         }
     }
+}
+
+/// Names of folders and request files in `dir`, sorted case-insensitively
+/// (the collection folder leaves out its reserved folders).
+pub(crate) fn entry_names(dir: &Path, is_root: bool) -> Result<Vec<String>, StorageError> {
+    let reading = std::fs::read_dir(dir).map_err(|error| StorageError::io(dir, error))?;
+    let mut names = Vec::new();
+    for entry in reading {
+        let entry = entry.map_err(|error| StorageError::io(dir, error))?;
+        let name = entry.file_name().to_string_lossy().into_owned();
+        let path = entry.path();
+        let settings = if is_root {
+            COLLECTION_FILE
+        } else {
+            FOLDER_FILE
+        };
+        let wanted = if path.is_dir() {
+            !(is_root && RESERVED_ROOT_FOLDERS.contains(&name.as_str()))
+        } else {
+            name != settings
+                && path
+                    .extension()
+                    .is_some_and(|extension| extension == EXTENSION)
+        };
+        if wanted && is_visible(&name) {
+            names.push(name);
+        }
+    }
+    names.sort_by_key(|name| name.to_lowercase());
+    Ok(names)
 }
 
 #[cfg(test)]

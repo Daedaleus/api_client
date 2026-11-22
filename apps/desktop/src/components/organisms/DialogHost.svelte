@@ -16,6 +16,9 @@
     if (current?.kind === 'name') {
       value = current.value;
       queueMicrotask(() => input?.select());
+    } else if (current?.kind === 'choose') {
+      value = current.value;
+      queueMicrotask(() => form?.querySelector<HTMLSelectElement>('select')?.focus());
     } else if (current) {
       queueMicrotask(() => form?.querySelector<HTMLButtonElement>('[type=submit]')?.focus());
     }
@@ -24,13 +27,13 @@
   function submit(event: SubmitEvent) {
     event.preventDefault();
     const current = dialogs.current;
-    if (current?.kind === 'name') current.answer(value);
+    if (current?.kind === 'name' || current?.kind === 'choose') current.answer(value);
     else current?.answer(true);
   }
 
   function cancel() {
     const current = dialogs.current;
-    if (current?.kind === 'name') current.answer(null);
+    if (current?.kind === 'name' || current?.kind === 'choose') current.answer(null);
     else current?.answer(false);
   }
 
@@ -56,6 +59,15 @@
             <span>{i18n.text(current.label)}</span>
             <!-- svelte-ignore a11y_autofocus -->
             <input class="dialog-host__input" type="text" bind:value bind:this={input} autofocus />
+          </label>
+        {:else if current.kind === 'choose'}
+          <label class="dialog-host__field">
+            <span>{i18n.text(current.label)}</span>
+            <select class="dialog-host__input" bind:value>
+              {#each current.options as option (option.value)}
+                <option value={option.value}>{option.label}</option>
+              {/each}
+            </select>
           </label>
         {:else}
           <p class="dialog-host__message">{i18n.text(current.message)}</p>

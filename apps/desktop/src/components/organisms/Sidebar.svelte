@@ -15,6 +15,14 @@
   let showHistory = $derived(workspace.history.visible);
 </script>
 
+<svelte:window
+  onpointermove={(event) => workspace.drag.move(event.clientX, event.clientY)}
+  onpointerup={() => void workspace.drop()}
+  onkeydown={(event) => {
+    if (event.key === 'Escape') workspace.drag.cancel();
+  }}
+/>
+
 <aside class="sidebar" aria-label={i18n.t('sidebar.title')}>
   <div class="sidebar__toolbar">
     <div class="sidebar__views" role="tablist" aria-label={i18n.t('sidebar.views')}>

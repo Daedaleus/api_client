@@ -87,7 +87,7 @@ impl<
         let opened = self.current(collection_id)?;
         let dir = folder_path(&opened, parent_id)?;
         let request = Request::new(name);
-        self.inner.store.create_request(dir, &request)?;
+        let _ = self.inner.store.create_request(dir, &request)?;
         self.reload(&opened.root, Some(request.id))
     }
 
@@ -100,7 +100,7 @@ impl<
         let name = non_empty(name)?;
         let opened = self.current(collection_id)?;
         let dir = folder_path(&opened, parent_id)?;
-        let id = self.inner.store.create_folder(dir, name)?;
+        let (_, id) = self.inner.store.create_folder(dir, name)?;
         self.reload(&opened.root, Some(id))
     }
 

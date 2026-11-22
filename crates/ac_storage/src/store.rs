@@ -12,7 +12,9 @@ use ac_domain::environment::Environment;
 use crate::error::StorageError;
 use crate::format::ENVIRONMENTS_FOLDER;
 use crate::load::{LoadedCollection, load_collection};
-use crate::{create, environment_file, remove, request_file, secrets_file, settings, temporary};
+use crate::{
+    arrange, create, environment_file, remove, request_file, secrets_file, settings, temporary,
+};
 
 /// How removed items are discarded.
 pub type Discard = fn(&Path) -> std::io::Result<()>;
@@ -80,15 +82,17 @@ impl CollectionStore for FileStore {
         request_file::save_request(file, request).map_err(store_error)
     }
 
-    fn create_request(&self, dir: &Path, request: &Request) -> Result<(), StoreError> {
-        create::create_request(dir, request)
-            .map(|_| ())
-            .map_err(store_error)
+    fn create_request(&self, dir: &Path, request: &Request) -> Result<PathBuf, StoreError> {
+        create::create_request(dir, request).map_err(store_error)
     }
 
-    fn create_folder(&self, parent: &Path, name: &str) -> Result<ItemId, StoreError> {
-        create::create_folder(parent, name)
-            .map(|(_, id)| id)
+    fn create_folder(&self, parent: &Path, name: &str) -> Result<(PathBuf, ItemId), StoreError> {
+        create::create_folder(parent, name).map_err(store_error)
+    }
+
+    fn move_item(&self, path: &Path, to_dir: &Path, position: usize) -> Result<(), StoreError> {
+        arrange::move_item(path, to_dir, position)
+            .map(|_| ())
             .map_err(store_error)
     }
 

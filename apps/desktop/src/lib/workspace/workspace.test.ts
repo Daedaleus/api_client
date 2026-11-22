@@ -24,13 +24,71 @@ function openDialog(workspace: Workspace) {
 /** Answers the dialog as soon as the action opens it. */
 async function answer(workspace: Workspace, value: string | boolean | null) {
   const dialog = await openDialog(workspace);
-  if (dialog.kind === 'name') dialog.answer(value as string | null);
+  if (dialog.kind === 'name' || dialog.kind === 'choose') dialog.answer(value as string | null);
   else dialog.answer(value as boolean);
 }
 
 const health: TreeItemView = shop().items[1]!;
 
 describe('Workspace', () => {
+  it('duplicates and moves items in the tree', async () => {
+    const { api, workspace } = await setup();
+    const login = (shop().items[0] as Extract<TreeItemView, { kind: 'folder' }>).items[0]!;
+
+    api.answers.push(changed(shop()));
+    await workspace.duplicate('c1', login);
+    expect(api.commands.at(-1)).toEqual({
+      type: 'duplicateItem',
+      collectionId: 'c1',
+      itemId: 'r1',
+      name: 'Login (copy)',
+    });
+
+    // Health is second at the top level: up is first, down is impossible.
+    api.answers.push(changed(shop()));
+    await workspace.moveBy('c1', health, -1);
+    expect(api.commands.at(-1)).toEqual({
+      type: 'moveItem',
+      collectionId: 'c1',
+      itemId: 'r2',
+      parentId: 'c1',
+      index: 0,
+    });
+    const before = api.commands.length;
+    await workspace.moveBy('c1', health, 1);
+    await workspace.moveBy('missing', health, 1);
+    expect(api.commands).toHaveLength(before);
+
+    // Into a folder chosen in a dialog, at its end.
+    api.answers.push(changed(shop()));
+    const moving = workspace.moveTo('c1', health);
+    const dialog = await openDialog(workspace);
+    expect(dialog.kind === 'choose' && dialog.options.map((option) => option.label)).toEqual([
+      'Shop',
+      'Shop / Auth',
+    ]);
+    await answer(workspace, 'f1');
+    await moving;
+    expect(api.commands.at(-1)).toMatchObject({ type: 'moveItem', parentId: 'f1', index: 1 });
+    const cancelled = workspace.moveTo('c1', health);
+    await answer(workspace, null);
+    await cancelled;
+    expect(api.commands.at(-1)).toMatchObject({ parentId: 'f1' });
+
+    // Dragged onto the Auth folder: into it.
+    workspace.drag.press('c1', health, 0, 0);
+    workspace.drag.move(10, 10);
+    workspace.drag.hover({ collectionId: 'c1', item: shop().items[0]!, position: 'inside' });
+    api.answers.push(changed(shop()));
+    await workspace.drop();
+    expect(api.commands.at(-1)).toMatchObject({ itemId: 'r2', parentId: 'f1', index: 1 });
+    // A press without moving is no drag.
+    workspace.drag.press('c1', health, 0, 0);
+    const count = api.commands.length;
+    await workspace.drop();
+    expect(api.commands).toHaveLength(count);
+  });
+
   it('routes run results from the backend to the tabs', async () => {
     const { api, workspace } = await setup();
     const stop = await workspace.connect();

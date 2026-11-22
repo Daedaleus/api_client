@@ -19,6 +19,9 @@ function workspace() {
     newRequest: vi.fn(),
     newFolder: vi.fn(),
     rename: vi.fn(),
+    duplicate: vi.fn(),
+    moveBy: vi.fn(),
+    moveTo: vi.fn(),
     remove: vi.fn(),
     closeCollection: vi.fn(),
     saveCollectionAs: vi.fn(),
@@ -90,12 +93,29 @@ describe('sidebar menus', () => {
       'new-folder',
       'settings',
       'rename',
+      'duplicate',
+      'move',
+      'move-up',
+      'move-down',
+      'move-to',
       'delete',
     ]);
     expect(fake.newRequest).toHaveBeenCalledWith('c1', folder.id);
     expect(fake.defaults.open).toHaveBeenCalledWith('c1', folder.id);
-    expect(chooseAll(treeItemMenu(ws, 'c1', request))).toEqual(['rename', 'delete']);
+    expect(chooseAll(treeItemMenu(ws, 'c1', request))).toEqual([
+      'rename',
+      'duplicate',
+      'move',
+      'move-up',
+      'move-down',
+      'move-to',
+      'delete',
+    ]);
     expect(fake.rename).toHaveBeenCalledWith('c1', request);
+    expect(fake.duplicate).toHaveBeenCalledWith('c1', request);
+    expect(fake.moveBy).toHaveBeenCalledWith('c1', request, -1);
+    expect(fake.moveBy).toHaveBeenCalledWith('c1', request, 1);
+    expect(fake.moveTo).toHaveBeenCalledWith('c1', request);
     expect(fake.remove).toHaveBeenCalledWith('c1', request);
   });
 });

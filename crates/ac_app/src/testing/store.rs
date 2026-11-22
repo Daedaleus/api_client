@@ -216,11 +216,24 @@ impl CollectionStore for MemoryStore {
         })
     }
 
-    fn create_request(&self, dir: &Path, request: &Request) -> Result<(), StoreError> {
-        self.with_items(dir, |items| items.push(Item::Request(request.clone())))
+    fn create_request(&self, dir: &Path, request: &Request) -> Result<PathBuf, StoreError> {
+        self.with_items(dir, |items| items.push(Item::Request(request.clone())))?;
+        Ok(dir.join(request.id.to_string()))
     }
 
-    fn create_folder(&self, parent: &Path, name: &str) -> Result<ItemId, StoreError> {
+    fn move_item(&self, path: &Path, to_dir: &Path, position: usize) -> Result<(), StoreError> {
+        let id = id_of(path)?;
+        let item = self.with_items(parent_of(path), |items| {
+            let index = items.iter().position(|item| item.id() == id)?;
+            Some(items.remove(index))
+        })?;
+        let item = item.ok_or_else(|| not_found(path))?;
+        self.with_items(to_dir, |items| {
+            items.insert(position.min(items.len()), item);
+        })
+    }
+
+    fn create_folder(&self, parent: &Path, name: &str) -> Result<(PathBuf, ItemId), StoreError> {
         let id = ItemId::new();
         self.with_items(parent, |items| {
             items.push(Item::Folder(Folder {
@@ -233,7 +246,7 @@ impl CollectionStore for MemoryStore {
                 items: Vec::new(),
             }));
         })?;
-        Ok(id)
+        Ok((parent.join(id.to_string()), id))
     }
 
     fn rename_folder(&self, dir: &Path, id: ItemId, name: &str) -> Result<(), StoreError> {

@@ -137,12 +137,14 @@ pub mod keys {
     pub const UNKNOWN_ITEM: &str = "error.unknown_item";
     /// New items can only be created in the collection or a folder.
     pub const NOT_A_FOLDER: &str = "error.not_a_folder";
+    /// A folder cannot go into itself or one of its folders.
+    pub const MOVE_INTO_ITSELF: &str = "error.move_into_itself";
     /// Names must not be empty.
     pub const NAME_EMPTY: &str = "error.name_empty";
 
     /// All keys with the names of their placeholders, checked against the
     /// translation file by a test.
-    pub const ALL: [(&str, &[&str]); 47] = [
+    pub const ALL: [(&str, &[&str]); 48] = [
         (URL_EMPTY, &[]),
         (URL_INVALID, &["reason"]),
         (URL_SCHEME, &["scheme"]),
@@ -189,6 +191,7 @@ pub mod keys {
         (ALREADY_SAVED, &[]),
         (UNKNOWN_ITEM, &[]),
         (NOT_A_FOLDER, &[]),
+        (MOVE_INTO_ITSELF, &[]),
         (NAME_EMPTY, &[]),
     ];
 }

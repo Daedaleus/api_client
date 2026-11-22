@@ -295,6 +295,14 @@
   "collection.new_request": { "de": "Neuer Request", "en": "New request" },
   "collection.new_folder": { "de": "Neuer Ordner", "en": "New folder" },
   "collection.rename": { "de": "Umbenennen", "en": "Rename" },
+  "collection.duplicate": { "de": "Duplizieren", "en": "Duplicate" },
+  "collection.copy_name": { "de": "{name} (Kopie)", "en": "{name} (copy)" },
+  "collection.move": { "de": "Verschieben", "en": "Move" },
+  "collection.move_up": { "de": "Nach oben", "en": "Up" },
+  "collection.move_down": { "de": "Nach unten", "en": "Down" },
+  "collection.move_to": { "de": "In Ordner …", "en": "To folder …" },
+  "collection.move_to_title": { "de": "„{name}“ verschieben", "en": "Move “{name}”" },
+  "collection.move_to_label": { "de": "Ziel", "en": "Destination" },
   "collection.delete": { "de": "Löschen", "en": "Delete" },
   "collection.close": {
     "de": "Collection schließen",
@@ -606,6 +614,10 @@
   "error.unknown_item": {
     "de": "Dieser Eintrag existiert nicht mehr, vielleicht wurde er außerhalb der App geändert.",
     "en": "This entry no longer exists; it may have been changed outside the app."
+  },
+  "error.move_into_itself": {
+    "de": "Ein Ordner kann nicht in sich selbst verschoben werden.",
+    "en": "A folder cannot be moved into itself."
   },
   "error.not_a_folder": {
     "de": "Neue Einträge gehen nur in die Collection oder einen Ordner.",

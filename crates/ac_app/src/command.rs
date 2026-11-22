@@ -71,6 +71,28 @@ pub enum Command {
         /// Display name.
         name: String,
     },
+    /// Copy a folder (with everything in it) or request as `name`, placed
+    /// right after it; the copy gets new ids.
+    DuplicateItem {
+        /// The collection.
+        collection_id: String,
+        /// The folder or request.
+        item_id: String,
+        /// Name of the copy.
+        name: String,
+    },
+    /// Move a folder or request into the collection or one of its folders,
+    /// or to another place in the same folder.
+    MoveItem {
+        /// The collection.
+        collection_id: String,
+        /// The folder or request.
+        item_id: String,
+        /// The collection or folder it goes into.
+        parent_id: String,
+        /// Its position there among the other items (0 = first).
+        index: usize,
+    },
     /// Rename a folder or request (its file keeps its name).
     RenameItem {
         /// The collection.

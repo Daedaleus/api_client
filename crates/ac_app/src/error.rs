@@ -87,6 +87,9 @@ pub enum AppError {
     /// New items go into the collection or a folder, not a request.
     #[error("not a folder")]
     NotAFolder,
+    /// A folder cannot be moved into itself or one of its folders.
+    #[error("cannot move a folder into itself")]
+    MoveIntoItself,
     /// A name is empty.
     #[error("name is empty")]
     EmptyName,
@@ -156,6 +159,7 @@ impl AppError {
             }
             Self::UnknownItem => UserText::new(keys::UNKNOWN_ITEM),
             Self::NotAFolder => UserText::new(keys::NOT_A_FOLDER),
+            Self::MoveIntoItself => UserText::new(keys::MOVE_INTO_ITSELF),
             Self::EmptyName => UserText::new(keys::NAME_EMPTY),
             Self::Store(error) => error.user_text(),
         }
