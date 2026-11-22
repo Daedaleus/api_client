@@ -43,6 +43,8 @@
 //  17. a pre-request script of the collection is saved and runs before
 //      sending,
 //  18. sent requests are in the history (secrets masked) and open as a tab,
+//  19. a path variable is filled in from the params table and a query
+//      parameter switched off there is not sent,
 // and the program is still running after each send.
 //
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
@@ -452,7 +454,9 @@ const setValue = (selector, value, event = 'input') => `(() => {
 const jsonBody = '{"price": 1.10}';
 await evaluate(setValue('.url-bar__select', 'POST', 'change'));
 await evaluate(setValue('.url-bar__input', echoUrl));
-// Headers section: add a row and fill it.
+// Headers section (after Params): add a row and fill it.
+await evaluate(`document.querySelectorAll('.request-editor__section')[1].click()`);
+await waitFor(`!!document.querySelector('.request-editor__panel .rows-editor')`, 'headers section');
 await evaluate(`[...document.querySelectorAll('.rows-editor button')].at(-1).click()`);
 await waitFor(`document.querySelectorAll('.rows-editor__input').length === 2`, 'header row');
 await evaluate(setValue('.rows-editor__input', 'X-Client'));
@@ -462,7 +466,7 @@ await evaluate(`(() => {
   value.dispatchEvent(new Event('input', { bubbles: true }));
 })()`);
 // Body section: JSON with a number that must arrive exactly as typed.
-await evaluate(`document.querySelectorAll('.request-editor__section')[1].click()`);
+await evaluate(`document.querySelectorAll('.request-editor__section')[2].click()`);
 await waitFor(`!!document.querySelector('input[name=body-kind][value=json]')`, 'body section');
 await evaluate(`document.querySelector('input[name=body-kind][value=json]').click()`);
 await waitFor(`!!document.querySelector('.body-editor__text')`, 'body text field');
@@ -682,7 +686,7 @@ await echoWith('scope=from-collection', 'echo with the collection variable');
 steps.push('collection variable used when sending');
 
 // A request variable of the same name is stronger.
-await evaluate(`document.querySelectorAll('.request-editor__section')[3].click()`);
+await evaluate(`document.querySelectorAll('.request-editor__section')[4].click()`);
 await waitFor(`!!document.querySelector('.request-editor__panel .rows-editor')`, 'variables tab');
 await evaluate(`document.querySelector('.request-editor__panel .rows-editor .button').click()`);
 await waitFor(
@@ -845,7 +849,7 @@ const fileContent = 'hello from e2e';
 mkdirSync(path.join(collectionDir, 'files'), { recursive: true });
 writeFileSync(path.join(collectionDir, 'files', 'hello.txt'), fileContent);
 
-await evaluate(`document.querySelectorAll('.request-editor__section')[1].click()`);
+await evaluate(`document.querySelectorAll('.request-editor__section')[2].click()`);
 await waitFor(`!!document.querySelector('input[name=body-kind][value=multipart]')`, 'body kinds');
 await evaluate(`document.querySelector('input[name=body-kind][value=multipart]').click()`);
 await waitFor(`!!document.querySelector('.multipart-editor')`, 'multipart editor');
@@ -887,7 +891,7 @@ check(exitCode === null, 'program still running after sending files');
 
 // --- 11. Certificate check --------------------------------------------------------
 
-await evaluate(`document.querySelectorAll('.request-editor__section')[4].click()`);
+await evaluate(`document.querySelectorAll('.request-editor__section')[5].click()`);
 await waitFor(`!!document.querySelector('.certificate-check-field__select')`, 'settings tab');
 check(
   !(await evaluate(`!!document.querySelector('.request-editor__insecure')`)),
@@ -1124,7 +1128,7 @@ const setScript = (index, text) => `(() => {
 await evaluate(
   `[...document.querySelectorAll('.response__tab')].find((tab) => tab.textContent.includes('Body')).click()`,
 );
-await evaluate(`document.querySelectorAll('.request-editor__section')[5].click()`);
+await evaluate(`document.querySelectorAll('.request-editor__section')[6].click()`);
 await waitFor(
   `document.querySelectorAll('.scripts-editor .cm-content').length === 2`,
   'script editors',
@@ -1345,5 +1349,25 @@ check(true, 'a history entry opens as a new tab with its response');
 await evaluate(
   `[...document.querySelectorAll('.sidebar__view')].find((tab) => !tab.classList.contains('sidebar__view--active')).click()`,
 );
+
+// --- 19. Params --------------------------------------------------------------------
+
+// A path variable gets its value in the params table; a query parameter
+// switched off there leaves the URL and is not sent.
+await evaluate(setValue('.url-bar__input', `${echoUrl}/:id?keep=1&drop=2`));
+await evaluate(`document.querySelectorAll('.request-editor__section')[0].click()`);
+await waitFor(`!!document.querySelector('.params-editor__input')`, 'path variable field');
+await evaluate(setValue('.params-editor__input', '42'));
+await evaluate(
+  `document.querySelectorAll('.params-editor .rows-editor input[type=checkbox]')[1].click()`,
+);
+const withoutDrop = await waitFor(
+  `(() => { const url = document.querySelector('.url-bar__input').value; return url.includes('drop') ? null : url; })()`,
+  'query parameter switched off',
+);
+check(withoutDrop.endsWith('/:id?keep=1'), `switched-off parameter left the URL (${withoutDrop})`);
+await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);
+await echoWith('/echo/42?keep=1', 'echo with the path variable filled in');
+check(true, 'path variable replaced when sending');
 
 finish(null);

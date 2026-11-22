@@ -21,6 +21,7 @@ fn with_auth(
     variables: &HashMap<&str, &str>,
 ) -> Result<ResolvedRequest, AppError> {
     let entered = Entered {
+        path_params: &[],
         verify_tls: true,
         method,
         url,
@@ -334,5 +335,47 @@ fn api_keys_go_into_a_header_or_the_query() {
         &HashMap::new(),
     )
     .unwrap_err();
+    assert_eq!(error.user_text().key, keys::VARIABLE_UNKNOWN);
+}
+
+#[test]
+fn path_variables_are_filled_in_before_the_variables() {
+    let params = [
+        PathParam {
+            name: "id".into(),
+            value: "{{userId}}".into(),
+        },
+        PathParam {
+            name: "kind".into(),
+            value: "a b".into(),
+        },
+    ];
+    let variables = HashMap::from([("base", "http://localhost:8080"), ("userId", "42")]);
+    let entered = Entered {
+        path_params: &params,
+        verify_tls: true,
+        method: "GET",
+        url: "{{base}}/users/:id/:kind/:missing?id=:id",
+        headers: &[],
+        body: &Body::None,
+        auth: &Auth::None,
+        files_base: None,
+    };
+    let request = resolve_request(&entered, &variables).unwrap().request;
+    assert_eq!(
+        request.url.as_str(),
+        "http://localhost:8080/users/42/a%20b/:missing?id=:id"
+    );
+
+    let unknown = [PathParam {
+        name: "id".into(),
+        value: "{{nope}}".into(),
+    }];
+    let entered = Entered {
+        path_params: &unknown,
+        url: "http://x/:id",
+        ..entered
+    };
+    let error = resolve_request(&entered, &variables).unwrap_err();
     assert_eq!(error.user_text().key, keys::VARIABLE_UNKNOWN);
 }

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/svelte';
+import { render, screen, within } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -19,8 +19,37 @@ function setup(
 describe('RequestEditor', () => {
   beforeEach(() => i18n.setLocale('en'));
 
+  it('edits query parameters and path variables in step with the URL', async () => {
+    const { tab } = setup();
+    tab.draft.url = '{{baseUrl}}/users/:id?page=2';
+    await screen.findByText(':id');
+    expect(screen.getByRole('tab', { name: /Params/ })).toHaveTextContent('2');
+    const query = screen.getByRole('region', { name: 'Query parameters' });
+    expect(within(query).getByDisplayValue('page')).toBeInTheDocument();
+
+    // A new row goes into the URL; switching it off moves it out.
+    await userEvent.click(within(query).getByRole('button', { name: 'Add parameter' }));
+    const names = within(query).getAllByLabelText('Parameter name');
+    await userEvent.type(names[1]!, 'q');
+    await userEvent.type(within(query).getAllByLabelText('Value')[1]!, 'tea');
+    expect(tab.draft.url).toBe('{{baseUrl}}/users/:id?page=2&q=tea');
+    await userEvent.click(within(query).getAllByRole('checkbox', { name: 'Send' })[0]!);
+    expect(tab.draft.url).toBe('{{baseUrl}}/users/:id?q=tea');
+    expect(tab.draft.disabledQuery).toEqual([{ name: 'page', value: '2' }]);
+
+    // Typed into the URL: the table follows.
+    tab.draft.url = '{{baseUrl}}/users/:id?q=coffee';
+    await vi.waitFor(() => expect(within(query).getByDisplayValue('coffee')).toBeInTheDocument());
+
+    // Path variable values are kept and previewed.
+    await userEvent.type(screen.getByLabelText('Value of :id'), '42');
+    expect(tab.draft.pathParams).toEqual([{ name: 'id', value: '42' }]);
+    expect(screen.getByText(/users\/42\?q=coffee/)).toBeInTheDocument();
+  });
+
   it('edits headers: add, name, value, switch off, remove', async () => {
     const { tab } = setup();
+    await userEvent.click(screen.getByRole('tab', { name: /Headers/ }));
     expect(screen.getByText('No headers.')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Add header' }));

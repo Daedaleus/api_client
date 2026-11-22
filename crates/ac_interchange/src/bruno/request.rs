@@ -5,6 +5,7 @@ use std::path::Path;
 use ac_domain::auth::{Auth, KeyPlacement, OAuth2, OAuth2Grant};
 use ac_domain::collection::{Body, FormField, HeaderEntry, MultipartField, Request};
 use ac_domain::environment::Variable;
+use ac_domain::params::{PathParam, QueryParam, path_param_names};
 use ac_domain::protocol::HttpMethod;
 use ac_domain::protocol::grant_type::{AUTHORIZATION_CODE, CLIENT_CREDENTIALS};
 use ac_domain::script::Scripts;
@@ -77,17 +78,32 @@ pub(super) fn request(
         .to_uppercase()
         .parse()
         .unwrap_or(HttpMethod::Get);
-    let (url, path_variables) = path_parameters(&method_block.get("url").unwrap_or_default());
-    request.url = url;
-    request.variables = path_variables;
-    if let Some(params) = find(blocks, "params:path") {
-        for entry in params.entries() {
-            if let Some(variable) = request.variables.iter_mut().find(|v| v.name == entry.key) {
-                variable.value = entry.value;
-            }
-        }
-    }
-    request.variables.extend(variables(blocks));
+    request.url = method_block.get("url").unwrap_or_default();
+    // Path variables as they are (`:id`), with their values.
+    let path_values = find(blocks, "params:path").map_or_default(Block::entries);
+    request.path_params = path_param_names(&request.url)
+        .into_iter()
+        .map(|name| PathParam {
+            name: name.to_owned(),
+            value: path_values
+                .iter()
+                .find(|entry| entry.key == name)
+                .map_or_default(|entry| entry.value.clone()),
+        })
+        .collect();
+    // Enabled query parameters are part of the URL already.
+    request.disabled_query = find(blocks, "params:query").map_or_default(|params| {
+        params
+            .entries()
+            .into_iter()
+            .filter(|entry| !entry.enabled)
+            .map(|entry| QueryParam {
+                name: entry.key,
+                value: entry.value,
+            })
+            .collect()
+    });
+    request.variables = variables(blocks);
     request.headers = find(blocks, "headers").map_or_default(|headers| {
         headers
             .entries()
@@ -104,30 +120,6 @@ pub(super) fn request(
     let auth_mode = method_block.get("auth");
     request.auth = auth(blocks, auth_mode.as_deref(), &request.name, report);
     (seq_of(meta), request)
-}
-
-/// Bruno's `:param` path parameters as `{{param}}` with a variable each.
-fn path_parameters(url: &str) -> (String, Vec<Variable>) {
-    let (path, query) = url
-        .split_once('?')
-        .map_or((url, None), |(p, q)| (p, Some(q)));
-    let mut variables = Vec::new();
-    let path: Vec<String> = path
-        .split('/')
-        .map(|segment| match segment.strip_prefix(':') {
-            Some(name) if !name.is_empty() => {
-                variables.push(Variable::plain(name, ""));
-                format!("{{{{{name}}}}}")
-            }
-            _ => segment.to_owned(),
-        })
-        .collect();
-    let mut url = path.join("/");
-    if let Some(query) = query {
-        url.push('?');
-        url.push_str(query);
-    }
-    (url, variables)
 }
 
 fn variables(blocks: &[Block]) -> Vec<Variable> {

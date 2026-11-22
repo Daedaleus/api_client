@@ -8,7 +8,8 @@ use crate::error::AppError;
 use crate::ports::{Location, OpenedCollection, StoreError};
 use crate::text::UserText;
 use crate::view::{
-    AuthDraft, BodyDraft, CertificateCheckView, EnvironmentDraft, ScriptsDraft, VariableDraft,
+    AuthDraft, BodyDraft, CertificateCheckView, EnvironmentDraft, ParamDraft, ScriptsDraft,
+    VariableDraft,
 };
 
 /// An open collection.
@@ -176,6 +177,12 @@ pub struct RequestDraft {
     /// Scripts before sending and after the response.
     #[serde(default)]
     pub scripts: ScriptsDraft,
+    /// Values of the path variables (`:name`) in the URL.
+    #[serde(default)]
+    pub path_params: Vec<ParamDraft>,
+    /// Query parameters switched off (the others are part of the URL).
+    #[serde(default)]
+    pub disabled_query: Vec<ParamDraft>,
     /// The file is never written (set by the app, ignored when saving).
     #[serde(default)]
     pub read_only: bool,
@@ -234,6 +241,8 @@ impl RequestDraft {
             auth: AuthDraft::from_auth(&request.auth),
             certificate_check: CertificateCheckView::from_check(request.certificate_check),
             scripts: ScriptsDraft::from_scripts(&request.scripts),
+            path_params: ParamDraft::from_path(&request.path_params),
+            disabled_query: ParamDraft::from_query(&request.disabled_query),
             read_only,
         }
     }
@@ -254,6 +263,8 @@ impl RequestDraft {
             url: self.url.clone(),
             headers: self.headers.iter().map(HeaderDraft::to_entry).collect(),
             body: self.body.to_body(),
+            path_params: ParamDraft::to_path(&self.path_params),
+            disabled_query: ParamDraft::to_query(&self.disabled_query),
         })
     }
 }

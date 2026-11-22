@@ -63,13 +63,15 @@ describe('TabsState', () => {
     const { api, tabs } = setup();
     const tab = tabs.active!;
     tab.draft.method = 'POST';
-    tab.draft.url = 'example.com';
+    tab.draft.url = 'example.com/users/:id';
+    tab.draft.pathParams = [{ name: 'id', value: '7' }];
     await tabs.send(tab);
     expect(api.commands).toEqual([
       {
         type: 'sendRequest',
         method: 'POST',
-        url: 'example.com',
+        url: 'example.com/users/:id',
+        pathParams: [{ name: 'id', value: '7' }],
         headers: [],
         body: { kind: 'none' },
         variables: [],

@@ -343,6 +343,20 @@
     "en": "env.set('token', res.json().token);"
   },
   "editor.headers": { "de": "Headers", "en": "Headers" },
+  "editor.params": { "de": "Params", "en": "Params" },
+  "params.query": { "de": "Query-Parameter", "en": "Query parameters" },
+  "params.path": { "de": "Pfadvariablen", "en": "Path variables" },
+  "params.path_hint": {
+    "de": "Ein Pfadabschnitt wie /users/:id wird hier zur Pfadvariable und beim Senden durch ihren Wert ersetzt.",
+    "en": "A path segment like /users/:id becomes a path variable here and is replaced by its value when sending."
+  },
+  "params.path_value": { "de": "Wert von :{name}", "en": "Value of :{name}" },
+  "params.enabled": { "de": "Mitsenden", "en": "Send" },
+  "params.name": { "de": "Parameter-Name", "en": "Parameter name" },
+  "params.value": { "de": "Wert", "en": "Value" },
+  "params.add": { "de": "Parameter hinzufügen", "en": "Add parameter" },
+  "params.remove": { "de": "Parameter entfernen", "en": "Remove parameter" },
+  "params.none": { "de": "Keine Query-Parameter.", "en": "No query parameters." },
   "editor.body": { "de": "Body", "en": "Body" },
   "editor.no_headers": { "de": "Keine Header.", "en": "No headers." },
   "editor.add_header": { "de": "Header hinzufügen", "en": "Add header" },

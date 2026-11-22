@@ -16,6 +16,7 @@ use ac_domain::collection::{
     Body, Collection, Folder, FormField, HeaderEntry, Item, ItemId, MultipartField, Request,
 };
 use ac_domain::environment::Variable;
+use ac_domain::params::{PathParam, QueryParam};
 use ac_domain::protocol::grant_type::{AUTHORIZATION_CODE, CLIENT_CREDENTIALS};
 use ac_domain::script::Scripts;
 use ac_domain::tls::CertificateCheck;
@@ -94,6 +95,17 @@ fn request_of(request: Option<&Value>, name: String, skipped: &mut Vec<Skipped>)
         converted.method = method;
     }
     converted.url = url_of(request.get("url"));
+    if let Some(url) = request.get("url").filter(|url| url.is_object()) {
+        // Path variables (`:id`) with their values; switched-off query
+        // parameters (the others are in the URL already).
+        converted.path_params = list(url.get("variable"))
+            .map(|(name, value, _)| PathParam { name, value })
+            .collect();
+        converted.disabled_query = list(url.get("query"))
+            .filter(|(_, _, enabled)| !enabled)
+            .map(|(name, value, _)| QueryParam { name, value })
+            .collect();
+    }
     converted.headers = list(request.get("header"))
         .map(|(key, value, enabled)| HeaderEntry {
             name: key,

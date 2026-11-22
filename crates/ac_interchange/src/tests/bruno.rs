@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 
 use ac_domain::auth::{Auth, KeyPlacement};
 use ac_domain::collection::{Body, HeaderEntry, MultipartField, Request};
+use ac_domain::params::{PathParam, QueryParam};
 use ac_domain::protocol::HttpMethod;
 
 use super::*;
@@ -151,8 +152,22 @@ fn requests_with_bodies_auth_and_path_parameters() {
 
     let products = &folder(&collection.items, "Products").items;
     let get = request(products, "Get product");
-    assert_eq!(get.url, "{{baseUrl}}/products/{{id}}?verbose=true");
-    assert_eq!(get.variables, [Variable::plain("id", "42")]);
+    assert_eq!(get.url, "{{baseUrl}}/products/:id?verbose=true");
+    assert_eq!(
+        get.path_params,
+        [PathParam {
+            name: "id".into(),
+            value: "42".into()
+        }]
+    );
+    assert_eq!(
+        get.disabled_query,
+        [QueryParam {
+            name: "debug".into(),
+            value: "1".into()
+        }]
+    );
+    assert_eq!(get.variables, []);
     assert_eq!(
         get.auth,
         Auth::ApiKey {

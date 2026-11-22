@@ -44,6 +44,7 @@ async fn sent_url(
         .app
         .execute(Command::SendRequest {
             request: crate::view::OutgoingRequest {
+                path_params: Vec::new(),
                 certificate_check: crate::view::CertificateCheckView::Inherit,
                 scripts: crate::view::ScriptsDraft::default(),
                 method: "GET".into(),
@@ -129,6 +130,7 @@ async fn without_context_only_the_own_variables_count() {
         .app
         .execute(Command::SendRequest {
             request: crate::view::OutgoingRequest {
+                path_params: Vec::new(),
                 certificate_check: crate::view::CertificateCheckView::Inherit,
                 scripts: crate::view::ScriptsDraft::default(),
                 method: "GET".into(),
@@ -228,6 +230,7 @@ async fn requests_inherit_auth_from_folders_and_the_collection() {
             .app
             .execute(Command::SendRequest {
                 request: crate::view::OutgoingRequest {
+                    path_params: Vec::new(),
                     certificate_check: crate::view::CertificateCheckView::Inherit,
                     scripts: crate::view::ScriptsDraft::default(),
                     method: "GET".into(),
@@ -272,6 +275,7 @@ async fn file_paths_are_relative_to_the_collection_folder() {
         .app
         .execute(Command::SendRequest {
             request: crate::view::OutgoingRequest {
+                path_params: Vec::new(),
                 certificate_check: crate::view::CertificateCheckView::Inherit,
                 scripts: crate::view::ScriptsDraft::default(),
                 method: "PUT".into(),
@@ -309,6 +313,7 @@ async fn the_certificate_check_is_inherited_and_on_by_default() {
             .app
             .execute(Command::SendRequest {
                 request: crate::view::OutgoingRequest {
+                    path_params: Vec::new(),
                     method: "GET".into(),
                     url: "https://x.example".into(),
                     headers: Vec::new(),

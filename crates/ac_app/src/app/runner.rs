@@ -80,6 +80,7 @@ impl<
                 auth: draft.auth,
                 certificate_check: draft.certificate_check,
                 scripts: draft.scripts,
+                path_params: draft.path_params,
                 context: Some(SendContext {
                     collection_id: collection_id.to_owned(),
                     request_id: Some(request.id.to_string()),
