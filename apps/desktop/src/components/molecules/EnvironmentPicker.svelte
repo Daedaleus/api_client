@@ -28,7 +28,15 @@
 <div class="environment-picker">
   <label class="environment-picker__field">
     <span class="environment-picker__label">{i18n.t('env.label')}</span>
-    <select class="environment-picker__select" value={chosen ?? NONE} onchange={change}>
+    <select
+      class="environment-picker__select"
+      value={chosen ?? NONE}
+      onchange={change}
+      title={i18n.t('shortcut.hint', {
+        action: i18n.t('env.label'),
+        keys: i18n.t('shortcut.environment'),
+      })}
+    >
       <option value={NONE}>{i18n.t('env.none')}</option>
       {#each environments as environment (environment.id)}
         <option value={environment.id}>{environment.name}</option>

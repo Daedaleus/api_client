@@ -109,6 +109,22 @@ describe('WorkspacePage', () => {
     expect(openTabs()).toHaveLength(3);
   });
 
+  it('sends with Ctrl+Enter and focuses the environment with Ctrl+E', async () => {
+    const { api } = await setup();
+    await userEvent.click(screen.getByRole('button', { name: 'GET Health' }));
+    await screen.findByLabelText('Name');
+    expect(screen.getByRole('button', { name: 'Send' })).toHaveAttribute(
+      'title',
+      'Send (Ctrl+Enter)',
+    );
+
+    await fireEvent.keyDown(window, { key: 'Enter', ctrlKey: true });
+    await waitFor(() => expect(api.commands.at(-1)?.type).toBe('sendRequest'));
+
+    await fireEvent.keyDown(window, { key: 'e', ctrlKey: true });
+    expect(screen.getByRole('combobox', { name: 'Environment' })).toHaveFocus();
+  });
+
   it('opens a collection folder with its own button', async () => {
     const { api } = await setup();
     api.folder = 'C:\\apis\\billing';
