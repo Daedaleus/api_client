@@ -20,12 +20,14 @@ fn requests_and_results_match_the_editor_contract() {
             severity: Severity::Hint,
             message: "m".into(),
         })],
+        partial: true,
     };
     assert_eq!(
         serde_json::to_value(result).unwrap(),
         serde_json::json!({
             "type": "diagnostics",
-            "items": [{ "from": 1, "to": 3, "severity": "info", "message": "m" }]
+            "items": [{ "from": 1, "to": 3, "severity": "info", "message": "m" }],
+            "partial": true
         })
     );
 }

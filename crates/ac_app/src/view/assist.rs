@@ -41,6 +41,9 @@ pub enum AssistResult {
     Diagnostics {
         /// In the order of the script.
         items: Vec<DiagnosticView>,
+        /// Only syntax errors: the checker is still starting, ask again
+        /// soon.
+        partial: bool,
     },
     /// Suggestions.
     Completions {

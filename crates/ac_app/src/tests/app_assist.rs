@@ -1,5 +1,7 @@
 use super::*;
-use crate::ports::{AssistError, CompletionKind, ScriptCompletion, ScriptDiagnostic, Severity};
+use crate::ports::{
+    AssistError, CompletionKind, ScriptCheck, ScriptCompletion, ScriptDiagnostic, Severity,
+};
 use crate::test_support::Fixture;
 use crate::testing::FakeScriptAssist;
 use crate::text::keys;
@@ -20,7 +22,7 @@ async fn checks_and_completions_pass_through_as_views() {
                 kind: CompletionKind::Function,
             }])),
     );
-    let AssistResult::Diagnostics { items } = fixture
+    let AssistResult::Diagnostics { items, partial } = fixture
         .app
         .assist(AssistRequest::Check {
             source: "req.methd".into(),
@@ -30,6 +32,7 @@ async fn checks_and_completions_pass_through_as_views() {
     else {
         panic!("expected diagnostics");
     };
+    assert!(!partial);
     assert_eq!(items[0].severity, SeverityView::Error);
     assert_eq!((items[0].from, items[0].to), (4, 9));
 
@@ -70,6 +73,33 @@ async fn a_checker_that_cannot_answer_says_why() {
 
     // Without a checker nothing is wrong and nothing suggested.
     let none = crate::ports::NoAssist;
-    assert_eq!(none.check(String::new()).await.unwrap().len(), 0);
+    assert_eq!(
+        none.check(String::new()).await.unwrap().diagnostics.len(),
+        0
+    );
     assert_eq!(none.complete(String::new(), 0).await.unwrap().len(), 0);
+}
+
+#[tokio::test]
+async fn a_starting_checker_answers_with_syntax_errors_only() {
+    let fixture = Fixture::with_assist(FakeScriptAssist::new().check_answer(Ok(
+        ScriptCheck::syntax_only(vec![ScriptDiagnostic {
+            from: 6,
+            to: 7,
+            severity: Severity::Error,
+            message: "Unexpected token".into(),
+        }]),
+    )));
+    let result = fixture
+        .app
+        .assist(AssistRequest::Check {
+            source: "const = ;".into(),
+        })
+        .await
+        .unwrap();
+    let AssistResult::Diagnostics { items, partial } = result else {
+        panic!("expected diagnostics");
+    };
+    assert!(partial);
+    assert_eq!(items[0].message, "Unexpected token");
 }

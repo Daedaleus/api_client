@@ -78,7 +78,12 @@ export type AssistResult =
 /**  Problems found. */
 { type: "diagnostics"; 
 /**  In the order of the script. */
-items: DiagnosticView[] } | 
+items: DiagnosticView[]; 
+/**
+ *  Only syntax errors: the checker is still starting, ask again
+ *  soon.
+ */
+partial: boolean } | 
 /**  Suggestions. */
 { type: "completions"; 
 /**  Best first. */

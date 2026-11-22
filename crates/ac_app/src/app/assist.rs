@@ -24,16 +24,17 @@ where
     /// [`AppError::Assist`] if the checker cannot answer.
     pub async fn assist(&self, request: AssistRequest) -> Result<AssistResult, AppError> {
         Ok(match request {
-            AssistRequest::Check { source } => AssistResult::Diagnostics {
-                items: self
-                    .inner
-                    .assist
-                    .check(source)
-                    .await?
-                    .iter()
-                    .map(DiagnosticView::from_diagnostic)
-                    .collect(),
-            },
+            AssistRequest::Check { source } => {
+                let check = self.inner.assist.check(source).await?;
+                AssistResult::Diagnostics {
+                    items: check
+                        .diagnostics
+                        .iter()
+                        .map(DiagnosticView::from_diagnostic)
+                        .collect(),
+                    partial: check.partial,
+                }
+            }
             AssistRequest::Complete { source, offset } => AssistResult::Completions {
                 items: self
                     .inner

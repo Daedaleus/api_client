@@ -35,6 +35,7 @@
 //  15. scripts: the pre-request script sets a header and a variable used in
 //      the URL, the post-response script logs and sets a variable for the
 //      next request and runs tests (one failing on purpose), a syntax error
+//      is marked while the checker starts, a syntax error
 //      stops the request and names its line, as does an error while running,
 //  16. Ctrl+Enter sends from the script editor, Ctrl+E focuses the
 //      environment picker,
@@ -1119,7 +1120,13 @@ await waitFor(
   'script editors',
 );
 
-// The checker marks a wrong member (the TypeScript service starts first)…
+// A syntax error is marked at once, while the TypeScript service starts…
+await evaluate(setScript(0, 'const = ;'));
+await waitFor(`!!document.querySelector('.scripts-editor .cm-lintRange-error')`, 'syntax mark');
+check(true, 'syntax error marked while the checker starts');
+await evaluate(setScript(0, 'req.method;'));
+await waitFor(`!document.querySelector('.scripts-editor .cm-lintRange-error')`, 'mark removed');
+// … then the checker marks a wrong member once it has started…
 await evaluate(setScript(0, 'req.methd;'));
 await waitFor(`!!document.querySelector('.scripts-editor .cm-lintRange-error')`, 'checker mark');
 check(true, 'checker marks an unknown member of req');
