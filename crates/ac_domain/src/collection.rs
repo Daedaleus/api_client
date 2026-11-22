@@ -8,6 +8,7 @@ use uuid::Uuid;
 
 use crate::auth::Auth;
 use crate::environment::Variable;
+use crate::params::{PathParam, QueryParam};
 use crate::protocol::HttpMethod;
 use crate::script::Scripts;
 use crate::tls::CertificateCheck;
@@ -248,6 +249,10 @@ pub struct Request {
     pub certificate_check: CertificateCheck,
     /// Scripts before sending and after the response.
     pub scripts: Scripts,
+    /// Values of the path variables (`:name`) in the URL.
+    pub path_params: Vec<PathParam>,
+    /// Query parameters switched off (the others are in the URL).
+    pub disabled_query: Vec<QueryParam>,
 }
 
 impl Request {
@@ -265,6 +270,8 @@ impl Request {
             auth: Auth::Inherit,
             certificate_check: CertificateCheck::Inherit,
             scripts: Scripts::default(),
+            path_params: Vec::new(),
+            disabled_query: Vec::new(),
         }
     }
 }

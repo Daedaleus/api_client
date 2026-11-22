@@ -89,6 +89,8 @@ export function draft(
     auth: { kind: 'inherit' },
     certificateCheck: 'inherit',
     scripts: { preRequest: '', postResponse: '' },
+    pathParams: [],
+    disabledQuery: [],
     readOnly: false,
     ...overrides,
   };

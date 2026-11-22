@@ -44,6 +44,8 @@ export class RequestTab {
       method: 'GET',
       url: '',
       headers: [],
+      pathParams: [],
+      disabledQuery: [],
       body: { kind: 'none' },
       variables: [],
       auth: { kind: 'inherit' },

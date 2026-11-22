@@ -12,6 +12,7 @@ use crate::view::{BodyDraft, EnvironmentDraft, VariableDraft};
 fn send(fixture: &Fixture, url: &str, environment: Option<&str>) -> Result<CommandAck, AppError> {
     fixture.app.execute(Command::SendRequest {
         request: crate::view::OutgoingRequest {
+            path_params: Vec::new(),
             certificate_check: crate::view::CertificateCheckView::Inherit,
             scripts: crate::view::ScriptsDraft::default(),
             method: "GET".into(),

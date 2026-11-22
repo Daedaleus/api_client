@@ -7,6 +7,7 @@ use ac_domain::auth::{Auth, KeyPlacement};
 use ac_domain::collection::{Body, HeaderEntry};
 use ac_domain::environment::{UnresolvedVariable, interpolate};
 use ac_domain::exchange::{Header, ResolvedRequest};
+use ac_domain::params::{PathParam, fill_path_params};
 use ac_domain::protocol::{HttpMethod, auth_scheme, header, is_token};
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64;
@@ -26,6 +27,8 @@ const SUPPORTED_SCHEMES: [&str; 2] = ["http", "https"];
 pub(crate) struct Entered<'a> {
     pub method: &'a str,
     pub url: &'a str,
+    /// Values of the path variables (`:name`) in `url`.
+    pub path_params: &'a [PathParam],
     pub headers: &'a [HeaderEntry],
     pub body: &'a Body,
     pub auth: &'a Auth,
@@ -48,8 +51,9 @@ pub(crate) struct Prepared {
 
 /// Validates method, URL and headers as entered and prepares the body.
 ///
-/// Every `{{name}}` in the URL, header names and values, the body and the
-/// authentication is replaced from `variables` first. Disabled headers and
+/// Path variables (`:name`) in the URL are replaced by their values, then
+/// every `{{name}}` in the URL, header names and values, the body and the
+/// authentication is replaced from `variables`. Disabled headers and
 /// rows without a name are left out. A JSON or text body gets a matching
 /// `Content-Type` unless the request sets one itself; likewise the
 /// authentication adds its header or query parameter unless the request
@@ -60,7 +64,15 @@ pub(crate) fn resolve_request(
 ) -> Result<Prepared, AppError> {
     let fill = |text: &str| interpolate(text, |name| variables.get(name).copied());
     let method: HttpMethod = entered.method.trim().parse()?;
-    let mut url = resolve_url(&fill(entered.url)?)?;
+    let with_path = fill_path_params(entered.url, |name| {
+        entered
+            .path_params
+            .iter()
+            .find(|param| param.name == name)
+            .map(|param| fill(&param.value))
+            .transpose()
+    })?;
+    let mut url = resolve_url(&fill(&with_path)?)?;
     let headers: Vec<HeaderEntry> = entered
         .headers
         .iter()

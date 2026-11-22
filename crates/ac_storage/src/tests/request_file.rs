@@ -194,3 +194,39 @@ fn request_variables_round_trip() {
     assert!(read(&path).contains("[[request.variables]]"));
     assert_eq!(read_request(&path).unwrap().0, request);
 }
+
+#[test]
+fn path_variables_and_switched_off_query_parameters_round_trip() {
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("user.toml");
+    let mut request = Request::new("User");
+    request.url = "{{baseUrl}}/users/:id?page=2".into();
+    request.path_params = vec![PathParam {
+        name: "id".into(),
+        value: "{{userId}}".into(),
+    }];
+    request.disabled_query = vec![QueryParam {
+        name: "debug".into(),
+        value: "true".into(),
+    }];
+    save_request(&path, &request).unwrap();
+    let text = std::fs::read_to_string(&path).unwrap();
+    assert!(text.contains("[[request.path_params]]"), "{text}");
+    assert!(text.contains("[[request.disabled_query]]"), "{text}");
+    let (read, _) = read_request(&path).unwrap();
+    assert_eq!(read.path_params, request.path_params);
+    assert_eq!(read.disabled_query, request.disabled_query);
+
+    // Saving again without changes keeps the file; removing them removes the tables.
+    save_request(&path, &read).unwrap();
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), text);
+    let mut cleared = read;
+    cleared.path_params.clear();
+    cleared.disabled_query.clear();
+    save_request(&path, &cleared).unwrap();
+    let text = std::fs::read_to_string(&path).unwrap();
+    assert!(
+        !text.contains("path_params") && !text.contains("disabled_query"),
+        "{text}"
+    );
+}

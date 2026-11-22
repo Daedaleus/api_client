@@ -776,6 +776,8 @@ export type OutgoingRequest_Deserialize = {
 	certificateCheck?: CertificateCheckView,
 	/**  Scripts before sending and after the response. */
 	scripts?: ScriptsDraft_Deserialize,
+	/**  Values of the path variables (`:name`) in the URL. */
+	pathParams?: ParamDraft[],
 	/**
 	 *  Where further `{{variables}}` come from: collection, folders and
 	 *  environment. Without it only the request's own variables count.
@@ -807,11 +809,24 @@ export type OutgoingRequest_Serialize = {
 	certificateCheck: CertificateCheckView,
 	/**  Scripts before sending and after the response. */
 	scripts: ScriptsDraft_Serialize,
+	/**  Values of the path variables (`:name`) in the URL. */
+	pathParams: ParamDraft[],
 	/**
 	 *  Where further `{{variables}}` come from: collection, folders and
 	 *  environment. Without it only the request's own variables count.
 	 */
 	context: SendContext_Serialize | null,
+};
+
+/**
+ *  A name and its value: a path variable, or a query parameter that is
+ *  switched off.
+ */
+export type ParamDraft = {
+	/**  Name (path variables without the colon). */
+	name: string,
+	/**  Value; may contain `{{variables}}`. */
+	value: string,
 };
 
 /**  Something the UI wants to read. */
@@ -997,6 +1012,10 @@ export type RequestDraft_Deserialize = {
 	certificateCheck?: CertificateCheckView,
 	/**  Scripts before sending and after the response. */
 	scripts?: ScriptsDraft_Deserialize,
+	/**  Values of the path variables (`:name`) in the URL. */
+	pathParams?: ParamDraft[],
+	/**  Query parameters switched off (the others are part of the URL). */
+	disabledQuery?: ParamDraft[],
 	/**  The file is never written (set by the app, ignored when saving). */
 	readOnly?: boolean,
 };
@@ -1023,6 +1042,10 @@ export type RequestDraft_Serialize = {
 	certificateCheck: CertificateCheckView,
 	/**  Scripts before sending and after the response. */
 	scripts: ScriptsDraft_Serialize,
+	/**  Values of the path variables (`:name`) in the URL. */
+	pathParams: ParamDraft[],
+	/**  Query parameters switched off (the others are part of the URL). */
+	disabledQuery: ParamDraft[],
 	/**  The file is never written (set by the app, ignored when saving). */
 	readOnly: boolean,
 };

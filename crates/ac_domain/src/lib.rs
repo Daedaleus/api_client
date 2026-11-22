@@ -11,6 +11,8 @@
 //! - [`collection`]: collections, folders and saved requests as the user
 //!   edits them.
 //! - [`environment`]: environments, variables and `{{name}}` placeholders.
+//! - [`params`]: path variables (`/users/:id`) and switched-off query
+//!   parameters.
 //! - [`scope`]: which value wins when variables are defined in several
 //!   places (collection, environment, folders, request).
 //! - [`tls`]: whether server certificates are checked (inherited).
@@ -21,6 +23,7 @@ pub mod auth;
 pub mod collection;
 pub mod environment;
 pub mod exchange;
+pub mod params;
 pub mod protocol;
 pub mod scope;
 pub mod script;

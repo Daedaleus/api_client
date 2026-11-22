@@ -23,7 +23,7 @@ use crate::ports::{BrowserLogin, CollectionStore, HttpSender, ScriptRunner, Secr
 use crate::ports::{HistoryStore, ScriptAssist};
 use crate::resolve::{Entered, Prepared, resolve_request};
 use crate::text::UserText;
-use crate::view::{HeaderDraft, OutgoingRequest, VariableDraft};
+use crate::view::{HeaderDraft, OutgoingRequest, ParamDraft, VariableDraft};
 
 impl<
     H: HttpSender,
@@ -72,6 +72,7 @@ impl<
         let runtime = self.runtime_variables(outgoing);
         let variables = scope(context.as_ref(), &own, &runtime).values();
         let headers: Vec<_> = outgoing.headers.iter().map(HeaderDraft::to_entry).collect();
+        let path_params = ParamDraft::to_path(&outgoing.path_params);
         let body = outgoing.body.to_body();
         let own_auth = outgoing.auth.to_auth();
         let auth = match &context {
@@ -81,6 +82,7 @@ impl<
         let entered = Entered {
             method: &outgoing.method,
             url: &outgoing.url,
+            path_params: &path_params,
             headers: &headers,
             body: &body,
             auth: &auth,

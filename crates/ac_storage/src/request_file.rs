@@ -4,6 +4,7 @@
 use std::path::Path;
 
 use ac_domain::collection::{HeaderEntry, Request};
+use ac_domain::params::{PathParam, QueryParam};
 use ac_domain::protocol::HttpMethod;
 use toml_edit::{DocumentMut, Item, Table, TableLike};
 
@@ -16,6 +17,10 @@ use crate::{auth, body, scripts, tls, variables};
 const REQUEST_TABLE: &str = "request";
 const HEADERS: &str = "headers";
 const BODY: &str = "body";
+/// Values of the path variables (`:name`) in the URL.
+const PATH_PARAMS: &str = "path_params";
+/// Query parameters switched off (the others are part of the URL).
+const DISABLED_QUERY: &str = "disabled_query";
 
 /// Reads a request file. Missing optional values get defaults (name: file
 /// name, method: `GET`, empty URL, no headers, no body).
@@ -60,7 +65,44 @@ pub(crate) fn request_from(doc: &DocumentMut, path: &Path) -> Result<Request, St
         url: document::opt_str(table, "url", path)?.unwrap_or_default(),
         headers: headers_from(table.get(HEADERS), path)?,
         body: body::read(table.get(BODY), path)?,
+        path_params: rows::read(table.get(PATH_PARAMS), path, "request.path_params")?
+            .into_iter()
+            .map(|row| PathParam {
+                name: row.name,
+                value: row.value,
+            })
+            .collect(),
+        disabled_query: rows::read(table.get(DISABLED_QUERY), path, "request.disabled_query")?
+            .into_iter()
+            .map(|row| QueryParam {
+                name: row.name,
+                value: row.value,
+            })
+            .collect(),
     })
+}
+
+/// Rows of name/value pairs; `enabled` says whether they are sent.
+fn pair_rows<'a>(pairs: impl Iterator<Item = (&'a String, &'a String)>, enabled: bool) -> Vec<Row> {
+    pairs
+        .map(|(name, value)| Row {
+            name: name.clone(),
+            value: value.clone(),
+            enabled,
+            secret: false,
+        })
+        .collect()
+}
+
+fn path_rows(params: &[PathParam]) -> Vec<Row> {
+    pair_rows(params.iter().map(|param| (&param.name, &param.value)), true)
+}
+
+fn disabled_rows(params: &[QueryParam]) -> Vec<Row> {
+    pair_rows(
+        params.iter().map(|param| (&param.name, &param.value)),
+        false,
+    )
 }
 
 fn headers_from(item: Option<&Item>, path: &Path) -> Result<Vec<HeaderEntry>, StorageError> {
@@ -142,6 +184,18 @@ fn apply(doc: &mut DocumentMut, request: &Request, path: &Path) -> Result<(), St
         HEADERS,
         &header_rows(&before.headers),
         &header_rows(&request.headers),
+    );
+    rows::write(
+        table,
+        PATH_PARAMS,
+        &path_rows(&before.path_params),
+        &path_rows(&request.path_params),
+    );
+    rows::write(
+        table,
+        DISABLED_QUERY,
+        &disabled_rows(&before.disabled_query),
+        &disabled_rows(&request.disabled_query),
     );
     variables::write(table, &before.variables, &request.variables);
     auth::write(table, &before.auth, &request.auth);

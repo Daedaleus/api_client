@@ -5,7 +5,9 @@
   import CertificateCheckField from '../molecules/CertificateCheckField.svelte';
   import BodyEditor from '../molecules/BodyEditor.svelte';
   import RowsEditor, { type RowLabels } from '../molecules/RowsEditor.svelte';
+  import ParamsEditor from '../molecules/ParamsEditor.svelte';
   import ScriptsEditor from '../molecules/ScriptsEditor.svelte';
+  import { fillPathParams, pathParamNames, queryParams } from '../../lib/params';
   import UrlBar from '../molecules/UrlBar.svelte';
   import { i18n } from '../../lib/i18n/i18n.svelte';
   import type { ScriptAssist } from '../../lib/script-assist';
@@ -57,9 +59,10 @@
   }
 
   // What the URL looks like with its `{{variables}}` filled in.
-  let urlPreview = $derived(
-    hasPlaceholders(tab.draft.url) ? preview(tab.draft.url, variables) : null,
-  );
+  let urlPreview = $derived.by(() => {
+    const url = fillPathParams(tab.draft.url, tab.draft.pathParams);
+    return hasPlaceholders(url) ? preview(url, variables) : null;
+  });
 
   const HEADER_LABELS: RowLabels = {
     enabled: 'editor.header_enabled',
@@ -79,9 +82,20 @@
     empty: 'editor.no_variables',
   };
 
-  type Section = 'headers' | 'body' | 'auth' | 'variables' | 'settings' | 'scripts';
-  const SECTIONS: Section[] = ['headers', 'body', 'auth', 'variables', 'settings', 'scripts'];
-  let section = $state<Section>('headers');
+  type Section = 'params' | 'headers' | 'body' | 'auth' | 'variables' | 'settings' | 'scripts';
+  const SECTIONS: Section[] = [
+    'params',
+    'headers',
+    'body',
+    'auth',
+    'variables',
+    'settings',
+    'scripts',
+  ];
+  let section = $state<Section>('params');
+  let activeParams = $derived(
+    queryParams(tab.draft.url).length + pathParamNames(tab.draft.url).length,
+  );
   let scriptCount = $derived(
     [tab.draft.scripts.preRequest, tab.draft.scripts.postResponse].filter(
       (script) => script.trim() !== '',
@@ -150,7 +164,9 @@
         onclick={() => (section = name)}
       >
         {i18n.t(`editor.${name}`)}
-        {#if name === 'headers' && activeHeaders > 0}
+        {#if name === 'params' && activeParams > 0}
+          <span class="request-editor__count">{activeParams}</span>
+        {:else if name === 'headers' && activeHeaders > 0}
           <span class="request-editor__count">{activeHeaders}</span>
         {:else if name === 'body' && tab.draft.body.kind !== 'none'}
           <span class="request-editor__count">{i18n.t(`editor.body_${tab.draft.body.kind}`)}</span>
@@ -173,7 +189,13 @@
     <p class="request-editor__note">{i18n.text(tab.notice)}</p>
   {/if}
   <div class="request-editor__panel" role="tabpanel">
-    {#if section === 'headers'}
+    {#if section === 'params'}
+      <ParamsEditor
+        bind:url={tab.draft.url}
+        bind:disabledQuery={tab.draft.disabledQuery}
+        bind:pathParams={tab.draft.pathParams}
+      />
+    {:else if section === 'headers'}
       <RowsEditor bind:rows={tab.draft.headers} labels={HEADER_LABELS} />
     {:else if section === 'body'}
       <BodyEditor bind:body={tab.draft.body} {onpickfile} />

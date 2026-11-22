@@ -1,3 +1,4 @@
+use ac_domain::params::{PathParam, QueryParam};
 use ac_domain::protocol::HttpMethod;
 
 use super::*;
@@ -198,6 +199,30 @@ b();
 c();"
     );
     assert_eq!(folder.scripts.pre_request, "");
+}
+
+#[test]
+fn path_variables_and_switched_off_query_parameters() {
+    let imported = from_postman(
+        r#"{"info": {}, "item": [{"name": "User", "request": {"url": {"raw": "{{base}}/users/:id?page=2", "query": [{"key": "page", "value": "2"}, {"key": "debug", "value": "1", "disabled": true}], "variable": [{"key": "id", "value": "7"}]}}}]}"#,
+    )
+    .unwrap();
+    let user = request(&imported.collection.items, "User");
+    assert_eq!(user.url, "{{base}}/users/:id?page=2");
+    assert_eq!(
+        user.path_params,
+        [PathParam {
+            name: "id".into(),
+            value: "7".into()
+        }]
+    );
+    assert_eq!(
+        user.disabled_query,
+        [QueryParam {
+            name: "debug".into(),
+            value: "1".into()
+        }]
+    );
 }
 
 #[test]
