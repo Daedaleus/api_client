@@ -36,7 +36,7 @@
 //      the URL, the post-response script logs and sets a variable for the
 //      next request and runs tests (one failing on purpose), a syntax error
 //      is marked while the checker starts, a syntax error
-//      stops the request and names its line,
+//      stops the request and names its line, as does an error while running,
 //  16. Ctrl+Enter sends from the script editor, Ctrl+E focuses the
 //      environment picker,
 //  17. a pre-request script of the collection is saved and runs before
@@ -1217,6 +1217,20 @@ const scriptFailure = await waitFor(
 check(
   scriptFailure.includes('line 2'),
   `syntax error of the pre-request script reported (${JSON.stringify(scriptFailure)})`,
+);
+// So does an error while running, with the line as written.
+await evaluate(setScript(0, 'type A = { x: number };\n\nconst a: any = undefined;\na.x;'));
+await evaluate(`document.querySelector('.url-bar button[type=submit]').click()`);
+const runtimeFailure = await waitFor(
+  `(() => {
+    const text = document.querySelector('.response__failure')?.textContent ?? '';
+    return text.includes('TypeError') ? text : null;
+  })()`,
+  'runtime failure',
+);
+check(
+  runtimeFailure.includes('line 4'),
+  `runtime error of the pre-request script names its line (${JSON.stringify(runtimeFailure)})`,
 );
 check(exitCode === null, 'program still running after scripts');
 
