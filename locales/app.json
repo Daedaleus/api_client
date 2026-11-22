@@ -30,6 +30,10 @@
     "de": "„{item}“: Der Server „{url}“ ist relativ zum Ort der Beschreibung. baseUrl ist vorläufig http://localhost{url} – bitte den Host in den Variablen der Collection anpassen.",
     "en": "“{item}”: the server “{url}” is relative to where the description is served. baseUrl is http://localhost{url} for now – please adjust the host in the collection's variables."
   },
+  "error.import_download": {
+    "de": "Herunterladen nicht möglich: {detail}",
+    "en": "Cannot download: {detail}"
+  },
   "import.done": { "de": "Import abgeschlossen", "en": "Import finished" },
   "import.skipped_intro": {
     "de": "Die Collection ist angelegt. Bitte beachten:",
@@ -233,6 +237,7 @@
   "menu.import_postman": { "de": "Postman-Collection …", "en": "Postman collection …" },
   "menu.import_openapi": { "de": "OpenAPI-Beschreibung …", "en": "OpenAPI description …" },
   "menu.import_bruno": { "de": "Bruno-Collection (Ordner) …", "en": "Bruno collection (folder) …" },
+  "menu.import_url": { "de": "Von einer URL (OpenAPI, Postman) …", "en": "From a URL (OpenAPI, Postman) …" },
   "menu.import_curl": { "de": "cURL-Befehl einfügen …", "en": "Paste cURL command …" },
   "menu.more": { "de": "Aktionen für „{name}“", "en": "Actions for “{name}”" },
   "shortcut.new_request": { "de": "Strg+N", "en": "Ctrl+N" },
@@ -247,6 +252,11 @@
   "import.title_bruno": {
     "de": "Ordner der Bruno-Collection wählen",
     "en": "Choose the folder of the Bruno collection"
+  },
+  "import.title_url": { "de": "Von einer URL importieren", "en": "Import from a URL" },
+  "import.url_label": {
+    "de": "Adresse der OpenAPI-Beschreibung oder Postman-Collection",
+    "en": "Address of the OpenAPI description or Postman collection"
   },
   "import.title_target": {
     "de": "Ordner für die neue Collection wählen",

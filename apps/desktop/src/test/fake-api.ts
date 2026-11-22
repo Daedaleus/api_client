@@ -140,6 +140,17 @@ export class FakeApi implements Api {
     };
   }
 
+  /** URLs imported from; answers come from `answers` like commands. */
+  importedUrls: string[] = [];
+
+  async importUrl(url: string): Promise<CommandAck> {
+    this.importedUrls.push(url);
+    const answer = this.answers.shift();
+    if (!answer) throw new Error('no answer queued for importUrl');
+    if ('fail' in answer) throw answer.fail;
+    return answer;
+  }
+
   /** Answers of the script checker, by request type; checked requests in `assisted`. */
   assistAnswers: (AssistResult | { fail: unknown })[] = [];
   assisted: AssistRequest[] = [];

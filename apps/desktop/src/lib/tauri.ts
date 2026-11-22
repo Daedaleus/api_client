@@ -8,6 +8,7 @@ export const tauriApi: Api = {
   execute: (command) => commands.execute(command),
   query: (query) => commands.query(query),
   assist: (request) => commands.assist(request),
+  importUrl: (url) => commands.importUrl(url),
   onEvent: (handler) => events.appEventMessage.listen((event) => handler(event.payload)),
   pickFolder: async (options = {}) => {
     const { title } = options;

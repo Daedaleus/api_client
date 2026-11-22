@@ -8,6 +8,7 @@ import type { KeyValueStorage } from '../storage';
 import type {
   CertificateCheckView,
   CollectionView,
+  CommandAck,
   EnvironmentDraft,
   SendContext,
   TreeItemView,
@@ -115,18 +116,42 @@ export class Workspace {
     const file = sourceFile(format, picked);
     this.collections.error = null;
     try {
-      const ack = await this.#api.execute({ type: 'importCollection', file, path: null });
-      if (ack.type !== 'collectionImported') throw new Error(`unexpected answer ${ack.type}`);
-      this.collections.apply(ack.collection);
-      if (ack.skipped.length > 0) {
-        await this.dialogs.inform(
-          { key: 'import.done', args: {} },
-          { key: 'import.skipped_intro', args: {} },
-          ack.skipped,
-        );
-      }
+      await this.#finishImport(
+        await this.#api.execute({ type: 'importCollection', file, path: null }),
+      );
     } catch (error) {
       this.collections.error = toUserText(error);
+    }
+  }
+
+  /**
+   * Downloads a collection or description from a URL the user enters and
+   * opens it unsaved; relative servers are resolved against the URL.
+   */
+  async importFromUrl(): Promise<void> {
+    const url = await this.dialogs.askText(
+      { key: 'import.title_url', args: {} },
+      { key: 'import.url_label', args: {} },
+    );
+    if (!url) return;
+    this.collections.error = null;
+    try {
+      await this.#finishImport(await this.#api.importUrl(url));
+    } catch (error) {
+      this.collections.error = toUserText(error);
+    }
+  }
+
+  /** Opens an imported collection and lists what was left out. */
+  async #finishImport(ack: CommandAck): Promise<void> {
+    if (ack.type !== 'collectionImported') throw new Error(`unexpected answer ${ack.type}`);
+    this.collections.apply(ack.collection);
+    if (ack.skipped.length > 0) {
+      await this.dialogs.inform(
+        { key: 'import.done', args: {} },
+        { key: 'import.skipped_intro', args: {} },
+        ack.skipped,
+      );
     }
   }
 

@@ -436,3 +436,52 @@ async fn unsaved_collections_vanish_when_closed_or_when_the_app_ends() {
     });
     assert!(unknown.is_err());
 }
+
+#[tokio::test]
+async fn descriptions_are_imported_from_a_url_with_their_relative_server() {
+    use crate::command::CommandAck;
+    use crate::ports::TransportError;
+    use crate::testing::{FakeHttpSender, response};
+
+    let petstore = r#"{"openapi": "3.0.4", "info": {"title": "Petstore"},
+        "servers": [{"url": "/api/v3"}],
+        "paths": {"/pet": {"post": {"summary": "Add a pet"}}}}"#;
+    let fixture = Fixture::with_http(
+        FakeHttpSender::new()
+            .reply(Ok(response(200, "application/json", petstore)))
+            .reply(Ok(response(404, "text/plain", "not here")))
+            .reply(Err(TransportError::Timeout))
+            .reply(Ok(response(200, "text/plain", "plain text"))),
+    );
+    let url = "https://petstore3.swagger.io/api/v3/openapi.json";
+    let CommandAck::CollectionImported {
+        collection,
+        skipped,
+    } = fixture.app.import_from_url(url).await.unwrap()
+    else {
+        panic!("expected an import");
+    };
+    assert!(collection.temporary);
+    assert_eq!(collection.name, "Petstore");
+    assert_eq!(
+        collection.variables[0].value,
+        "https://petstore3.swagger.io/api/v3"
+    );
+    assert_eq!(skipped.len(), 0);
+    let sent = &fixture.http.sent()[0];
+    assert_eq!(sent.method.as_str(), "GET");
+    assert_eq!(sent.url.as_str(), url);
+    assert!(sent.verify_tls);
+    assert!(sent.headers.iter().any(|header| header.name == "accept"));
+
+    let status = fixture.app.import_from_url(url).await.unwrap_err();
+    assert_eq!(status.user_text().key, keys::IMPORT_DOWNLOAD);
+    assert_eq!(status.user_text().args["detail"], "status 404");
+    let timeout = fixture.app.import_from_url(url).await.unwrap_err();
+    assert_eq!(timeout.user_text().key, keys::IMPORT_DOWNLOAD);
+    let unknown = fixture.app.import_from_url(url).await.unwrap_err();
+    assert_eq!(unknown.user_text().key, keys::IMPORT_INVALID);
+    let empty = fixture.app.import_from_url("  ").await.unwrap_err();
+    assert_eq!(empty.user_text().key, keys::URL_EMPTY);
+    assert_eq!(fixture.http.sent().len(), 4);
+}

@@ -4,7 +4,14 @@
 import type { UserText } from '../types';
 
 export type DialogRequest =
-  | { kind: 'name'; title: UserText; value: string; answer(value: string | null): void }
+  | {
+      kind: 'name';
+      title: UserText;
+      /** The field's label (`dialog.name` for names). */
+      label: UserText;
+      value: string;
+      answer(value: string | null): void;
+    }
   | { kind: 'confirm'; title: UserText; message: UserText; answer(ok: boolean): void }
   | {
       kind: 'info';
@@ -19,10 +26,16 @@ export class Dialogs {
 
   /** Asks for a name; resolves to the trimmed name or `null` if cancelled or empty. */
   askName(title: UserText, value = ''): Promise<string | null> {
+    return this.askText(title, { key: 'dialog.name', args: {} }, value);
+  }
+
+  /** Asks for a line of text with `label`; the trimmed text or `null`. */
+  askText(title: UserText, label: UserText, value = ''): Promise<string | null> {
     return new Promise((resolve) => {
       this.current = {
         kind: 'name',
         title,
+        label,
         value,
         answer: (name) => {
           this.current = null;

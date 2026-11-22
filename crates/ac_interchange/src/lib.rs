@@ -17,4 +17,6 @@ pub mod import;
 mod openapi;
 mod postman;
 
-pub use import::{ImportError, Imported, Skipped, SkippedKind, import_collection};
+pub use import::{
+    ImportError, Imported, Skipped, SkippedKind, import_collection, import_collection_from,
+};

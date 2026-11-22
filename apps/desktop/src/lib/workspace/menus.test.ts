@@ -15,6 +15,7 @@ function workspace() {
     defaults: { open: vi.fn() },
     createCollection: vi.fn(),
     importCollection: vi.fn(),
+    importFromUrl: vi.fn(),
     newRequest: vi.fn(),
     newFolder: vi.fn(),
     rename: vi.fn(),
@@ -49,6 +50,7 @@ describe('sidebar menus', () => {
       'import-postman',
       'import-openapi',
       'import-bruno',
+      'import-url',
       'import-curl',
     ]);
     expect(fake.tabs.openScratch).toHaveBeenCalledOnce();

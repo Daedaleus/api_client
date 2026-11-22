@@ -4,8 +4,9 @@
 //! (in the order of the description's `tags`, then of appearance);
 //! operations without a tag stay at the top. The first server becomes the
 //! collection variable `baseUrl`; a relative one (`/api/v3`, relative to
-//! where the description is served, which an imported file does not tell)
-//! gets `http://localhost` in front and is pointed out. Path parameters and required query
+//! where the description is served) is resolved against the URL it was
+//! downloaded from; from a file it gets `http://localhost` in front and is
+//! pointed out. Path parameters and required query
 //! parameters become `{{variables}}` of the request with their example as
 //! value; header parameters become headers. Bodies are filled with the
 //! example of the description, or one built from its schema. Security
@@ -24,6 +25,7 @@ use ac_domain::collection::{Collection, Folder, Item, ItemId};
 use ac_domain::environment::Variable;
 use ac_domain::tls::CertificateCheck;
 use serde_json::Value;
+use url::Url;
 
 use crate::import::{Imported, Skipped, SkippedKind};
 use schema::Document;
@@ -41,7 +43,7 @@ const NO_SERVER: &str = "http://localhost";
 const BASE_URL: &str = "baseUrl";
 
 /// Converts an `OpenAPI` 3 description; `None` if `root` is none.
-pub(crate) fn from_value(root: &Value) -> Option<Imported> {
+pub(crate) fn from_value(root: &Value, origin: Option<&Url>) -> Option<Imported> {
     let version = root.get("openapi")?.as_str()?;
     if !version.starts_with('3') {
         return None;
@@ -87,7 +89,7 @@ pub(crate) fn from_value(root: &Value) -> Option<Imported> {
             folders.add(tag, Item::Request(converted));
         }
     }
-    let (base_url, relative) = server_url(root);
+    let (base_url, relative) = server_url(root, origin);
     if let Some(url) = relative {
         skipped.push(Skipped {
             item: name.clone(),
@@ -109,8 +111,9 @@ pub(crate) fn from_value(root: &Value) -> Option<Imported> {
 }
 
 /// The first server's URL with its variables' defaults filled in, and the
-/// URL as given if it was relative (then put below [`NO_SERVER`]).
-fn server_url(root: &Value) -> (String, Option<String>) {
+/// URL as given if it was relative and no `origin` resolves it (then it is
+/// put below [`NO_SERVER`]).
+fn server_url(root: &Value, origin: Option<&Url>) -> (String, Option<String>) {
     let Some(server) = root.pointer("/servers/0") else {
         return (NO_SERVER.to_owned(), None);
     };
@@ -128,6 +131,11 @@ fn server_url(root: &Value) -> (String, Option<String>) {
         if let Some(default) = variable.get("default").and_then(Value::as_str) {
             url = url.replace(&format!("{{{name}}}"), default);
         }
+    }
+    if !url.contains("://")
+        && let Some(resolved) = origin.and_then(|origin| origin.join(&url).ok())
+    {
+        return (resolved.as_str().trim_end_matches('/').to_owned(), None);
     }
     let url = url.trim_end_matches('/');
     if url.contains("://") {

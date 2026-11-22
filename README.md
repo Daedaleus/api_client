@@ -25,7 +25,7 @@ on your machine.
 - **TypeScript scripts and tests** before and after a request
   ([`docs/scripting.md`](docs/scripting.md)), sandboxed; a checker and code
   completion in the editor follow.
-- **Import** from Postman, Bruno and OpenAPI; **export** to cURL.
+- **Import** from Postman, Bruno and OpenAPI (also straight from a URL); **export** to cURL.
 - **Command line runner** for CI ([`docs/cli.md`](docs/cli.md)).
 - Interface in **English and German**, light and dark theme.
 

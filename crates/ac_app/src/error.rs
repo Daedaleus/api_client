@@ -69,6 +69,9 @@ pub enum AppError {
     /// The script checker cannot answer.
     #[error(transparent)]
     Assist(#[from] AssistError),
+    /// An import from a URL got nothing usable.
+    #[error("download failed: {0}")]
+    Download(String),
     /// "Save as" for a collection that is saved already.
     #[error("collection is saved already")]
     AlreadySaved,
@@ -144,6 +147,9 @@ impl AppError {
             }
             Self::UnknownCollection => UserText::new(keys::UNKNOWN_COLLECTION),
             Self::AlreadySaved => UserText::new(keys::ALREADY_SAVED),
+            Self::Download(detail) => {
+                UserText::new(keys::IMPORT_DOWNLOAD).with("detail", detail.clone())
+            }
             Self::UnknownItem => UserText::new(keys::UNKNOWN_ITEM),
             Self::NotAFolder => UserText::new(keys::NOT_A_FOLDER),
             Self::EmptyName => UserText::new(keys::NAME_EMPTY),

@@ -139,6 +139,35 @@ describe('collection import', () => {
     });
   });
 
+  it('imports from a URL the user enters', async () => {
+    const { api, workspace } = setup();
+    render(DialogHost, { dialogs: workspace.dialogs });
+    const cancelled = workspace.importFromUrl();
+    expect(await screen.findByRole('dialog')).toHaveTextContent('Import from a URL');
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await cancelled;
+    expect(api.importedUrls).toEqual([]);
+
+    api.answers.push({ type: 'collectionImported', collection: shop(), skipped: [] });
+    const importing = workspace.importFromUrl();
+    const field = await screen.findByLabelText(
+      'Address of the OpenAPI description or Postman collection',
+    );
+    await userEvent.type(field, 'https://example.com/openapi.json{Enter}');
+    await importing;
+    expect(api.importedUrls).toEqual(['https://example.com/openapi.json']);
+    expect(workspace.collections.find('c1')?.name).toBe('Shop');
+
+    api.answers.push({ fail: { key: 'error.import_download', args: { detail: 'status 404' } } });
+    const failing = workspace.importFromUrl();
+    await userEvent.type(
+      await screen.findByLabelText('Address of the OpenAPI description or Postman collection'),
+      'https://example.com/gone{Enter}',
+    );
+    await failing;
+    expect(workspace.collections.error?.key).toBe('error.import_download');
+  });
+
   it('closes the note with Escape too', async () => {
     const { workspace } = setup();
     render(DialogHost, { dialogs: workspace.dialogs });

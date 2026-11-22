@@ -28,7 +28,8 @@
 //  13. a Postman export, an OpenAPI description and a Bruno collection are
 //      imported as new collections on disk (through the real IPC command: native file
 //      dialogs cannot be driven from here); an import without a folder stays
-//      unsaved until "save as" moves it,
+//      unsaved until "save as" moves it; a description from a URL gets its
+//      relative server resolved,
 //  14. large JSON responses (0.9 MB shown formatted, 10 MB shown truncated)
 //      appear in time without blocking the window for long,
 //  15. scripts: the pre-request script sets a header and a variable used in
@@ -175,6 +176,18 @@ const largeBodies = { '/large/0.9': largeJson(900_000), '/large/10': largeJson(1
 server = http.createServer((request, response) => {
   response.setHeader('Content-Type', 'application/json');
   response.setHeader('X-Test', 'e2e');
+  if (request.url === '/spec/openapi.json') {
+    // A description with a relative server, as the Swagger Petstore has.
+    response.end(
+      JSON.stringify({
+        openapi: '3.0.4',
+        info: { title: 'Pets from a URL' },
+        servers: [{ url: '/api/v3' }],
+        paths: { '/pet': { post: { summary: 'Add a pet' } } },
+      }),
+    );
+    return;
+  }
   if (request.url in largeBodies) {
     response.end(largeBodies[request.url]);
     return;
@@ -1013,6 +1026,16 @@ check(
     readFileSync(path.join(savedAs, 'collection.toml'), 'utf8').includes('Shop API') &&
     !existsSync(unsavedRoot),
   'save as moves the collection to the chosen folder',
+);
+// From a URL: downloaded through the HTTP adapter, relative server resolved.
+const fromUrl = await evaluate(`window.__TAURI_INTERNALS__.invoke('import_url', {
+  url: ${JSON.stringify(`${origin}/spec/openapi.json`)},
+})`);
+check(
+  fromUrl?.collection?.name === 'Pets from a URL' &&
+    fromUrl.collection.temporary === true &&
+    fromUrl.collection.variables?.[0]?.value === `${origin}/api/v3`,
+  `import from a URL resolves the relative server (${fromUrl?.collection?.variables?.[0]?.value})`,
 );
 check(exitCode === null, 'program still running after importing');
 

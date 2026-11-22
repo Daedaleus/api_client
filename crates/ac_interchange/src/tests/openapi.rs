@@ -331,3 +331,27 @@ fn relative_servers_get_a_host_and_are_pointed_out() {
     );
     assert_eq!(absolute.skipped.len(), 0);
 }
+
+#[test]
+fn relative_servers_resolve_against_where_the_description_came_from() {
+    let text = r#"{"openapi": "3.0.4", "info": {"title": "Petstore"}, "paths": {}, "servers": [{"url": "/api/v3"}]}"#;
+    let origin = url::Url::parse("https://petstore3.swagger.io/api/v3/openapi.json").unwrap();
+    let imported = crate::import::import_collection_from(text, Some(&origin)).unwrap();
+    assert_eq!(
+        imported.collection.variables,
+        [Variable::plain(
+            "baseUrl",
+            "https://petstore3.swagger.io/api/v3"
+        )]
+    );
+    assert_eq!(imported.skipped.len(), 0);
+
+    // Relative to the folder of the description, too.
+    let sibling = r#"{"openapi": "3.0.4", "info": {}, "paths": {}, "servers": [{"url": "v2/"}]}"#;
+    let origin = url::Url::parse("https://example.com/docs/openapi.yaml").unwrap();
+    let imported = crate::import::import_collection_from(sibling, Some(&origin)).unwrap();
+    assert_eq!(
+        imported.collection.variables,
+        [Variable::plain("baseUrl", "https://example.com/docs/v2")]
+    );
+}

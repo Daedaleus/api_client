@@ -32,6 +32,8 @@ export interface Api {
   query(query: Query): Promise<QueryResult>;
   /** Calls `handler` for every application event; resolves to an unsubscribe function. */
   onEvent(handler: (event: AppEvent) => void): Promise<() => void>;
+  /** Downloads and imports a collection from `url`; rejects with a `UserText` if it cannot. */
+  importUrl(url: string): Promise<CommandAck>;
   /** Checks or completes a script for the editor; rejects with a `UserText` if it cannot. */
   assist(request: AssistRequest): Promise<AssistResult>;
   /** Lets the user pick a folder; resolves to its path, or `null` if cancelled. */
