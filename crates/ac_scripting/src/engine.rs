@@ -16,6 +16,10 @@ use crate::strip::{Stripped, strip};
 
 /// The API implementation, see `prelude.js`.
 const PRELUDE: &str = include_str!("prelude.js");
+/// Chai-style assertions, run before the prelude (see `chai.js`).
+const CHAI: &str = include_str!("chai.js");
+/// Postman and Bruno compatibility, run after the prelude (see `compat.js`).
+const COMPAT: &str = include_str!("compat.js");
 /// The file name of the script in stack traces.
 const SCRIPT_FILE: &str = "script.js";
 /// The script runs inside an async function, so scripts can `await`; then
@@ -162,7 +166,9 @@ fn execute(ctx: &Ctx<'_>, job: &ScriptJob, javascript: &str) -> Result<ScriptOut
     ctx.globals()
         .set("__input", input.to_string())
         .map_err(thrown)?;
+    ctx.eval::<(), _>(CHAI).map_err(thrown)?;
     ctx.eval::<(), _>(PRELUDE).map_err(thrown)?;
+    ctx.eval::<(), _>(COMPAT).map_err(thrown)?;
     let mut options = EvalOptions::default();
     options.filename = Some(SCRIPT_FILE.into());
     let promise: Promise = ctx

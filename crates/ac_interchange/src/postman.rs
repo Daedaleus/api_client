@@ -4,7 +4,8 @@
 //! bodies (raw JSON/text, URL-encoded, form data with files, binary file),
 //! auth (Basic, Bearer, API key, none, inherit) and variables of the
 //! collection and of folders. Postman's `{{variable}}` syntax is the same.
-//! What has no counterpart – scripts, other auth types, GraphQL bodies – is
+//! Scripts are taken over as written (they run with the `pm` object of the
+//! script API). What has no counterpart – other auth types, GraphQL bodies – is
 //! reported in [`Imported::skipped`](crate::import::Imported::skipped).
 //!
 //! Read leniently from JSON values: exports differ between Postman versions,
@@ -16,6 +17,7 @@ use ac_domain::collection::{
 };
 use ac_domain::environment::Variable;
 use ac_domain::protocol::grant_type::{AUTHORIZATION_CODE, CLIENT_CREDENTIALS};
+use ac_domain::script::Scripts;
 use ac_domain::tls::CertificateCheck;
 use serde_json::Value;
 
@@ -23,6 +25,10 @@ use crate::import::{Imported, Skipped, SkippedKind, loopback_redirect};
 
 /// Name of a collection without one.
 const UNNAMED: &str = "Postman";
+/// Event of a script that runs before the request.
+const PREREQUEST_EVENT: &str = "prerequest";
+/// Event of a script that runs after the response (Postman's "tests").
+const TEST_EVENT: &str = "test";
 
 /// Converts an exported Postman collection; `None` if `root` is none
 /// (`info` and `item` missing).
@@ -32,10 +38,9 @@ pub(crate) fn from_value(root: &Value) -> Option<Imported> {
     };
     let name = text_of(info.get("name")).unwrap_or_else(|| UNNAMED.to_owned());
     let mut skipped = Vec::new();
-    scripts(root, &name, &mut skipped);
     let auth = auth(root.get("auth"), &name, &mut skipped);
     let collection = Collection {
-        scripts: ac_domain::script::Scripts::default(),
+        scripts: scripts(root),
         id: ItemId::new(),
         items: items_of(items, &mut skipped),
         variables: variables(root.get("variable")),
@@ -59,10 +64,9 @@ fn items_of(items: &Value, skipped: &mut Vec<Skipped>) -> Vec<Item> {
 
 fn item_of(item: &Value, skipped: &mut Vec<Skipped>) -> Item {
     let name = text_of(item.get("name")).unwrap_or_default();
-    scripts(item, &name, skipped);
     if let Some(children) = item.get("item") {
         return Item::Folder(Folder {
-            scripts: ac_domain::script::Scripts::default(),
+            scripts: scripts(item),
             id: ItemId::new(),
             items: items_of(children, skipped),
             variables: variables(item.get("variable")),
@@ -71,7 +75,9 @@ fn item_of(item: &Value, skipped: &mut Vec<Skipped>) -> Item {
             name,
         });
     }
-    Item::Request(request_of(item.get("request"), name, skipped))
+    let mut request = request_of(item.get("request"), name, skipped);
+    request.scripts = scripts(item);
+    Item::Request(request)
 }
 
 fn request_of(request: Option<&Value>, name: String, skipped: &mut Vec<Skipped>) -> Request {
@@ -283,28 +289,34 @@ fn text_of(value: Option<&Value>) -> Option<String> {
     }
 }
 
-/// Notes scripts (`event` with `prerequest` or `test` code) of an item.
-fn scripts(item: &Value, name: &str, skipped: &mut Vec<Skipped>) {
-    let has_code = item
-        .get("event")
-        .and_then(Value::as_array)
-        .is_some_and(|events| {
-            events.iter().any(|event| {
-                event
-                    .pointer("/script/exec")
-                    .and_then(Value::as_array)
-                    .is_some_and(|lines| {
-                        lines
-                            .iter()
-                            .any(|line| line.as_str().is_some_and(|line| !line.trim().is_empty()))
-                    })
+/// The scripts of an item (`event` with `prerequest` or `test` code), as
+/// written: they run with the `pm` object of the script API.
+fn scripts(item: &Value) -> Scripts {
+    let code = |listen: &str| {
+        item.get("event")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+            .filter(|event| event.get("listen").and_then(Value::as_str) == Some(listen))
+            .filter_map(|event| match event.pointer("/script/exec")? {
+                Value::String(text) => Some(text.clone()),
+                Value::Array(lines) => Some(
+                    lines
+                        .iter()
+                        .filter_map(Value::as_str)
+                        .collect::<Vec<_>>()
+                        .join("\n"),
+                ),
+                _ => None,
             })
-        });
-    if has_code {
-        skipped.push(Skipped {
-            item: name.to_owned(),
-            what: SkippedKind::Scripts,
-        });
+            .map(|code| code.trim().to_owned())
+            .filter(|code| !code.is_empty())
+            .collect::<Vec<_>>()
+            .join("\n\n")
+    };
+    Scripts {
+        pre_request: code(PREREQUEST_EVENT),
+        post_response: code(TEST_EVENT),
     }
 }
 

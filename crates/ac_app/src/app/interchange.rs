@@ -160,7 +160,9 @@ pub(super) fn parse_curl(text: &str) -> Result<QueryResult, AppError> {
 /// What an import left out, as shown to the user.
 fn skipped_text(skipped: &Skipped) -> UserText {
     let text = match &skipped.what {
-        SkippedKind::Scripts => UserText::new(keys::IMPORT_SKIPPED_SCRIPTS),
+        SkippedKind::Assertion(assertion) => {
+            UserText::new(keys::IMPORT_SKIPPED_ASSERTION).with("assertion", assertion.clone())
+        }
         SkippedKind::Auth(kind) => {
             UserText::new(keys::IMPORT_SKIPPED_AUTH).with("kind", kind.clone())
         }

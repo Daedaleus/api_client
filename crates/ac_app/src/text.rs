@@ -79,8 +79,8 @@ pub mod keys {
     pub const CURL_INVALID: &str = "error.curl_invalid";
     /// A file cannot be imported. Argument: `detail`.
     pub const IMPORT_INVALID: &str = "error.import_invalid";
-    /// An import left out scripts. Argument: `item`.
-    pub const IMPORT_SKIPPED_SCRIPTS: &str = "import.skipped_scripts";
+    /// An import left out a declarative assertion. Arguments: `item`, `assertion`.
+    pub const IMPORT_SKIPPED_ASSERTION: &str = "import.skipped_assertion";
     /// An import left out an auth type. Arguments: `item`, `kind`.
     pub const IMPORT_SKIPPED_AUTH: &str = "import.skipped_auth";
     /// An import left out headers of a folder or the collection. Argument:
@@ -160,7 +160,7 @@ pub mod keys {
         (FILE_RELATIVE, &["path"]),
         (CURL_INVALID, &["detail"]),
         (IMPORT_INVALID, &["detail"]),
-        (IMPORT_SKIPPED_SCRIPTS, &["item"]),
+        (IMPORT_SKIPPED_ASSERTION, &["item", "assertion"]),
         (IMPORT_SKIPPED_AUTH, &["item", "kind"]),
         (IMPORT_SKIPPED_BODY, &["item", "mode"]),
         (IMPORT_RELATIVE_SERVER, &["item", "url"]),

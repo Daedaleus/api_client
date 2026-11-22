@@ -1,3 +1,6 @@
+use super::skipped_text;
+use ac_interchange::{Skipped, SkippedKind};
+
 use crate::command::{Query, QueryResult};
 use crate::error::AppError;
 use crate::test_support::Fixture;
@@ -101,16 +104,15 @@ async fn postman_exports_become_new_open_collections() {
     assert_eq!(collection.name, "Shop API");
     assert_eq!(collection.items.len(), 4);
     let keys: Vec<_> = skipped.iter().map(|text| text.key).collect();
-    assert_eq!(
-        keys,
-        [
-            keys::IMPORT_SKIPPED_SCRIPTS,
-            keys::IMPORT_SKIPPED_BODY,
-            keys::IMPORT_SKIPPED_AUTH
-        ]
-    );
-    assert_eq!(skipped[2].args["kind"], "oauth2");
-    assert_eq!(skipped[1].args["item"], "GraphQL");
+    assert_eq!(keys, [keys::IMPORT_SKIPPED_BODY, keys::IMPORT_SKIPPED_AUTH]);
+    assert_eq!(skipped[1].args["kind"], "oauth2");
+    assert_eq!(skipped[0].args["item"], "GraphQL");
+    let assertion = skipped_text(&Skipped {
+        item: "Login".into(),
+        what: SkippedKind::Assertion("res.status: between 1 2".into()),
+    });
+    assert_eq!(assertion.key, keys::IMPORT_SKIPPED_ASSERTION);
+    assert_eq!(assertion.args["assertion"], "res.status: between 1 2");
     // It is open like any other collection.
     let tree = fixture
         .app

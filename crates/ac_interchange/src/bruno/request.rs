@@ -7,6 +7,7 @@ use ac_domain::collection::{Body, FormField, HeaderEntry, MultipartField, Reques
 use ac_domain::environment::Variable;
 use ac_domain::protocol::HttpMethod;
 use ac_domain::protocol::grant_type::{AUTHORIZATION_CODE, CLIENT_CREDENTIALS};
+use ac_domain::script::Scripts;
 
 use super::bru::{Block, find};
 use super::{seq_of, skipped};
@@ -17,23 +18,23 @@ const METHODS: [&str; 9] = [
     "get", "post", "put", "patch", "delete", "options", "head", "connect", "trace",
 ];
 
-/// Blocks with scripts or tests, which have no counterpart yet.
-const SCRIPT_BLOCKS: [&str; 4] = [
-    "script:pre-request",
-    "script:post-response",
-    "tests",
-    "assert",
-];
+/// The script blocks; `tests` and the translated `assert` block run after
+/// the response, after `script:post-response`.
+const PRE_REQUEST: &str = "script:pre-request";
+const POST_RESPONSE: &str = "script:post-response";
+const TESTS: &str = "tests";
+const ASSERT: &str = "assert";
 
 /// What a folder or the collection passes on.
 pub(super) struct Defaults {
     pub variables: Vec<Variable>,
     pub auth: Auth,
+    pub scripts: Scripts,
 }
 
 /// Variables and auth of `collection.bru` or `folder.bru`.
 pub(super) fn defaults(blocks: &[Block], item: &str, report: &mut Vec<Skipped>) -> Defaults {
-    scripts(blocks, item, report);
+    let scripts = scripts(blocks, item, report);
     if let Some(headers) = find(blocks, "headers")
         && !headers.entries().is_empty()
     {
@@ -43,6 +44,7 @@ pub(super) fn defaults(blocks: &[Block], item: &str, report: &mut Vec<Skipped>) 
     Defaults {
         variables: variables(blocks),
         auth: auth(blocks, mode.as_deref(), item, report),
+        scripts,
     }
 }
 
@@ -63,7 +65,7 @@ pub(super) fn request(
         .and_then(|meta| meta.get("name"))
         .unwrap_or_else(|| stem.to_owned());
     let mut request = Request::new(name);
-    scripts(blocks, &request.name, report);
+    request.scripts = scripts(blocks, &request.name, report);
     if meta.and_then(|meta| meta.get("type")).as_deref() == Some("graphql") {
         report.push(skipped(&request.name, SkippedKind::Body("graphql".into())));
     }
@@ -263,12 +265,24 @@ fn auth(blocks: &[Block], mode: Option<&str>, item: &str, report: &mut Vec<Skipp
     }
 }
 
-fn scripts(blocks: &[Block], item: &str, report: &mut Vec<Skipped>) {
-    let has_code = blocks.iter().any(|block| {
-        SCRIPT_BLOCKS.contains(&block.name.as_str())
-            && block.lines.iter().any(|line| !line.trim().is_empty())
-    });
-    if has_code {
-        report.push(skipped(item, SkippedKind::Scripts));
+/// The scripts as written – they run with the Bruno names of the script
+/// API (`bru`, `req.getUrl()`, `res.getBody()`, chai-style `expect`) – plus
+/// the `assert` block as tests.
+fn scripts(blocks: &[Block], item: &str, report: &mut Vec<Skipped>) -> Scripts {
+    let code = |name: &str| {
+        find(blocks, name)
+            .map(|block| block.lines.join("\n").trim().to_owned())
+            .filter(|code| !code.is_empty())
+    };
+    let asserts = find(blocks, ASSERT)
+        .map(|block| super::asserts::tests(block, item, report).join("\n"))
+        .filter(|code| !code.is_empty());
+    let post: Vec<String> = [code(POST_RESPONSE), code(TESTS), asserts]
+        .into_iter()
+        .flatten()
+        .collect();
+    Scripts {
+        pre_request: code(PRE_REQUEST).unwrap_or_default(),
+        post_response: post.join("\n\n"),
     }
 }

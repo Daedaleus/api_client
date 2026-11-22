@@ -168,3 +168,25 @@ async fn syntax_errors_come_at_once_while_the_service_starts() {
     );
     assert!(slow.is_started());
 }
+
+#[tokio::test]
+async fn postman_and_bruno_scripts_check_without_errors() {
+    let postman = "
+        pm.test('ok', () => {
+            pm.response.to.have.status(200);
+            const body = pm.response.json<{ id: number }>();
+            pm.expect(body.id).to.be.a('number').and.to.be.above(0);
+        });
+        pm.environment.set('id', String(pm.response.json().id));
+        pm.request.headers.add({ key: 'X', value: pm.variables.get('id') ?? '' });
+    ";
+    assert_eq!(messages(postman).await, []);
+    let bruno = "
+        bru.setVar('token', res.getBody().token);
+        test('status', () => expect(res.getStatus()).to.equal(200));
+        req.setUrl(bru.interpolate('{{baseUrl}}/x'));
+    ";
+    assert_eq!(messages(bruno).await, []);
+    let wrong = messages("pm.expect(1).to.equl(1);").await;
+    assert!(wrong[0].0.contains("equl"), "{wrong:?}");
+}

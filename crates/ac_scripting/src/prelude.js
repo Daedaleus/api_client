@@ -4,6 +4,10 @@
 (() => {
   const input = JSON.parse(globalThis.__input);
   delete globalThis.__input;
+  // Chai-style assertions from `chai.js`, for `expect(x).to…` (Bruno) and
+  // `pm.expect` (Postman, see `compat.js`).
+  const chai = globalThis.__chai;
+  delete globalThis.__chai;
   const logs = [];
   const set = [];
 
@@ -157,7 +161,18 @@
       },
     };
   };
-  const expect = (actual) => ({ ...matchers(actual, false), not: matchers(actual, true) });
+  /** Jest-style matchers, and `.to` for chai-style checks. */
+  const expect = (actual) => {
+    const negated = matchers(actual, true);
+    Object.defineProperty(negated, 'to', { get: () => chai(actual).not });
+    return {
+      ...matchers(actual, false),
+      not: negated,
+      get to() {
+        return chai(actual);
+      },
+    };
+  };
 
   const tests = [];
   const pending = [];
@@ -186,6 +201,8 @@
   };
   define('test', test);
   define('expect', expect);
+  /** For `compat.js`: chai-style assertions, also about an HTTP response. */
+  define('__chai', chai);
   /** Waits for async tests; the host calls it after the script. */
   define('__settle', () => Promise.all(pending));
 

@@ -14,6 +14,7 @@
 //! - `bru`: the `.bru` text format.
 //! - `request`: one `.bru` request file.
 
+mod asserts;
 mod bru;
 mod request;
 
@@ -81,7 +82,7 @@ pub fn from_files(root: &Path, files: &[BrunoFile]) -> Imported {
         .collect();
     Imported {
         collection: Collection {
-            scripts: ac_domain::script::Scripts::default(),
+            scripts: defaults.scripts,
             id: ItemId::new(),
             name,
             items,
@@ -166,7 +167,7 @@ impl Tree {
             items.push((
                 seq,
                 Item::Folder(Folder {
-                    scripts: ac_domain::script::Scripts::default(),
+                    scripts: defaults.scripts,
                     id: ItemId::new(),
                     items: self.items(folder_dir, files, root, skipped),
                     variables: defaults.variables,

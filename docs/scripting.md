@@ -79,6 +79,39 @@ Checks: `toBe`, `toEqual` (deep), `toBeTruthy`, `toBeFalsy`, `toBeDefined`,
 The [command line runner](cli.md) runs the tests too: a request passes only
 when all its tests pass, and the JUnit report lists every test.
 
+## Scripts from Postman and Bruno
+
+Imported collections keep their scripts as they are: Postman's pre-request
+and test scripts become the scripts before the request and after the
+response, Bruno's `script:pre-request`, `script:post-response` and `tests`
+likewise. Bruno's declarative `assert` block becomes tests
+(`res.status: eq 200` → `test(…, () => expect(res.getStatus()).to.eql(200))`);
+assertions without a counterpart are listed after the import.
+
+So that these scripts run unchanged, the API also offers the commonly used
+part of both tools
+([`compat.d.ts`](../crates/ac_scripting/api/compat.d.ts)):
+
+- **Chai-style assertions** – `expect(x).to.equal(1)`, `.to.be.above(2)`,
+  `.to.have.property('id')`, `.to.include('a')`, `.to.be.a('string')`,
+  `.not`, `.deep` and more; also `pm.expect`.
+- **Postman** – `pm.test`, `pm.expect`, `pm.response` (`code`, `json()`,
+  `text()`, `responseTime`, `headers.get()`, `to.have.status(200)`,
+  `to.have.header(…)`, `to.be.ok`), `pm.request` (method, URL, headers,
+  body), `pm.environment` / `pm.variables` / `pm.collectionVariables` /
+  `pm.globals` (`get`, `set`, `unset`, `has`, `replaceIn`).
+- **Bruno** – `bru.getEnvVar` / `setEnvVar` / `getVar` / `setVar` /
+  `interpolate`, `req.getUrl()` / `setUrl()` / `getMethod()` /
+  `setBody()` …, `res.getStatus()` / `getBody()` / `getHeader()` /
+  `getResponseTime()` and `res.body`.
+
+All variable scopes of Postman and Bruno are the script variables here
+(`env`): what a script sets applies to the following requests of the
+collection and is never saved. Sending further requests from a script
+(`pm.sendRequest`, `bru.sendRequest`), changing the run order
+(`setNextRequest`) and waiting (`bru.sleep`) are not supported and stop
+the script with a clear error.
+
 ## Limits
 
 Scripts run in a sandbox ([ADR S1](adr/s1-script-runtime.md)): a fresh
