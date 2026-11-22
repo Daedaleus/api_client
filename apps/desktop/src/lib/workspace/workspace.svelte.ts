@@ -16,7 +16,7 @@ import type {
   VariableDraft,
 } from '../types';
 import { apiAssist, type ScriptAssist } from '../script-assist';
-import { scopeValues } from '../variables';
+import { scopeInfo, scopeValues, type VariableInfo, type VariableSource } from '../variables';
 import { CollectionsState } from './collections.svelte';
 import { Dialogs } from './dialogs.svelte';
 import { EnvironmentChoice } from './environments.svelte';
@@ -348,6 +348,22 @@ export class Workspace {
     }
     layers.push(tab.draft.variables);
     return scopeValues(layers);
+  }
+
+  /** The variables of a tab's request with where each comes from (see `variablesFor`). */
+  variableInfo(tab: RequestTab): Map<string, VariableInfo> {
+    const layers: { source: VariableSource; variables: VariableDraft[] }[] = [];
+    const collection = this.collectionOf(tab);
+    if (collection && tab.saved) {
+      layers.push({ source: 'collection', variables: collection.variables });
+      const environment = this.environments.of(collection);
+      if (environment) layers.push({ source: 'environment', variables: environment.variables });
+      for (const folder of foldersAround(collection, tab.saved.requestId)) {
+        layers.push({ source: 'folder', variables: folder.variables });
+      }
+    }
+    layers.push({ source: 'request', variables: tab.draft.variables });
+    return scopeInfo(layers);
   }
 
   /**

@@ -48,6 +48,7 @@
 //  20. a request is duplicated and the copy moved into a folder,
 //  21. the open tabs are remembered for the next start (without secrets),
 //  22. Ctrl+K finds a request and opens it,
+//  23. typing {{ in the URL suggests the variables that apply,
 // and the program is still running after each send.
 //
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
@@ -1465,5 +1466,17 @@ const openedName = await waitFor(
   'request opened from the search',
 );
 check(openedName === 'Health', `quick search opened the request (${openedName})`);
+
+// --- 23. Variable suggestions -----------------------------------------------------
+
+// Typing {{ in the URL of a collection request suggests its variables.
+await waitFor(clickTreeEntry('Health'), 'request "Health" in the collection tree');
+await waitFor(`!!document.querySelector('.environment-picker__select')`, 'collection request');
+await evaluate(setValue('.url-bar__input', '{{'));
+const suggested = await waitFor(
+  `document.querySelector('.variable-field__list')?.textContent ?? null`,
+  'variable suggestions',
+);
+check(suggested.includes('baseUrl'), `variables suggested after {{ (${suggested.slice(0, 60)}…)`);
 
 finish(null);

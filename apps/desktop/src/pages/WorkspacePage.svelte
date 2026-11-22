@@ -101,6 +101,7 @@
             onsend={() => workspace.send(tab)}
             onsave={() => workspace.save(tab)}
             variables={workspace.variablesFor(tab)}
+            variableInfo={workspace.variableInfo(tab)}
             onpickfile={() => workspace.pickFile()}
             checksCertificates={workspace.checksCertificates(tab)}
             oncopycurl={() => workspace.curlFor(tab)}
