@@ -99,6 +99,10 @@ pub(crate) fn run(job: &ScriptJob, limits: Limits) -> Result<ScriptOutcome, Scri
                 megabytes: limits.memory / (1024 * 1024),
             }
         }
+        Failure::Nothing => ScriptError::Failed(format!(
+            "the script stopped without an error – if it builds large data, it may have              used more than {} MB of memory",
+            limits.memory / (1024 * 1024)
+        )),
         Failure::Thrown { message, stack } => {
             match stack.and_then(|stack| script_line(&stack, &stripped)) {
                 Some(line) => ScriptError::Thrown { line, message },
@@ -115,6 +119,10 @@ enum Failure {
         /// The error's stack trace, if it has one.
         stack: Option<String>,
     },
+    /// `null` or `undefined` was thrown. `QuickJS` does that itself when it
+    /// runs out of memory so badly that it cannot create its error (seen on
+    /// macOS); the memory used is gone by the time we could look.
+    Nothing,
 }
 
 impl Failure {
@@ -221,6 +229,9 @@ fn describe(ctx: &Ctx<'_>, error: &rquickjs::Error) -> Failure {
             message,
             stack: exception.stack(),
         };
+    }
+    if caught.is_null() || caught.is_undefined() {
+        return Failure::Nothing;
     }
     // Thrown values that are not errors (`throw 'text'`).
     Failure::message(
