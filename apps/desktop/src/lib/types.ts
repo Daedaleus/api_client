@@ -10,6 +10,7 @@ import type {
   Command_Deserialize,
   EnvironmentDraft_Deserialize,
   EnvironmentDraft_Serialize,
+  HistoryItemView_Serialize,
   QueryResult_Serialize,
   RequestDraft_Deserialize,
   RequestDraft_Serialize,
@@ -62,6 +63,7 @@ export type RequestDraftInput = RequestDraft_Deserialize;
 export type ResponseView = ResponseView_Serialize;
 export type RunOutcome = RunOutcomeView_Serialize;
 export type ScriptsDraft = ScriptsDraft_Serialize;
+export type HistoryItemView = HistoryItemView_Serialize;
 
 /** The collection in a `collectionChanged` acknowledgement. */
 export type ChangedCollection = { collection: CollectionView; createdId: string | null };

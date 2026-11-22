@@ -12,10 +12,10 @@ use super::collections::{item_id_from, location, writable};
 use super::secrets::Unlocked;
 use crate::command::CommandAck;
 use crate::error::AppError;
-use crate::ports::ScriptAssist;
 use crate::ports::{
     BrowserLogin, CollectionStore, HttpSender, OpenedCollection, ScriptRunner, SecretVault,
 };
+use crate::ports::{HistoryStore, ScriptAssist};
 use crate::view::collection::non_empty;
 use crate::view::{EnvironmentDraft, SendContext};
 
@@ -26,7 +26,8 @@ impl<
     B: BrowserLogin,
     R: ScriptRunner,
     A: ScriptAssist,
-> App<H, S, V, B, R, A>
+    Y: HistoryStore,
+> App<H, S, V, B, R, A, Y>
 {
     pub(super) fn create_environment(
         &self,

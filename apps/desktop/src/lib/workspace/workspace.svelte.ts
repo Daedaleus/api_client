@@ -30,6 +30,7 @@ import { RecipientsState } from './recipients.svelte';
 import type { RequestTab } from './request-tab.svelte';
 import { TabsState } from './tabs.svelte';
 import { baseName, foldersAround } from './tree';
+import { HistoryState } from './history.svelte';
 import { CurlState } from './curl.svelte';
 import { DefaultsState } from './defaults.svelte';
 
@@ -52,6 +53,8 @@ export class Workspace {
   readonly curl: CurlState;
   /** Checker and completion of the script editor. */
   readonly scriptAssist: ScriptAssist;
+  /** Requests sent before (sidebar). */
+  readonly history: HistoryState;
   /** The environment being edited, if the editor is open. */
   editing = $state<EnvironmentEdit | null>(null);
   readonly #api: Api;
@@ -65,6 +68,7 @@ export class Workspace {
     this.recipients = new RecipientsState(api, this.collections);
     this.defaults = new DefaultsState(api, this.collections);
     this.curl = new CurlState(api, this.tabs);
+    this.history = new HistoryState(api, this.tabs, this.dialogs);
   }
 
   /** The collection a tab's request belongs to (none for scratch tabs). */
@@ -72,9 +76,12 @@ export class Workspace {
     return tab.saved ? this.collections.find(tab.saved.collectionId) : undefined;
   }
 
-  /** Listens for run results; resolves to an unsubscribe function. */
+  /** Listens for run results and history changes; resolves to an unsubscribe function. */
   connect(): Promise<() => void> {
-    return this.#api.onEvent((event) => this.tabs.handle(event));
+    return this.#api.onEvent((event) => {
+      if (event.type === 'historyChanged') void this.history.changed(event.error);
+      else this.tabs.handle(event);
+    });
   }
 
   /** Opens the collections of the last session. */

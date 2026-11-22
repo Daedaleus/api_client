@@ -8,10 +8,10 @@ use super::App;
 use super::collections::location;
 use crate::command::{CommandAck, QueryResult};
 use crate::error::AppError;
-use crate::ports::ScriptAssist;
 use crate::ports::{
     BrowserLogin, CollectionStore, HttpSender, ScriptRunner, SecretError, SecretValues, SecretVault,
 };
+use crate::ports::{HistoryStore, ScriptAssist};
 use crate::view::RecipientsView;
 
 impl<
@@ -21,7 +21,8 @@ impl<
     B: BrowserLogin,
     R: ScriptRunner,
     A: ScriptAssist,
-> App<H, S, V, B, R, A>
+    Y: HistoryStore,
+> App<H, S, V, B, R, A, Y>
 {
     pub(super) fn query_recipients(&self, collection_id: &str) -> Result<QueryResult, AppError> {
         let opened = self.current(collection_id)?;

@@ -26,6 +26,8 @@ on your machine.
   ([`docs/scripting.md`](docs/scripting.md)), sandboxed; a checker and code
   completion in the editor follow.
 - **Import** from Postman, Bruno and OpenAPI (also straight from a URL); **export** to cURL.
+- **Request history** – every sent request with its response, on your machine
+  only, secrets hidden; open any entry again as a new tab.
 - **Command line runner** for CI ([`docs/cli.md`](docs/cli.md)).
 - Interface in **English and German**, light and dark theme.
 

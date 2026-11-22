@@ -41,6 +41,7 @@
 //      environment picker,
 //  17. a pre-request script of the collection is saved and runs before
 //      sending,
+//  18. sent requests are in the history (secrets masked) and open as a tab,
 // and the program is still running after each send.
 //
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
@@ -261,6 +262,8 @@ app = spawn(program, [], {
   env: {
     ...environment,
     API_CLIENT_IDENTITY_FILE: identityFile,
+    // The request history goes there too, never into the user's.
+    API_CLIENT_DATA_DIR: webviewData,
     // The browser for OAuth 2 sign-ins: a script that follows the redirect.
     BROWSER: `'${process.execPath}' '${path.join(ROOT, 'apps', 'desktop', 'e2e', 'fake-browser.mjs')}'`,
     WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${debugPort}`,
@@ -1311,6 +1314,31 @@ const fromCollection = await echoWith('collection=1', 'echo with the collection 
 check(
   fromCollection.includes('"xClient": "from-collection"'),
   'collection pre-request script ran before sending',
+);
+
+// --- 18. Request history --------------------------------------------------------------
+
+// Every sent request is in the history, the secret of step 6 never.
+const historyFile = path.join(webviewData, 'history.jsonl');
+const historyText = readFileSync(historyFile, 'utf8');
+check(
+  historyText.includes('/echo') && historyText.includes('"version":1'),
+  'sent requests recorded in the history file',
+);
+check(!historyText.includes(secretValue), 'secret masked in the history file');
+await evaluate(
+  `[...document.querySelectorAll('.sidebar__view')].find((tab) => tab.textContent.includes('${'Verlauf'}') || tab.textContent.includes('History')).click()`,
+);
+const historyCount = await waitFor(
+  `document.querySelectorAll('.history-list__entry').length || null`,
+  'history entries',
+);
+check(historyCount > 10, `history lists the sent requests (${historyCount})`);
+await evaluate(`document.querySelector('.history-list__entry').click()`);
+await waitFor(text('.response__status'), 'response of the history entry');
+check(true, 'a history entry opens as a new tab with its response');
+await evaluate(
+  `[...document.querySelectorAll('.sidebar__view')].find((tab) => !tab.classList.contains('sidebar__view--active')).click()`,
 );
 
 finish(null);

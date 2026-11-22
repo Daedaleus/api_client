@@ -205,7 +205,11 @@ async fn scripts_also_run_from_send_and_errors_explain_themselves() {
     let request = outgoing(&fixture, "{{nope}}", "log('x')", "");
     // With a pre-request script the request is checked only after it.
     fixture.run(Command::SendRequest { request });
-    let crate::event::AppEvent::RunFinished { outcome, .. } = events.recv().await.unwrap();
+    let outcome = loop {
+        if let crate::event::AppEvent::RunFinished { outcome, .. } = events.recv().await.unwrap() {
+            break outcome;
+        }
+    };
     let RunOutcomeView::Failed { error, .. } = outcome else {
         panic!("expected a failure");
     };

@@ -28,6 +28,7 @@
 //! - [`remove`]: removing requests and folders.
 //! - `tree`: reading the text files of a folder tree (folder imports).
 //! - [`store`]: [`FileStore`], the `CollectionStore` port of `ac_app`.
+//! - [`history`]: [`FileHistory`], the `HistoryStore` port (request history).
 //! - [`names`]: file and folder names from display names.
 //! - `order`: keeping `order` lists in step with their folder.
 //! - `document`: reading and updating TOML values in place, atomic writes.
@@ -39,6 +40,7 @@ mod document;
 pub mod environment_file;
 pub mod error;
 pub mod format;
+pub mod history;
 pub mod load;
 pub mod names;
 mod order;
@@ -60,6 +62,7 @@ mod variables;
 pub use create::{create_collection, create_folder, create_request};
 pub use environment_file::{create_environment, read_environment, save_environment};
 pub use error::{LoadProblem, StorageError};
+pub use history::FileHistory;
 pub use load::{Entry, EntryKind, LoadedCollection, load_collection};
 pub use remove::remove_item;
 pub use request_file::{read_request, save_request};

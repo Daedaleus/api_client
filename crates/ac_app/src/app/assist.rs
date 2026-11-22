@@ -5,11 +5,12 @@
 use super::App;
 use crate::error::AppError;
 use crate::ports::{
-    BrowserLogin, CollectionStore, HttpSender, ScriptAssist, ScriptRunner, SecretVault,
+    BrowserLogin, CollectionStore, HistoryStore, HttpSender, ScriptAssist, ScriptRunner,
+    SecretVault,
 };
 use crate::view::{AssistRequest, AssistResult, CompletionView, DiagnosticView};
 
-impl<H, S, V, B, R, A> App<H, S, V, B, R, A>
+impl<H, S, V, B, R, A, Y> App<H, S, V, B, R, A, Y>
 where
     H: HttpSender,
     S: CollectionStore,
@@ -17,6 +18,7 @@ where
     B: BrowserLogin,
     R: ScriptRunner,
     A: ScriptAssist,
+    Y: HistoryStore,
 {
     /// Answers a question of the script editor.
     ///

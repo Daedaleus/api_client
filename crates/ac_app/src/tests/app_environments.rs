@@ -62,7 +62,8 @@ async fn sending_resolves_variables_from_the_chosen_environment() {
         .await
         .expect("run finishes within 5 s")
         .expect("channel open");
-    assert!(matches!(event, AppEvent::RunFinished { .. }));
+    // Recorded in the history right after sending, before the run ends.
+    assert!(matches!(event, AppEvent::HistoryChanged { error: None }));
     assert_eq!(
         fixture.http.sent()[0].url.as_str(),
         "https://dev.example.com/health"

@@ -16,6 +16,7 @@ pub mod auth;
 pub mod body;
 pub mod collection;
 pub mod environment;
+pub mod history;
 pub mod outgoing;
 pub mod recipients;
 pub mod request_body;
@@ -31,6 +32,7 @@ pub use auth::{AuthDraft, CertificateCheckView, KeyPlacementView, OAuth2GrantVie
 pub use body::BodyView;
 pub use collection::{CollectionView, HeaderDraft, RequestDraft, TreeItemView};
 pub use environment::EnvironmentDraft;
+pub use history::HistoryItemView;
 pub use outgoing::OutgoingRequest;
 pub use recipients::RecipientsView;
 pub use request_body::{BodyDraft, FormFieldDraft, MultipartFieldDraft};

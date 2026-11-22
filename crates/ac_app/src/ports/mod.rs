@@ -7,8 +7,10 @@
 //! - [`login`]: signing in in the browser ([`BrowserLogin`]).
 //! - [`script`]: running request scripts ([`ScriptRunner`]).
 //! - [`assist`]: checking and completing scripts ([`ScriptAssist`]).
+//! - [`history`]: keeping the request history ([`HistoryStore`]).
 
 pub mod assist;
+pub mod history;
 pub mod http;
 pub mod login;
 pub mod script;
@@ -19,6 +21,7 @@ pub use assist::{
     AssistError, CompletionKind, NoAssist, ScriptAssist, ScriptCheck, ScriptCompletion,
     ScriptDiagnostic, Severity,
 };
+pub use history::{HistoryError, HistoryStore, NoHistory};
 pub use http::{HttpSender, TransportError};
 pub use login::{BrowserLogin, LoginError, PendingLogin};
 pub use script::{

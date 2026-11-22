@@ -13,6 +13,7 @@ use base64::engine::general_purpose::STANDARD as BASE64;
 use url::Url;
 
 use crate::error::AppError;
+use crate::history::Masking;
 use crate::oauth::OAuthClient;
 use crate::resolve_body::resolve_body;
 
@@ -40,6 +41,9 @@ pub(crate) struct Prepared {
     pub request: ResolvedRequest,
     /// Obtain a token with these and send it as bearer authorization.
     pub oauth: Option<OAuthClient>,
+    /// What the history must not keep (set by the caller, which knows the
+    /// secrets).
+    pub masking: Masking,
 }
 
 /// Validates method, URL and headers as entered and prepares the body.
@@ -85,6 +89,7 @@ pub(crate) fn resolve_request(
             verify_tls: entered.verify_tls,
         },
         oauth,
+        masking: Masking::default(),
     })
 }
 

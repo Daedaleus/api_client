@@ -12,11 +12,13 @@
 //! - `interchange`: cURL export and import.
 //! - `defaults`: what the collection and its folders pass on to requests.
 //! - `assist`: checking and completing scripts in the editor.
+//! - `history`: recording sent requests; listing, opening, clearing them.
 
 mod assist;
 mod collections;
 mod defaults;
 mod environments;
+mod history;
 mod interchange;
 mod recipients;
 mod runner;
@@ -39,15 +41,15 @@ use crate::command::{Command, CommandAck, Query, QueryResult};
 use crate::error::AppError;
 use crate::event::AppEvent;
 use crate::oauth::TokenCache;
-use crate::ports::ScriptAssist;
 use crate::ports::{BrowserLogin, CollectionStore, HttpSender, ScriptRunner, SecretVault};
+use crate::ports::{HistoryStore, ScriptAssist};
 use script_runs::RuntimeVariables;
 
 /// Events kept for slow subscribers before they start missing some.
 const EVENT_CAPACITY: usize = 64;
 
 /// The adapters the application works with.
-pub struct Ports<H, S, V, B, R, A> {
+pub struct Ports<H, S, V, B, R, A, Y> {
     /// Sends HTTP requests.
     pub http: H,
     /// Reads and writes collections.
@@ -60,23 +62,26 @@ pub struct Ports<H, S, V, B, R, A> {
     pub scripts: R,
     /// Checks and completes scripts in the editor.
     pub assist: A,
+    /// Keeps the request history.
+    pub history: Y,
 }
 
 /// The application: send [`Command`]s and [`Query`]s, receive
 /// [`AppEvent`]s.
 ///
 /// Cheap to clone; clones share state.
-pub struct App<H, S, V, B, R, A> {
-    inner: Arc<Inner<H, S, V, B, R, A>>,
+pub struct App<H, S, V, B, R, A, Y> {
+    inner: Arc<Inner<H, S, V, B, R, A, Y>>,
 }
 
-struct Inner<H, S, V, B, R, A> {
+struct Inner<H, S, V, B, R, A, Y> {
     http: H,
     store: S,
     vault: V,
     login: B,
     scripts: R,
     assist: A,
+    history: Y,
     /// Variables set by scripts, in memory only.
     runtime_variables: Mutex<RuntimeVariables>,
     /// Background work runs here, whichever thread calls `execute` – UIs
@@ -94,7 +99,7 @@ struct Inner<H, S, V, B, R, A> {
     temporary: Mutex<HashSet<ItemId>>,
 }
 
-impl<H, S, V, B, R, A> Clone for App<H, S, V, B, R, A> {
+impl<H, S, V, B, R, A, Y> Clone for App<H, S, V, B, R, A, Y> {
     fn clone(&self) -> Self {
         Self {
             inner: Arc::clone(&self.inner),
@@ -109,12 +114,13 @@ impl<
     B: BrowserLogin,
     R: ScriptRunner,
     A: ScriptAssist,
-> App<H, S, V, B, R, A>
+    Y: HistoryStore,
+> App<H, S, V, B, R, A, Y>
 {
     /// Creates the application with its adapters; background work runs on
     /// `runtime`.
     #[must_use]
-    pub fn new(ports: Ports<H, S, V, B, R, A>, runtime: Handle) -> Self {
+    pub fn new(ports: Ports<H, S, V, B, R, A, Y>, runtime: Handle) -> Self {
         let (events, _) = broadcast::channel(EVENT_CAPACITY);
         Self {
             inner: Arc::new(Inner {
@@ -124,6 +130,7 @@ impl<
                 login: ports.login,
                 scripts: ports.scripts,
                 assist: ports.assist,
+                history: ports.history,
                 runtime_variables: Mutex::default(),
                 runtime,
                 events,
@@ -209,6 +216,7 @@ impl<
                 collection_id,
                 recipients,
             } => self.set_recipients(&collection_id, &recipients),
+            Command::ClearHistory => self.clear_history(),
         }
     }
 
@@ -226,6 +234,8 @@ impl<
             Query::Recipients { collection_id } => self.query_recipients(&collection_id),
             Query::Curl { request } => self.query_curl(&request),
             Query::ParseCurl { text } => interchange::parse_curl(&text),
+            Query::History => self.query_history(),
+            Query::HistoryEntry { id } => self.query_history_entry(&id),
         }
     }
 

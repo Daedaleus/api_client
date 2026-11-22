@@ -12,11 +12,11 @@ use ac_domain::collection::{Item, ItemId, Request};
 use super::App;
 use crate::command::{CommandAck, QueryResult};
 use crate::error::AppError;
-use crate::ports::ScriptAssist;
 use crate::ports::{
     BrowserLogin, CollectionStore, HttpSender, Location, OpenedCollection, ScriptRunner,
     SecretVault, StoreError, StoreErrorKind,
 };
+use crate::ports::{HistoryStore, ScriptAssist};
 use crate::view::collection::non_empty;
 use crate::view::{CollectionView, RequestDraft};
 
@@ -27,7 +27,8 @@ impl<
     B: BrowserLogin,
     R: ScriptRunner,
     A: ScriptAssist,
-> App<H, S, V, B, R, A>
+    Y: HistoryStore,
+> App<H, S, V, B, R, A, Y>
 {
     pub(super) fn open_collection(&self, path: &str) -> Result<CommandAck, AppError> {
         let opened = self.inner.store.open(Path::new(path))?;
