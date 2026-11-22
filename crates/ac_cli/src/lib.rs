@@ -138,6 +138,8 @@ pub fn run(
             scripts: QuickJsRunner::default(),
             // No editor, nothing to check.
             assist: ac_app::ports::NoAssist,
+            // Runs in CI are not the user's history.
+            history: ac_app::ports::NoHistory,
         },
         runtime.handle().clone(),
     );

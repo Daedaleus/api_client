@@ -21,6 +21,7 @@ pub mod app;
 pub mod command;
 pub mod error;
 pub mod event;
+pub mod history;
 mod oauth;
 pub mod ports;
 mod resolve;

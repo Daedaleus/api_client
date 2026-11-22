@@ -2,6 +2,7 @@
 //! request's scripts, see `script_runs`), the result reported as
 //! [`AppEvent::RunFinished`].
 
+use ac_domain::auth::Auth;
 use ac_domain::auth::effective;
 use ac_domain::environment::Variable;
 use ac_domain::exchange::Response;
@@ -16,9 +17,10 @@ use super::{App, Inner};
 use crate::command::{CommandAck, RunId};
 use crate::error::AppError;
 use crate::event::AppEvent;
+use crate::history::Masking;
 use crate::oauth::authorize;
-use crate::ports::ScriptAssist;
 use crate::ports::{BrowserLogin, CollectionStore, HttpSender, ScriptRunner, SecretVault};
+use crate::ports::{HistoryStore, ScriptAssist};
 use crate::resolve::{Entered, Prepared, resolve_request};
 use crate::text::UserText;
 use crate::view::{HeaderDraft, OutgoingRequest, VariableDraft};
@@ -30,7 +32,8 @@ impl<
     B: BrowserLogin,
     R: ScriptRunner,
     A: ScriptAssist,
-> App<H, S, V, B, R, A>
+    Y: HistoryStore,
+> App<H, S, V, B, R, A, Y>
 {
     /// Starts a run: checked at once unless a pre-request script may still
     /// change the request, then scripts and sending in the background.
@@ -90,12 +93,25 @@ impl<
                 }
             },
         };
-        resolve_request(&entered, &variables).map_err(|error| {
-            let unlocked = context
-                .as_ref()
-                .and_then(|context| context.unlocked.as_ref());
-            explain(error, unlocked)
-        })
+        let unlocked = context
+            .as_ref()
+            .and_then(|context| context.unlocked.as_ref());
+        let mut prepared =
+            resolve_request(&entered, &variables).map_err(|error| explain(error, unlocked))?;
+        let secrets = unlocked.into_iter().flat_map(|unlocked| {
+            unlocked
+                .environment
+                .variables
+                .iter()
+                .filter(|variable| variable.secret && variable.enabled)
+                .map(|variable| variable.value.clone())
+        });
+        let api_key = match &auth {
+            Auth::ApiKey { name, .. } => Some(name.clone()),
+            _ => None,
+        };
+        prepared.masking = Masking::new(secrets, api_key);
+        Ok(prepared)
     }
 }
 
@@ -113,7 +129,7 @@ pub(super) fn scope<'a>(
     .then(runtime)
 }
 
-impl<H: HttpSender, S, V, B: BrowserLogin, R, A> Inner<H, S, V, B, R, A> {
+impl<H: HttpSender, S, V, B: BrowserLogin, R, A, Y> Inner<H, S, V, B, R, A, Y> {
     /// Sends a prepared request, fetching its OAuth 2 token first if it
     /// needs one.
     pub(super) async fn send(&self, prepared: Prepared) -> Result<Response, UserText> {

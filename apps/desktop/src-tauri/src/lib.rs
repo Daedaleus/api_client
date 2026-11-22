@@ -20,14 +20,15 @@ use ac_app::{App, AppEvent, Command, CommandAck, Ports, Query, QueryResult, User
 use ac_http::{DEFAULT_TIMEOUT, LoopbackLogin, ReqwestSender};
 use ac_scripting::{QuickJsRunner, TsAssist, TypeScriptFiles};
 use ac_secrets::{AgeVault, KeyConfig};
-use ac_storage::FileStore;
+use ac_storage::{FileHistory, FileStore};
 use serde::Serialize;
 use specta_typescript::Typescript;
 use tauri::{AppHandle, Manager, State};
 use tauri_specta::{Event, collect_commands, collect_events};
 use tokio::sync::broadcast::{Receiver, error::RecvError};
 
-type DesktopApp = App<ReqwestSender, FileStore, AgeVault, LoopbackLogin, QuickJsRunner, TsAssist>;
+type DesktopApp =
+    App<ReqwestSender, FileStore, AgeVault, LoopbackLogin, QuickJsRunner, TsAssist, FileHistory>;
 
 /// The TypeScript compiler and libraries for the script checker, packed by
 /// `build.rs`; unpacked when the first script editor asks.
@@ -35,6 +36,9 @@ const TYPESCRIPT: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/typescript.d
 
 /// The user's own key for secrets, in the app's config folder (ADR S4).
 const IDENTITY_FILE: &str = "identity.txt";
+/// Another folder for the app's data (the request history), e.g. for
+/// tests that must not touch the user's.
+const DATA_DIR_VARIABLE: &str = "API_CLIENT_DATA_DIR";
 
 /// Header of the generated bindings file.
 const BINDINGS_HEADER: &str = "// Generated from the Rust types by tauri-specta - do not edit.\n\
@@ -120,6 +124,10 @@ pub fn run() {
             // Tauri's Tokio runtime instead.
             let runtime = tauri::async_runtime::handle().inner().clone();
             let identity = tauri_app.path().app_config_dir()?.join(IDENTITY_FILE);
+            let data = match std::env::var_os(DATA_DIR_VARIABLE) {
+                Some(folder) => std::path::PathBuf::from(folder),
+                None => tauri_app.path().app_data_dir()?,
+            };
             let app = App::new(
                 Ports {
                     http: ReqwestSender::new(DEFAULT_TIMEOUT)?,
@@ -128,6 +136,7 @@ pub fn run() {
                     login: LoopbackLogin::new(),
                     scripts: QuickJsRunner::default(),
                     assist: TsAssist::new(|| TypeScriptFiles::from_archive(TYPESCRIPT)),
+                    history: FileHistory::new(&data),
                 },
                 runtime,
             );

@@ -10,8 +10,8 @@ use serde::{Deserialize, Serialize};
 use crate::text::UserText;
 
 use crate::view::{
-    AuthDraft, CertificateCheckView, CollectionView, EnvironmentDraft, OutgoingRequest,
-    RecipientsView, RequestDraft, ScriptsDraft, VariableDraft,
+    AuthDraft, CertificateCheckView, CollectionView, EnvironmentDraft, HistoryItemView,
+    OutgoingRequest, RecipientsView, RequestDraft, RunOutcomeView, ScriptsDraft, VariableDraft,
 };
 
 /// Something the user wants the application to do.
@@ -146,6 +146,8 @@ pub enum Command {
         /// Public keys (`age1…`, `ssh-ed25519 …`, `ssh-rsa …`).
         recipients: Vec<String>,
     },
+    /// Remove every entry of the request history.
+    ClearHistory,
 }
 
 /// Identifies one sending of a request, so the UI can match the result.
@@ -187,6 +189,8 @@ pub enum CommandAck {
         /// The collection.
         collection_id: String,
     },
+    /// The request history was cleared.
+    HistoryCleared,
 }
 
 /// Something the UI wants to read.
@@ -216,6 +220,13 @@ pub enum Query {
         /// The request as entered.
         #[serde(flatten)]
         request: Box<OutgoingRequest>,
+    },
+    /// The request history, newest first.
+    History,
+    /// One entry of the request history, to open as a new tab.
+    HistoryEntry {
+        /// The entry.
+        id: String,
     },
     /// A pasted cURL command as a new, unsaved request.
     ParseCurl {
@@ -253,6 +264,18 @@ pub enum QueryResult {
     Curl {
         /// For a POSIX shell, one option per line.
         command: String,
+    },
+    /// The request history, newest first.
+    History {
+        /// The entries.
+        entries: Vec<HistoryItemView>,
+    },
+    /// One entry of the history, to open as a new tab.
+    HistoryEntry {
+        /// Its request (not saved, no id).
+        request: Box<RequestDraft>,
+        /// Its response or error.
+        outcome: Box<RunOutcomeView>,
     },
     /// The request a cURL command describes.
     ParsedCurl {

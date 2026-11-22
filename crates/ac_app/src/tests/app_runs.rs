@@ -23,6 +23,7 @@ type TestApp = App<
     FakeBrowserLogin,
     FakeScriptRunner,
     crate::ports::NoAssist,
+    crate::ports::NoHistory,
 >;
 
 fn app(fake: FakeHttpSender) -> (TestApp, Arc<FakeHttpSender>) {
@@ -35,6 +36,7 @@ fn app(fake: FakeHttpSender) -> (TestApp, Arc<FakeHttpSender>) {
             login: FakeBrowserLogin::new(),
             scripts: FakeScriptRunner::new(),
             assist: crate::ports::NoAssist,
+            history: crate::ports::NoHistory,
         },
         Handle::current(),
     );
@@ -95,11 +97,17 @@ async fn headers_and_body_are_sent() {
     assert_eq!(sent[0].headers[0].name, "X-Test");
 }
 
+/// The next finished run (history notices are skipped).
 async fn next_event(events: &mut broadcast::Receiver<AppEvent>) -> AppEvent {
-    timeout(Duration::from_secs(5), events.recv())
-        .await
-        .expect("event within 5 s")
-        .expect("channel open")
+    loop {
+        let event = timeout(Duration::from_secs(5), events.recv())
+            .await
+            .expect("event within 5 s")
+            .expect("channel open");
+        if matches!(event, AppEvent::RunFinished { .. }) {
+            return event;
+        }
+    }
 }
 
 #[tokio::test]
@@ -113,7 +121,10 @@ async fn sending_reports_the_response_as_event() {
     let AppEvent::RunFinished {
         run_id: finished,
         outcome,
-    } = next_event(&mut events).await;
+    } = next_event(&mut events).await
+    else {
+        unreachable!("next_event returns finished runs");
+    };
     assert_eq!(finished, run_id);
     let RunOutcomeView::Completed(view) = outcome else {
         panic!("expected a response, got {outcome:?}");
@@ -142,7 +153,10 @@ async fn sending_works_from_a_thread_without_runtime() {
 
     let AppEvent::RunFinished {
         run_id: finished, ..
-    } = next_event(&mut events).await;
+    } = next_event(&mut events).await
+    else {
+        unreachable!("next_event returns finished runs");
+    };
     assert_eq!(finished, run_id);
 }
 
@@ -152,7 +166,9 @@ async fn transport_errors_are_a_normal_outcome() {
     let mut events = app.clone().subscribe();
     app.execute(send("GET", "https://slow.example")).unwrap();
 
-    let AppEvent::RunFinished { outcome, .. } = next_event(&mut events).await;
+    let AppEvent::RunFinished { outcome, .. } = next_event(&mut events).await else {
+        unreachable!("next_event returns finished runs");
+    };
     assert_eq!(
         outcome,
         RunOutcomeView::Failed {
@@ -185,7 +201,9 @@ async fn unanswered_fake_and_transport_texts() {
     let (app, _) = app(FakeHttpSender::new());
     let mut events = app.subscribe();
     app.execute(send("GET", "a.example")).unwrap();
-    let AppEvent::RunFinished { outcome, .. } = next_event(&mut events).await;
+    let AppEvent::RunFinished { outcome, .. } = next_event(&mut events).await else {
+        unreachable!("next_event returns finished runs");
+    };
     let RunOutcomeView::Failed { error, .. } = outcome else {
         panic!("expected a failure");
     };
