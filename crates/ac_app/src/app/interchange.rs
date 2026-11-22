@@ -8,9 +8,11 @@ use ac_domain::exchange::{Header, ResolvedRequest};
 use ac_domain::protocol::{HttpMethod, StatusClass, header};
 use ac_interchange::bruno::{self, BrunoFile};
 use ac_interchange::curl::{from_curl, to_curl};
+use ac_interchange::export::postman::to_postman;
 use ac_interchange::snippet::to_snippet;
 use ac_interchange::{
-    ImportError, Imported, Skipped, SkippedKind, import_collection, import_collection_from,
+    ImportError, Imported, ItemSetting, Skipped, SkippedKind, import_collection,
+    import_collection_from,
 };
 
 use super::App;
@@ -21,7 +23,7 @@ use crate::ports::{BrowserLogin, CollectionStore, HttpSender, ScriptRunner, Secr
 use crate::ports::{HistoryStore, ScriptAssist, SettingsStore};
 use crate::resolve::resolve_url;
 use crate::text::{UserText, keys};
-use crate::view::{OutgoingRequest, RequestDraft, SnippetLanguageView};
+use crate::view::{ExportFormatView, OutgoingRequest, RequestDraft, SnippetLanguageView};
 
 /// What an import from a URL asks for: the formats it reads, JSON first.
 const IMPORT_ACCEPT: &str = "application/json, application/yaml;q=0.9, */*;q=0.5";
@@ -116,6 +118,27 @@ impl<
         })
     }
 
+    /// Writes the collection in `format` to `file` (the user confirmed
+    /// replacing it in the save dialog); what the format has no place for
+    /// is listed. Secret values are never written.
+    pub(super) fn export_collection(
+        &self,
+        collection_id: &str,
+        format: ExportFormatView,
+        file: &str,
+    ) -> Result<CommandAck, AppError> {
+        let opened = self.current(collection_id)?;
+        let exported = match format {
+            ExportFormatView::Postman => to_postman(&opened.collection),
+        };
+        self.inner
+            .store
+            .write_text(Path::new(file), &exported.text)?;
+        Ok(CommandAck::CollectionExported {
+            left_out: exported.left_out.iter().map(skipped_text).collect(),
+        })
+    }
+
     /// The Bruno collection in `dir`.
     fn read_bruno(&self, dir: &Path) -> Result<Imported, AppError> {
         let files: Vec<BrunoFile> = self
@@ -190,6 +213,14 @@ fn skipped_text(skipped: &Skipped) -> UserText {
         SkippedKind::Body(mode) => {
             UserText::new(keys::IMPORT_SKIPPED_BODY).with("mode", mode.clone())
         }
+        SkippedKind::SecretValue(name) => {
+            UserText::new(keys::EXPORT_SECRET_VALUE).with("name", name.clone())
+        }
+        SkippedKind::Setting(setting) => UserText::new(match setting {
+            ItemSetting::Timeout => keys::EXPORT_TIMEOUT,
+            ItemSetting::Redirects => keys::EXPORT_REDIRECTS,
+            ItemSetting::CertificateCheck => keys::EXPORT_CERTIFICATE_CHECK,
+        }),
         SkippedKind::Resources { kind, count } => UserText::new(keys::IMPORT_SKIPPED_RESOURCES)
             .with("kind", kind.clone())
             .with("count", count.to_string()),

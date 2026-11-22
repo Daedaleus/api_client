@@ -26,6 +26,29 @@
     "de": "„{item}“: Body-Art {mode}",
     "en": "“{item}”: body type {mode}"
   },
+  "collection.export_postman": { "de": "Als Postman-Collection exportieren …", "en": "Export as Postman collection …" },
+  "export.title_postman": { "de": "Als Postman-Collection exportieren", "en": "Export as Postman collection" },
+  "export.done": { "de": "Export abgeschlossen", "en": "Export finished" },
+  "export.left_out_intro": {
+    "de": "Die Datei ist geschrieben. Nicht enthalten:",
+    "en": "The file was written. Not included:"
+  },
+  "export.secret_value": {
+    "de": "„{item}“: Der Wert des Secrets {name} wird nicht exportiert",
+    "en": "“{item}”: the value of the secret {name} is not exported"
+  },
+  "export.timeout": {
+    "de": "„{item}“: Das Zeitlimit hat dort keinen Platz",
+    "en": "“{item}”: the time limit has no place there"
+  },
+  "export.redirects": {
+    "de": "„{item}“: Die Einstellung für Weiterleitungen hat dort nur bei Ordnern und Requests Platz",
+    "en": "“{item}”: the redirect setting has a place there only on folders and requests"
+  },
+  "export.certificate_check": {
+    "de": "„{item}“: Die Zertifikatsprüfung hat dort nur bei Ordnern und Requests Platz",
+    "en": "“{item}”: the certificate check has a place there only on folders and requests"
+  },
   "import.skipped_resources": {
     "de": "„{item}“: {count} Einträge vom Typ {kind} (nur XHR/fetch-Requests übernommen)",
     "en": "“{item}”: {count} entries of type {kind} (only XHR/fetch requests taken over)"

@@ -1,4 +1,4 @@
-import { open } from '@tauri-apps/plugin-dialog';
+import { open, save } from '@tauri-apps/plugin-dialog';
 
 import type { Api } from './api';
 import { commands, events } from './bindings';
@@ -21,6 +21,10 @@ export const tauriApi: Api = {
   },
   pickFile: async (options = {}) => {
     const picked = await open({ directory: false, multiple: false, ...options });
+    return typeof picked === 'string' ? picked : null;
+  },
+  pickSaveFile: async (options = {}) => {
+    const picked = await save(options);
     return typeof picked === 'string' ? picked : null;
   },
 };

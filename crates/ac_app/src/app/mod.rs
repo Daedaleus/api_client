@@ -241,6 +241,11 @@ impl<
             Command::ImportCollection { file, path } => {
                 self.import_collection(&file, path.as_deref())
             }
+            Command::ExportCollection {
+                collection_id,
+                format,
+                file,
+            } => self.export_collection(&collection_id, format, &file),
             Command::SaveCollectionAs {
                 collection_id,
                 path,

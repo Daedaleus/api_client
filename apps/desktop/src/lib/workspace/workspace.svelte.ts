@@ -21,6 +21,7 @@ import { scopeInfo, scopeValues, type VariableInfo, type VariableSource } from '
 import { CollectionsState } from './collections.svelte';
 import { Dialogs } from './dialogs.svelte';
 import { EnvironmentChoice } from './environments.svelte';
+import { exportOptions } from './export-target';
 import {
   type ImportFormat,
   isFolder,
@@ -194,6 +195,36 @@ export class Workspace {
         { key: 'import.skipped_intro', args: {} },
         ack.skipped,
       );
+    }
+  }
+
+  /**
+   * Writes a collection as a Postman collection where the user chooses and
+   * lists what Postman has no place for (secret values are never written).
+   */
+  async exportCollection(collectionId: string): Promise<void> {
+    const collection = this.collections.find(collectionId);
+    if (!collection) return;
+    const file = await this.#api.pickSaveFile(exportOptions(collection.name));
+    if (!file) return;
+    this.collections.error = null;
+    try {
+      const ack = await this.#api.execute({
+        type: 'exportCollection',
+        collectionId,
+        format: 'postman',
+        file,
+      });
+      if (ack.type !== 'collectionExported') throw new Error(`unexpected answer ${ack.type}`);
+      if (ack.leftOut.length > 0) {
+        await this.dialogs.inform(
+          { key: 'export.done', args: {} },
+          { key: 'export.left_out_intro', args: {} },
+          ack.leftOut,
+        );
+      }
+    } catch (error) {
+      this.collections.error = toUserText(error);
     }
   }
 
