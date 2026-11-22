@@ -6,13 +6,16 @@
 //! - `strip`: TypeScript → JavaScript.
 //! - `engine`: one run in a fresh, limited runtime.
 //! - `prelude.js`: the script API, built from the run's input in JavaScript.
+//! - [`assist`]: checking and completing scripts ([`TsAssist`], ADR S2).
 //!
 //! Scripts reach nothing but the API in [`API_DECLARATIONS`]: `QuickJS` has no
 //! file, network or timer functions, and the host adds none.
 
+pub mod assist;
 mod engine;
 mod strip;
 
+pub use assist::{TsAssist, TypeScriptFiles};
 pub use engine::Limits;
 
 use ac_app::ports::{ScriptError, ScriptJob, ScriptOutcome, ScriptRunner};

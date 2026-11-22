@@ -13,6 +13,7 @@ import type {
   TreeItemView,
   VariableDraft,
 } from '../types';
+import { apiAssist, type ScriptAssist } from '../script-assist';
 import { scopeValues } from '../variables';
 import { CollectionsState } from './collections.svelte';
 import { Dialogs } from './dialogs.svelte';
@@ -48,11 +49,14 @@ export class Workspace {
   readonly defaults: DefaultsState;
   /** cURL export and import. */
   readonly curl: CurlState;
+  /** Checker and completion of the script editor. */
+  readonly scriptAssist: ScriptAssist;
   /** The environment being edited, if the editor is open. */
   editing = $state<EnvironmentEdit | null>(null);
   readonly #api: Api;
 
   constructor(api: Api, storage: KeyValueStorage | null) {
+    this.scriptAssist = apiAssist(api);
     this.#api = api;
     this.collections = new CollectionsState(api, storage);
     this.tabs = new TabsState(api);

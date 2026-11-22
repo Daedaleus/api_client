@@ -38,7 +38,7 @@ pub use command::{Command, CommandAck, Query, QueryResult, RunId};
 pub use error::AppError;
 pub use event::AppEvent;
 pub use ports::{
-    BrowserLogin, CollectionStore, HttpSender, LoginError, PendingLogin, ScriptRunner, StoreError,
-    TransportError,
+    BrowserLogin, CollectionStore, HttpSender, LoginError, PendingLogin, ScriptAssist,
+    ScriptRunner, StoreError, TransportError,
 };
 pub use text::UserText;

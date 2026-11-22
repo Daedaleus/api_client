@@ -12,6 +12,11 @@ export const commands = {
 	execute: (command: Command_Deserialize, options?: InvokeOptions) => __TAURI_INVOKE<CommandAck_Serialize>("execute", { command }, options),
 	/**  Answers a query from the UI. */
 	query: (query: Query_Deserialize, options?: InvokeOptions) => __TAURI_INVOKE<QueryResult_Serialize>("query", { query }, options),
+	/**
+	 *  Checks or completes a script for the editor. Async: the checker needs
+	 *  about a second to start, which must not block the window.
+	 */
+	assist: (request: AssistRequest, options?: InvokeOptions) => __TAURI_INVOKE<AssistResult>("assist", { request }, options),
 };
 
 /** Events */
@@ -49,6 +54,30 @@ export type AppEvent_Serialize =
 runId: RunId; 
 /**  What happened. */
 outcome: RunOutcomeView_Serialize };
+
+/**  A question of the script editor. */
+export type AssistRequest = 
+/**  Problems in the script. */
+{ type: "check"; 
+/**  The script. */
+source: string } | 
+/**  Suggestions at a position. */
+{ type: "complete"; 
+/**  The script. */
+source: string; 
+/**  Where the cursor is (JavaScript string offset). */
+offset: number };
+
+/**  The answer to an [`AssistRequest`]. */
+export type AssistResult = 
+/**  Problems found. */
+{ type: "diagnostics"; 
+/**  In the order of the script. */
+items: DiagnosticView[] } | 
+/**  Suggestions. */
+{ type: "completions"; 
+/**  Best first. */
+items: CompletionView[] };
 
 /**  The authentication of a request, folder or collection. */
 export type AuthDraft = 
@@ -471,6 +500,41 @@ path: string }) & { auth?: never; certificateCheck?: never; collectionId?: never
 collectionId: string; 
 /**  Public keys (`age1…`, `ssh-ed25519 …`, `ssh-rsa …`). */
 recipients: string[] }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; itemId?: never; name?: never; parentId?: never; path?: never; request?: never; variables?: never };
+
+/**  What a suggestion is (`CodeMirror`'s completion types). */
+export type CompletionKindView = 
+/**  A method or function. */
+"function" | 
+/**  A property. */
+"property" | 
+/**  A variable or constant. */
+"variable" | 
+/**  A class, interface or type. */
+"type" | 
+/**  A keyword. */
+"keyword" | 
+/**  Anything else. */
+"text";
+
+/**  A suggestion as the editor lists it. */
+export type CompletionView = {
+	/**  What is inserted. */
+	label: string,
+	/**  What it is (the editor's icon names). */
+	kind: CompletionKindView,
+};
+
+/**  A problem as the editor marks it. */
+export type DiagnosticView = {
+	/**  Start offset. */
+	from: number,
+	/**  End offset (exclusive). */
+	to: number,
+	/**  How bad it is. */
+	severity: SeverityView,
+	/**  What is wrong. */
+	message: string,
+};
 
 /**  An environment with its variables. */
 export type EnvironmentDraft = EnvironmentDraft_Serialize | EnvironmentDraft_Deserialize;
@@ -951,6 +1015,15 @@ export type SendContext_Serialize = {
 	/**  The chosen environment, if any. */
 	environmentId: string | null,
 };
+
+/**  How bad a problem is (the editor's names). */
+export type SeverityView = 
+/**  Breaks the script. */
+"error" | 
+/**  May not work as meant. */
+"warning" | 
+/**  A suggestion. */
+"info";
 
 /**  Class of a status code as the UI sees it (serialized in camelCase). */
 export type StatusClassView = 

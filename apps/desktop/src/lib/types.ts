@@ -22,9 +22,13 @@ import type {
 } from './bindings';
 
 export type {
+  AssistRequest,
+  AssistResult,
   AuthDraft,
   BodyDraft,
   BodyView,
+  CompletionView,
+  DiagnosticView,
   CertificateCheckView,
   FormFieldDraft,
   MultipartFieldDraft,

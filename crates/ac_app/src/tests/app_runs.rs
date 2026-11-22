@@ -16,7 +16,14 @@ use crate::text::{UserText, keys};
 use crate::view::BodyDraft;
 use crate::view::RunOutcomeView;
 
-type TestApp = App<Arc<FakeHttpSender>, MemoryStore, FakeVault, FakeBrowserLogin, FakeScriptRunner>;
+type TestApp = App<
+    Arc<FakeHttpSender>,
+    MemoryStore,
+    FakeVault,
+    FakeBrowserLogin,
+    FakeScriptRunner,
+    crate::ports::NoAssist,
+>;
 
 fn app(fake: FakeHttpSender) -> (TestApp, Arc<FakeHttpSender>) {
     let fake = Arc::new(fake);
@@ -27,6 +34,7 @@ fn app(fake: FakeHttpSender) -> (TestApp, Arc<FakeHttpSender>) {
             vault: FakeVault::default(),
             login: FakeBrowserLogin::new(),
             scripts: FakeScriptRunner::new(),
+            assist: crate::ports::NoAssist,
         },
         Handle::current(),
     );

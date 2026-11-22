@@ -4,6 +4,8 @@
 import type { Api, PickOptions } from '../lib/api';
 import type {
   AppEvent,
+  AssistRequest,
+  AssistResult,
   CollectionView,
   Command,
   CommandAck,
@@ -135,6 +137,20 @@ export class FakeApi implements Api {
     return () => {
       this.unsubscribed = true;
     };
+  }
+
+  /** Answers of the script checker, by request type; checked requests in `assisted`. */
+  assistAnswers: (AssistResult | { fail: unknown })[] = [];
+  assisted: AssistRequest[] = [];
+
+  async assist(request: AssistRequest): Promise<AssistResult> {
+    this.assisted.push(request);
+    const answer = this.assistAnswers.shift();
+    if (answer && 'fail' in answer) throw answer.fail;
+    if (answer) return answer;
+    return request.type === 'check'
+      ? { type: 'diagnostics', items: [] }
+      : { type: 'completions', items: [] };
   }
 
   /** The options of every file and folder dialog opened. */

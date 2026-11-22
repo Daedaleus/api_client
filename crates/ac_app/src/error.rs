@@ -3,7 +3,7 @@
 use ac_domain::environment::UnresolvedVariable;
 use ac_domain::protocol::InvalidMethod;
 
-use crate::ports::{SecretError, StoreError};
+use crate::ports::{AssistError, SecretError, StoreError};
 use crate::text::{UserText, keys};
 
 /// A command or query that cannot be carried out as given.
@@ -66,6 +66,9 @@ pub enum AppError {
     /// Nothing in the collection matches what should be run.
     #[error("no folder or request at {0:?}")]
     NothingToRun(String),
+    /// The script checker cannot answer.
+    #[error(transparent)]
+    Assist(#[from] AssistError),
     /// The collection is not open.
     #[error("collection is not open")]
     UnknownCollection,
@@ -117,6 +120,7 @@ impl AppError {
             Self::SecretUnavailable { reason, .. }
             | Self::NotReencrypted { reason, .. }
             | Self::Secret(reason) => reason.user_text(),
+            Self::Assist(error) => error.user_text(),
             Self::RedirectNotLoopback(url) => {
                 UserText::new(keys::OAUTH_REDIRECT).with("url", url.clone())
             }

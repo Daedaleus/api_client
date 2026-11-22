@@ -1,4 +1,12 @@
-import type { AppEvent, Command, CommandAck, Query, QueryResult } from './types';
+import type {
+  AppEvent,
+  AssistRequest,
+  AssistResult,
+  Command,
+  CommandAck,
+  Query,
+  QueryResult,
+} from './types';
 
 /** Files a file dialog offers: a name and extensions (`*` for all). */
 export interface FileFilter {
@@ -24,6 +32,8 @@ export interface Api {
   query(query: Query): Promise<QueryResult>;
   /** Calls `handler` for every application event; resolves to an unsubscribe function. */
   onEvent(handler: (event: AppEvent) => void): Promise<() => void>;
+  /** Checks or completes a script for the editor; rejects with a `UserText` if it cannot. */
+  assist(request: AssistRequest): Promise<AssistResult>;
   /** Lets the user pick a folder; resolves to its path, or `null` if cancelled. */
   pickFolder(options?: PickOptions): Promise<string | null>;
   /** Lets the user pick a file; resolves to its path, or `null` if cancelled. */

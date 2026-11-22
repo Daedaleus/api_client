@@ -8,6 +8,7 @@
   import ScriptsEditor from '../molecules/ScriptsEditor.svelte';
   import UrlBar from '../molecules/UrlBar.svelte';
   import { i18n } from '../../lib/i18n/i18n.svelte';
+  import type { ScriptAssist } from '../../lib/script-assist';
   import { hasPlaceholders, preview } from '../../lib/variables';
   import type { RequestTab } from '../../lib/workspace/request-tab.svelte';
 
@@ -25,6 +26,8 @@
     oncopycurl?: (() => Promise<string | null>) | undefined;
     /** Lets the user pick a file for the body. */
     onpickfile?: () => Promise<string | null>;
+    /** Checker and completion for the scripts. */
+    assist?: ScriptAssist | undefined;
   }
 
   let {
@@ -36,6 +39,7 @@
     onpickfile,
     checksCertificates = true,
     oncopycurl,
+    assist,
   }: Props = $props();
 
   let copied = $state(false);
@@ -177,7 +181,7 @@
     {:else if section === 'settings'}
       <CertificateCheckField bind:check={tab.draft.certificateCheck} />
     {:else if section === 'scripts'}
-      <ScriptsEditor bind:scripts={tab.draft.scripts} />
+      <ScriptsEditor bind:scripts={tab.draft.scripts} {assist} />
     {:else}
       <p class="request-editor__note">{i18n.t('editor.variables_hint')}</p>
       <RowsEditor bind:rows={tab.draft.variables} labels={VARIABLE_LABELS} />

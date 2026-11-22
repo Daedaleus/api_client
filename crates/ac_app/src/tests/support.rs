@@ -12,7 +12,9 @@ use tokio::runtime::Handle;
 use crate::app::{App, Ports};
 use crate::command::{Command, CommandAck, Query, QueryResult};
 use crate::error::AppError;
-use crate::testing::{FakeBrowserLogin, FakeHttpSender, FakeScriptRunner, FakeVault, MemoryStore};
+use crate::testing::{
+    FakeBrowserLogin, FakeHttpSender, FakeScriptAssist, FakeScriptRunner, FakeVault, MemoryStore,
+};
 use crate::view::{CollectionView, RequestDraft, TreeItemView};
 
 /// The app with test doubles shared with the fixture.
@@ -22,6 +24,7 @@ pub(crate) type TestApp = App<
     Arc<FakeVault>,
     Arc<FakeBrowserLogin>,
     Arc<FakeScriptRunner>,
+    Arc<FakeScriptAssist>,
 >;
 
 /// `Shop` with `Auth/Login` and `Health`, and the environment `Dev`
@@ -29,6 +32,7 @@ pub(crate) type TestApp = App<
 pub(crate) struct Fixture {
     pub app: TestApp,
     pub scripts: Arc<FakeScriptRunner>,
+    pub assist: Arc<FakeScriptAssist>,
     pub http: Arc<FakeHttpSender>,
     pub browser: Arc<FakeBrowserLogin>,
     pub store: Arc<MemoryStore>,
@@ -51,17 +55,37 @@ impl Fixture {
     }
 
     pub fn with_ports(http: FakeHttpSender, browser: FakeBrowserLogin) -> Self {
-        Self::with_all(http, browser, FakeScriptRunner::new())
+        Self::with_all(
+            http,
+            browser,
+            FakeScriptRunner::new(),
+            FakeScriptAssist::new(),
+        )
     }
 
     pub fn with_scripts(http: FakeHttpSender, scripts: FakeScriptRunner) -> Self {
-        Self::with_all(http, FakeBrowserLogin::new(), scripts)
+        Self::with_all(
+            http,
+            FakeBrowserLogin::new(),
+            scripts,
+            FakeScriptAssist::new(),
+        )
+    }
+
+    pub fn with_assist(assist: FakeScriptAssist) -> Self {
+        Self::with_all(
+            FakeHttpSender::new(),
+            FakeBrowserLogin::new(),
+            FakeScriptRunner::new(),
+            assist,
+        )
     }
 
     fn with_all(
         http: FakeHttpSender,
         browser: FakeBrowserLogin,
         scripts: FakeScriptRunner,
+        assist: FakeScriptAssist,
     ) -> Self {
         let mut login = Request::new("Login");
         login.method = HttpMethod::Post;
@@ -101,6 +125,7 @@ impl Fixture {
         let vault = Arc::new(FakeVault::default());
         let browser = Arc::new(browser);
         let scripts = Arc::new(scripts);
+        let assist = Arc::new(assist);
         let app = App::new(
             Ports {
                 http: Arc::clone(&http),
@@ -108,6 +133,7 @@ impl Fixture {
                 vault: Arc::clone(&vault),
                 login: Arc::clone(&browser),
                 scripts: Arc::clone(&scripts),
+                assist: Arc::clone(&assist),
             },
             Handle::current(),
         );
@@ -116,6 +142,7 @@ impl Fixture {
             http,
             browser,
             scripts,
+            assist,
             store,
             vault,
             root,

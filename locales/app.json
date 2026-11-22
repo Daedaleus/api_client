@@ -485,6 +485,10 @@
     "de": "Skript vor dem Request: {detail}",
     "en": "Pre-request script: {detail}"
   },
+  "error.script_assist": {
+    "de": "Skriptprüfung nicht möglich: {detail}",
+    "en": "Script check not possible: {detail}"
+  },
   "error.script_post_response": {
     "de": "Skript nach der Response: {detail}",
     "en": "Post-response script: {detail}"

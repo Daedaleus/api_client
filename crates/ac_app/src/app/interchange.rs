@@ -11,12 +11,19 @@ use super::App;
 use crate::command::{CommandAck, QueryResult};
 use crate::error::AppError;
 use crate::oauth::{TOKEN_PLACEHOLDER, authorize};
+use crate::ports::ScriptAssist;
 use crate::ports::{BrowserLogin, CollectionStore, HttpSender, ScriptRunner, SecretVault};
 use crate::text::{UserText, keys};
 use crate::view::{CollectionView, OutgoingRequest, RequestDraft};
 
-impl<H: HttpSender, S: CollectionStore, V: SecretVault, B: BrowserLogin, R: ScriptRunner>
-    App<H, S, V, B, R>
+impl<
+    H: HttpSender,
+    S: CollectionStore,
+    V: SecretVault,
+    B: BrowserLogin,
+    R: ScriptRunner,
+    A: ScriptAssist,
+> App<H, S, V, B, R, A>
 {
     /// Converts another tool's file into a new collection in `path` and
     /// opens it; what has no counterpart is listed for the user. A Bruno
