@@ -161,7 +161,7 @@ export class FakeApi implements Api {
     if (answer && 'fail' in answer) throw answer.fail;
     if (answer) return answer;
     return request.type === 'check'
-      ? { type: 'diagnostics', items: [] }
+      ? { type: 'diagnostics', items: [], partial: false }
       : { type: 'completions', items: [] };
   }
 

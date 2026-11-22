@@ -3,23 +3,28 @@
 //!
 //! - this file: [`TsAssist`], the [`ScriptAssist`] adapter.
 //! - `files`: the compiler and library declarations, and their archive.
+//! - `syntax`: syntax errors from oxc while the service starts.
 //! - `service.js`: the language service set-up and the functions called.
 //!
 //! The service starts with the first question (about a second: loading the
 //! compiler and parsing the libraries), not with the app. Questions wait in
 //! order; each gets an answer through a channel, so callers never block a
-//! UI thread.
+//! UI thread. Until the service is ready a check answers at once with
+//! oxc's syntax errors, marked as partial so the editor asks again.
 
 mod files;
+mod syntax;
 
 pub use files::{COMPILER, TypeScriptFiles, is_library};
 
+use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
 use ac_app::ports::{
-    AssistError, CompletionKind, ScriptAssist, ScriptCompletion, ScriptDiagnostic, Severity,
+    AssistError, CompletionKind, ScriptAssist, ScriptCheck, ScriptCompletion, ScriptDiagnostic,
+    Severity,
 };
 use rquickjs::{Context, Function, Object, Runtime, Value};
 use serde::Deserialize;
@@ -39,6 +44,16 @@ const STACK_SIZE: usize = 8 * 1024 * 1024;
 /// frames below it (debug builds need more).
 const THREAD_STACK_SIZE: usize = 4 * STACK_SIZE;
 
+/// Where the service is (stored in `TsAssist::state`).
+mod state {
+    /// Not asked anything yet.
+    pub const IDLE: u8 = 0;
+    /// Loading the compiler and libraries.
+    pub const STARTING: u8 = 1;
+    /// Started (or failed to start): jobs get the service's answer.
+    pub const DONE: u8 = 2;
+}
+
 /// Where the files come from, called once, on the service's thread.
 type Loader = Box<dyn FnOnce() -> Result<TypeScriptFiles, String> + Send>;
 
@@ -46,9 +61,13 @@ type Loader = Box<dyn FnOnce() -> Result<TypeScriptFiles, String> + Send>;
 #[derive(Debug)]
 pub struct TsAssist {
     jobs: Mutex<mpsc::Sender<Job>>,
+    /// See `state`; set to `DONE` by the service thread.
+    state: Arc<AtomicU8>,
 }
 
 enum Job {
+    /// Start the service, nothing else.
+    Start,
     Check(
         String,
         oneshot::Sender<Result<Vec<ScriptDiagnostic>, AssistError>>,
@@ -69,13 +88,39 @@ impl TsAssist {
     pub fn new(load: impl FnOnce() -> Result<TypeScriptFiles, String> + Send + 'static) -> Self {
         let (sender, receiver) = mpsc::channel();
         let load: Loader = Box::new(load);
+        let state = Arc::new(AtomicU8::new(state::IDLE));
+        let done = Arc::clone(&state);
         std::thread::Builder::new()
             .name("script-assist".into())
             .stack_size(THREAD_STACK_SIZE)
-            .spawn(move || serve(&receiver, load))
+            .spawn(move || serve(&receiver, load, &done))
             .expect("the operating system can start a thread");
         Self {
             jobs: Mutex::new(sender),
+            state,
+        }
+    }
+
+    /// Whether the service has started (or failed to); until then checks
+    /// answer with syntax errors only.
+    #[must_use]
+    pub fn is_started(&self) -> bool {
+        self.state.load(Ordering::Acquire) == state::DONE
+    }
+
+    /// Starts the service in the background unless it is already starting.
+    fn warm_up(&self) {
+        if self
+            .state
+            .compare_exchange(
+                state::IDLE,
+                state::STARTING,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            )
+            .is_ok()
+        {
+            self.send(Job::Start);
         }
     }
 
@@ -91,10 +136,15 @@ impl TsAssist {
 }
 
 impl ScriptAssist for TsAssist {
-    async fn check(&self, source: String) -> Result<Vec<ScriptDiagnostic>, AssistError> {
+    async fn check(&self, source: String) -> Result<ScriptCheck, AssistError> {
+        if !self.is_started() {
+            self.warm_up();
+            return Ok(ScriptCheck::syntax_only(syntax::diagnostics(&source)));
+        }
         let (answer, receiver) = oneshot::channel();
         self.send(Job::Check(source, answer));
-        receiver.await.unwrap_or_else(|_| Err(stopped()))
+        let diagnostics = receiver.await.unwrap_or_else(|_| Err(stopped()))?;
+        Ok(ScriptCheck::complete(diagnostics))
     }
 
     async fn complete(
@@ -113,15 +163,18 @@ fn stopped() -> AssistError {
 }
 
 /// The service thread: starts the service with the first job, then answers.
-fn serve(jobs: &mpsc::Receiver<Job>, load: Loader) {
+fn serve(jobs: &mpsc::Receiver<Job>, load: Loader, state: &AtomicU8) {
     let mut load = Some(load);
     let mut service: Option<Result<Service, AssistError>> = None;
     for job in jobs {
         let started = service.get_or_insert_with(|| {
             let load = load.take().expect("loaded only once");
-            Service::start(load)
+            let started = Service::start(load);
+            state.store(state::DONE, Ordering::Release);
+            started
         });
         match (job, started) {
+            (Job::Start, _) => {}
             (Job::Check(source, answer), Ok(service)) => {
                 let _ = answer.send(service.check(&source));
             }

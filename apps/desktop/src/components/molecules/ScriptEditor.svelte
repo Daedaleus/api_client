@@ -10,7 +10,7 @@
   import { javascript } from '@codemirror/lang-javascript';
   import { bracketMatching, indentOnInput } from '@codemirror/language';
   import { linter, lintGutter, lintKeymap } from '@codemirror/lint';
-  import { EditorState, type Extension } from '@codemirror/state';
+  import { EditorState, StateEffect, type Extension } from '@codemirror/state';
   import {
     EditorView,
     keymap,
@@ -37,6 +37,10 @@
 
   /** Wait this long after typing before checking (ms). */
   const CHECK_DELAY = 400;
+  /** Milliseconds before checking again while the checker starts. */
+  const RECHECK_DELAY = 500;
+  /** Asks the linter to check the unchanged text again. */
+  const recheck = StateEffect.define<null>();
 
   /** The script editor is at least a few lines high. */
   const size = EditorView.theme({ '.cm-content': { minHeight: '7.5em' } });
@@ -71,12 +75,22 @@
       ...base,
       lintGutter(),
       linter(
-        async (current) =>
-          toDiagnostics(
-            await checker.check(current.state.doc.toString()),
-            current.state.doc.length,
-          ),
-        { delay: CHECK_DELAY },
+        async (current) => {
+          const checked = await checker.check(current.state.doc.toString());
+          // Syntax errors only for now: the full check follows once the
+          // checker has started.
+          if (checked.partial) {
+            setTimeout(() => current.dispatch({ effects: recheck.of(null) }), RECHECK_DELAY);
+          }
+          return toDiagnostics(checked.items, current.state.doc.length);
+        },
+        {
+          delay: CHECK_DELAY,
+          needsRefresh: (update) =>
+            update.transactions.some((transaction) =>
+              transaction.effects.some((effect) => effect.is(recheck)),
+            ),
+        },
       ),
       autocompletion({ override: [(context) => complete(checker, context)] }),
     ];

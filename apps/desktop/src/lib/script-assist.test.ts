@@ -15,7 +15,7 @@ function context(text: string, explicit = false): CompletionContext {
 
 function fakeAssist(labels: string[]): ScriptAssist & { complete: ReturnType<typeof vi.fn> } {
   return {
-    check: vi.fn(async () => []),
+    check: vi.fn(async () => ({ items: [], partial: false })),
     complete: vi.fn(async () => labels.map((label) => ({ label, kind: 'function' as const }))),
   };
 }
@@ -29,16 +29,19 @@ describe('script assist', () => {
     api.assistAnswers.push({
       type: 'diagnostics',
       items: [{ from: 0, to: 3, severity: 'error', message: 'bad' }],
+      partial: true,
     });
-    expect(await assist.check('req')).toEqual([
-      { from: 0, to: 3, severity: 'error', message: 'bad' },
-    ]);
+    expect(await assist.check('req')).toEqual({
+      items: [{ from: 0, to: 3, severity: 'error', message: 'bad' }],
+      partial: true,
+    });
     api.assistAnswers.push({ fail: { key: 'error.script_assist', args: { detail: 'down' } } });
-    expect(await assist.check('req')).toEqual([
-      { from: 0, to: 0, severity: 'info', message: 'Script check not possible: down' },
-    ]);
+    expect(await assist.check('req')).toEqual({
+      items: [{ from: 0, to: 0, severity: 'info', message: 'Script check not possible: down' }],
+      partial: false,
+    });
     api.assistAnswers.push({ type: 'completions', items: [] });
-    expect(await assist.check('x')).toEqual([]);
+    expect(await assist.check('x')).toEqual({ items: [], partial: false });
 
     api.assistAnswers.push({
       type: 'completions',
@@ -47,7 +50,7 @@ describe('script assist', () => {
     expect(await assist.complete('req.', 4)).toEqual([{ label: 'setHeader', kind: 'function' }]);
     api.assistAnswers.push({ fail: new Error('down') });
     expect(await assist.complete('req.', 4)).toEqual([]);
-    api.assistAnswers.push({ type: 'diagnostics', items: [] });
+    api.assistAnswers.push({ type: 'diagnostics', items: [], partial: false });
     expect(await assist.complete('x', 1)).toEqual([]);
     expect(api.assisted.at(-1)).toEqual({ type: 'complete', source: 'x', offset: 1 });
   });

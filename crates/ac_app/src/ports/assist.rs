@@ -11,11 +11,12 @@ use crate::text::{UserText, keys};
 
 /// Checks scripts and suggests completions.
 pub trait ScriptAssist: Send + Sync + 'static {
-    /// Problems in `source`.
+    /// Problems in `source`; while the checker starts, only its syntax
+    /// errors ([`ScriptCheck::partial`]).
     fn check(
         &self,
         source: String,
-    ) -> impl Future<Output = Result<Vec<ScriptDiagnostic>, AssistError>> + Send;
+    ) -> impl Future<Output = Result<ScriptCheck, AssistError>> + Send;
 
     /// What may be written at `offset` in `source`.
     fn complete(
@@ -29,7 +30,7 @@ impl<T: ScriptAssist> ScriptAssist for Arc<T> {
     fn check(
         &self,
         source: String,
-    ) -> impl Future<Output = Result<Vec<ScriptDiagnostic>, AssistError>> + Send {
+    ) -> impl Future<Output = Result<ScriptCheck, AssistError>> + Send {
         T::check(self, source)
     }
 
@@ -39,6 +40,35 @@ impl<T: ScriptAssist> ScriptAssist for Arc<T> {
         offset: usize,
     ) -> impl Future<Output = Result<Vec<ScriptCompletion>, AssistError>> + Send {
         T::complete(self, source, offset)
+    }
+}
+
+/// The answer to a check.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct ScriptCheck {
+    /// The problems found, in the order of the script.
+    pub diagnostics: Vec<ScriptDiagnostic>,
+    /// Only syntax errors: the checker is still starting, ask again soon.
+    pub partial: bool,
+}
+
+impl ScriptCheck {
+    /// A full check.
+    #[must_use]
+    pub fn complete(diagnostics: Vec<ScriptDiagnostic>) -> Self {
+        Self {
+            diagnostics,
+            partial: false,
+        }
+    }
+
+    /// Syntax errors only, while the checker starts.
+    #[must_use]
+    pub fn syntax_only(diagnostics: Vec<ScriptDiagnostic>) -> Self {
+        Self {
+            diagnostics,
+            partial: true,
+        }
     }
 }
 
@@ -114,8 +144,8 @@ impl ScriptAssist for NoAssist {
     fn check(
         &self,
         _source: String,
-    ) -> impl Future<Output = Result<Vec<ScriptDiagnostic>, AssistError>> + Send {
-        std::future::ready(Ok(Vec::new()))
+    ) -> impl Future<Output = Result<ScriptCheck, AssistError>> + Send {
+        std::future::ready(Ok(ScriptCheck::default()))
     }
 
     fn complete(
