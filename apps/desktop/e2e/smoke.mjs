@@ -1056,9 +1056,15 @@ const measure = (expectedStart, minimum) => `new Promise((resolve) => {
     else resolve({ shownMs: Math.round(shown), maxGapMs: Math.round(maxGap) });
   };
   requestAnimationFrame(tick);
+  // Formatted bodies are in the code viewer, which draws only the visible
+  // lines (its full length is on the element); others are plain text.
   const done = () => {
-    const text = document.querySelector('.response__body')?.textContent ?? '';
-    return text.startsWith(${JSON.stringify(expectedStart)}) && text.length >= ${minimum};
+    const viewer = document.querySelector('.response__body .code-viewer');
+    const shownText = viewer
+      ? (viewer.querySelector('.cm-content')?.textContent ?? '')
+      : (document.querySelector('pre.response__body')?.textContent ?? '');
+    const length = viewer ? Number(viewer.dataset.length) : shownText.length;
+    return shownText.startsWith(${JSON.stringify(expectedStart)}) && length >= ${minimum};
   };
   new MutationObserver((_, observer) => {
     if (!done()) return;
@@ -1073,7 +1079,8 @@ for (const [size, minimum, formatted] of [
 ]) {
   await evaluate(setValue('.url-bar__select', 'GET', 'change'));
   await evaluate(setValue('.url-bar__input', `${origin}/large/${size}`));
-  const { shownMs, maxGapMs } = await evaluate(measure(formatted ? '[\n' : '[{', minimum));
+  // Lines of the code viewer join without line breaks: "[" then "  {".
+  const { shownMs, maxGapMs } = await evaluate(measure(formatted ? '[  {' : '[{', minimum));
   const truncated = await evaluate(
     `[...document.querySelectorAll('.response__note')].some((note) => note.textContent.includes('MB'))`,
   );

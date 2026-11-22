@@ -38,7 +38,7 @@ describe('ResponseViewer', () => {
     expect(screen.getByText(/200\s+OK/)).toBeInTheDocument();
     expect(screen.getByText('142 ms')).toBeInTheDocument();
     expect(screen.getByText('2.0 KB')).toBeInTheDocument();
-    expect(screen.getByText(/"a": 1/)).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Body' })).toHaveTextContent('"a": 1');
   });
 
   it('switches to the headers', async () => {
@@ -144,5 +144,12 @@ describe('ResponseViewer', () => {
       sending: false,
     });
     expect(screen.getByRole('list', { name: 'Tests' })).toHaveTextContent('before');
+  });
+
+  it('shows a body with a huge line as plain text', () => {
+    const line = 'x'.repeat(30_000);
+    render(ResponseViewer, { outcome: completed({ text: line, pretty: false }), sending: false });
+    expect(screen.queryByRole('textbox', { name: 'Body' })).not.toBeInTheDocument();
+    expect(screen.getByText(line)).toBeInTheDocument();
   });
 });

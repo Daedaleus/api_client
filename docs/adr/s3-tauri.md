@@ -58,7 +58,11 @@ between two frames (a frozen window shows as a long gap).
    the one slow spot (rendering many lines) has a known fix in the web
    stack. egui stays the fallback but is not pursued.
 2. **Show response bodies in a virtualised viewer** (CodeMirror 6, read-only)
-   before raising `PREVIEW_LIMIT`.
+   before raising `PREVIEW_LIMIT`. *Done (2026-11-22):* the 0.9 MB formatted
+   body now appears after ~0.08 s with no frame longer than ~17 ms (was
+   ~0.5 s frozen). Bodies with a line longer than 20 000 characters (minified
+   JSON) stay plain text: the viewer draws whole lines, and such a line
+   would freeze it.
 3. **Confirm Linux and macOS at runtime** before the first release: the
    end-to-end test on Linux in CI (#24) and a manual start on macOS. If
    WebKitGTK turns out unusable, this ADR is reopened.

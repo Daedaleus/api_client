@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { formatBytes, formatDuration } from '../../lib/format';
+  import { fitsCodeView, formatBytes, formatDuration } from '../../lib/format';
   import { i18n } from '../../lib/i18n/i18n.svelte';
   import type { RunOutcome } from '../../lib/types';
+  import CodeViewer from '../molecules/CodeViewer.svelte';
   import TestResults from '../molecules/TestResults.svelte';
 
   interface Props {
@@ -102,7 +103,17 @@
               {i18n.t('response.body.truncated', { size: formatBytes(outcome.body.text.length) })}
             </p>
           {/if}
-          <pre class="response__body">{outcome.body.text}</pre>
+          {#if fitsCodeView(outcome.body.text)}
+            <div class="response__body response__body--code">
+              <CodeViewer
+                text={outcome.body.text}
+                isJson={outcome.body.pretty}
+                label={i18n.t('response.body')}
+              />
+            </div>
+          {:else}
+            <pre class="response__body">{outcome.body.text}</pre>
+          {/if}
         {/if}
       {:else}
         <table class="response__headers">
@@ -246,6 +257,19 @@
     flex: 1;
     min-height: 0;
     overflow: auto;
+  }
+
+  /* The code viewer scrolls itself and fills the panel. */
+  .response__panel:has(.response__body--code) {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .response__body--code {
+    flex: 1;
+    min-height: 0;
+    padding: 0;
   }
 
   .response__body {
