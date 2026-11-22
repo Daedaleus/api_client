@@ -170,6 +170,8 @@
 
   for (const [name, value] of [
     ['pm', pm],
+    // Insomnia's script API follows Postman's: imported scripts run as they are.
+    ['insomnia', pm],
     ['bru', bru],
   ]) {
     Object.defineProperty(globalThis, name, { value, writable: false, configurable: false });

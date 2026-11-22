@@ -370,6 +370,17 @@ fn postman_scripts_run_unchanged() {
 }
 
 #[test]
+fn insomnia_scripts_run_with_the_same_api() {
+    let post = r"
+        insomnia.test('status', () => insomnia.expect(insomnia.response.code).to.equal(201));
+        insomnia.environment.set('token', insomnia.response.json().token);
+    ";
+    let outcome = run_default(&job(ScriptPhase::PostResponse, post)).unwrap();
+    assert_eq!(failures(&outcome), []);
+    assert_eq!(outcome.variables, [pair("token", "t0k")]);
+}
+
+#[test]
 fn bruno_scripts_run_unchanged() {
     let pre = r"
         bru.setVar('id', 3);

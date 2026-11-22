@@ -26,6 +26,18 @@
     "de": "„{item}“: Body-Art {mode}",
     "en": "“{item}”: body type {mode}"
   },
+  "import.skipped_resources": {
+    "de": "„{item}“: {count} Einträge vom Typ {kind} (nur XHR/fetch-Requests übernommen)",
+    "en": "“{item}”: {count} entries of type {kind} (only XHR/fetch requests taken over)"
+  },
+  "import.skipped_request_kind": {
+    "de": "„{item}“: Request-Art {kind}",
+    "en": "“{item}”: request kind {kind}"
+  },
+  "import.template_tag": {
+    "de": "„{item}“: Vorlagen-Tag {tag} bleibt als Text stehen",
+    "en": "“{item}”: template tag {tag} stays as text"
+  },
   "import.relative_server": {
     "de": "„{item}“: Der Server „{url}“ ist relativ zum Ort der Beschreibung. baseUrl ist vorläufig http://localhost{url} – bitte den Host in den Variablen der Collection anpassen.",
     "en": "“{item}”: the server “{url}” is relative to where the description is served. baseUrl is http://localhost{url} for now – please adjust the host in the collection's variables."
@@ -302,6 +314,8 @@
   "menu.import_postman": { "de": "Postman-Collection …", "en": "Postman collection …" },
   "menu.import_openapi": { "de": "OpenAPI-Beschreibung …", "en": "OpenAPI description …" },
   "menu.import_bruno": { "de": "Bruno-Collection (Ordner) …", "en": "Bruno collection (folder) …" },
+  "menu.import_insomnia": { "de": "Insomnia-Export …", "en": "Insomnia export …" },
+  "menu.import_har": { "de": "HAR-Datei (Browser-Aufzeichnung) …", "en": "HAR file (browser recording) …" },
   "menu.import_url": { "de": "Von einer URL (OpenAPI, Postman) …", "en": "From a URL (OpenAPI, Postman) …" },
   "menu.import_curl": { "de": "cURL-Befehl einfügen …", "en": "Paste cURL command …" },
   "menu.more": { "de": "Aktionen für „{name}“", "en": "Actions for “{name}”" },
@@ -316,6 +330,14 @@
   "import.title_openapi": {
     "de": "OpenAPI-Beschreibung importieren",
     "en": "Import an OpenAPI description"
+  },
+  "import.title_insomnia": {
+    "de": "Insomnia-Export importieren",
+    "en": "Import an Insomnia export"
+  },
+  "import.title_har": {
+    "de": "HAR-Datei importieren",
+    "en": "Import a HAR file"
   },
   "import.title_bruno": {
     "de": "Ordner der Bruno-Collection wählen",
@@ -332,6 +354,8 @@
   },
   "import.filter_postman": { "de": "Postman-Collection (JSON)", "en": "Postman collection (JSON)" },
   "import.filter_openapi": { "de": "OpenAPI (JSON, YAML)", "en": "OpenAPI (JSON, YAML)" },
+  "import.filter_insomnia": { "de": "Insomnia-Export (JSON, YAML)", "en": "Insomnia export (JSON, YAML)" },
+  "import.filter_har": { "de": "HAR-Datei", "en": "HAR file" },
   "import.filter_all": { "de": "Alle Dateien", "en": "All files" },
   "sidebar.empty": {
     "de": "Noch keine Collection geöffnet. Einen Ordner öffnen oder eine neue Collection anlegen.",

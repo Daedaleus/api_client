@@ -113,6 +113,26 @@ async fn postman_exports_become_new_open_collections() {
     });
     assert_eq!(assertion.key, keys::IMPORT_SKIPPED_ASSERTION);
     assert_eq!(assertion.args["assertion"], "res.status: between 1 2");
+    let resources = skipped_text(&Skipped {
+        item: "Recording".into(),
+        what: SkippedKind::Resources {
+            kind: "image".into(),
+            count: 3,
+        },
+    });
+    assert_eq!(resources.key, keys::IMPORT_SKIPPED_RESOURCES);
+    assert_eq!(resources.args["count"], "3");
+    let grpc = skipped_text(&Skipped {
+        item: "Stream".into(),
+        what: SkippedKind::RequestKind("gRPC".into()),
+    });
+    assert_eq!(grpc.args["kind"], "gRPC");
+    let tag = skipped_text(&Skipped {
+        item: "List".into(),
+        what: SkippedKind::TemplateTag("response".into()),
+    });
+    assert_eq!(tag.key, keys::IMPORT_TEMPLATE_TAG);
+    assert_eq!(tag.args["tag"], "response");
     // It is open like any other collection.
     let tree = fixture
         .app

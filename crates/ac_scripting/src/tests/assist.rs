@@ -187,6 +187,9 @@ async fn postman_and_bruno_scripts_check_without_errors() {
         req.setUrl(bru.interpolate('{{baseUrl}}/x'));
     ";
     assert_eq!(messages(bruno).await, []);
+    let insomnia =
+        "insomnia.test('ok', () => insomnia.expect(insomnia.response.code).to.equal(200));";
+    assert_eq!(messages(insomnia).await, []);
     let wrong = messages("pm.expect(1).to.equl(1);").await;
     assert!(wrong[0].0.contains("equl"), "{wrong:?}");
 }

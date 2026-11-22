@@ -1,6 +1,6 @@
 [package]
 name = "ac_interchange"
-description = "Import and export: cURL commands (later Postman, Bruno, OpenAPI)."
+description = "Import and export: Postman, Insomnia, HAR, Bruno, OpenAPI, cURL and code snippets."
 version.workspace = true
 edition.workspace = true
 license.workspace = true

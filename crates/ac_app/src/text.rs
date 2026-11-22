@@ -88,6 +88,13 @@ pub mod keys {
     pub const IMPORT_SKIPPED_HEADERS: &str = "import.skipped_headers";
     /// An import left out a body. Arguments: `item`, `mode`.
     pub const IMPORT_SKIPPED_BODY: &str = "import.skipped_body";
+    /// Recorded entries that are no API calls (HAR). Arguments: `item`,
+    /// `kind`, `count`.
+    pub const IMPORT_SKIPPED_RESOURCES: &str = "import.skipped_resources";
+    /// An import left out a request kind (gRPC …). Arguments: `item`, `kind`.
+    pub const IMPORT_SKIPPED_REQUEST_KIND: &str = "import.skipped_request_kind";
+    /// A template tag stayed as text (Insomnia). Arguments: `item`, `tag`.
+    pub const IMPORT_TEMPLATE_TAG: &str = "import.template_tag";
     /// A relative `OpenAPI` server. Placeholders: `item`, `url`.
     pub const IMPORT_RELATIVE_SERVER: &str = "import.relative_server";
     /// An import from a URL got nothing usable. Placeholder: `detail`.
@@ -147,7 +154,7 @@ pub mod keys {
 
     /// All keys with the names of their placeholders, checked against the
     /// translation file by a test.
-    pub const ALL: [(&str, &[&str]); 49] = [
+    pub const ALL: [(&str, &[&str]); 52] = [
         (URL_EMPTY, &[]),
         (URL_INVALID, &["reason"]),
         (URL_SCHEME, &["scheme"]),
@@ -171,6 +178,9 @@ pub mod keys {
         (IMPORT_SKIPPED_AUTH, &["item", "kind"]),
         (IMPORT_SKIPPED_BODY, &["item", "mode"]),
         (IMPORT_RELATIVE_SERVER, &["item", "url"]),
+        (IMPORT_SKIPPED_RESOURCES, &["item", "kind", "count"]),
+        (IMPORT_SKIPPED_REQUEST_KIND, &["item", "kind"]),
+        (IMPORT_TEMPLATE_TAG, &["item", "tag"]),
         (IMPORT_DOWNLOAD, &["detail"]),
         (IMPORT_SKIPPED_HEADERS, &["item"]),
         (REQUEST, &["detail"]),
