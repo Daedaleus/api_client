@@ -99,7 +99,10 @@ fn errors_say_what_went_wrong() {
     let failed = |source: &str| run_default(&job(ScriptPhase::PreRequest, source)).unwrap_err();
     assert_eq!(
         failed("throw new TypeError('bad input')"),
-        ScriptError::Failed("TypeError: bad input".into())
+        ScriptError::Thrown {
+            line: 1,
+            message: "TypeError: bad input".into()
+        }
     );
     assert_eq!(
         failed("throw 'plain text'"),
@@ -107,11 +110,14 @@ fn errors_say_what_went_wrong() {
     );
     assert_eq!(
         failed("await Promise.reject(new Error('later'))"),
-        ScriptError::Failed("Error: later".into())
+        ScriptError::Thrown {
+            line: 1,
+            message: "Error: later".into()
+        }
     );
     assert!(matches!(
         failed("req = null"),
-        ScriptError::Failed(message) if message.contains("TypeError")
+        ScriptError::Thrown { message, .. } if message.contains("TypeError")
     ));
     assert_eq!(
         failed("log(1)\nlet = ;"),
@@ -122,7 +128,44 @@ fn errors_say_what_went_wrong() {
     );
     let post = run_default(&job(ScriptPhase::PostResponse, "JSON.parse('{')"));
     assert!(
-        matches!(post, Err(ScriptError::Failed(message)) if message.starts_with("SyntaxError"))
+        matches!(post, Err(ScriptError::Thrown { message, .. }) if message.starts_with("SyntaxError"))
+    );
+}
+
+#[test]
+fn runtime_errors_name_the_line_as_written() {
+    let failed = |source: &str| run_default(&job(ScriptPhase::PostResponse, source)).unwrap_err();
+    // Type-only lines, blank lines and comments vanish when stripping.
+    let typescript = "interface Body {\n  items: number[];\n}\n\n// the body\nconst body = res.json<Body>();\nconst missing: any = undefined;\nlog(body.items.length);\nmissing.items.length;";
+    assert!(
+        matches!(failed(typescript), ScriptError::Thrown { line: 9, ref message } if message.starts_with("TypeError")),
+        "{:?}",
+        failed(typescript)
+    );
+    // Inside a function and a test callback: the innermost line of the script.
+    let nested = "function check(value: string) {\n  return value.toUpperCase();\n}\nlog('a');\ncheck(undefined as unknown as string);";
+    assert!(matches!(
+        failed(nested),
+        ScriptError::Thrown { line: 2, .. }
+    ));
+    let awaited = "log(1);\nawait Promise.resolve();\nthrow new Error('after await');";
+    assert_eq!(
+        failed(awaited),
+        ScriptError::Thrown {
+            line: 3,
+            message: "Error: after await".into()
+        }
+    );
+    // An error raised by the API points at the script line calling it.
+    let api = "log(1);\n\nexpect(res.status).toBe(200);";
+    assert!(matches!(failed(api), ScriptError::Thrown { line: 3, .. }));
+    assert_eq!(
+        ScriptError::Thrown {
+            line: 3,
+            message: "Error: x".into()
+        }
+        .to_string(),
+        "Error: x (line 3)"
     );
 }
 
@@ -230,6 +273,9 @@ fn expect_outside_a_test_fails_the_script() {
     .unwrap_err();
     assert_eq!(
         error,
-        ScriptError::Failed("AssertionError: expected 201 to be 200".into())
+        ScriptError::Thrown {
+            line: 1,
+            message: "AssertionError: expected 201 to be 200".into()
+        }
     );
 }
