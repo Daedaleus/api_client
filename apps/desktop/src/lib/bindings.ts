@@ -217,6 +217,11 @@ export type CollectionView_Deserialize = {
 	certificateCheck: CertificateCheckView,
 	/**  Files that could not be loaded. */
 	problems: UserText[],
+	/**
+	 *  Not saved yet (an import): lives in a temporary folder until saved
+	 *  with "save as", gone when closed or when the app ends.
+	 */
+	temporary: boolean,
 };
 
 /**  An open collection. */
@@ -239,6 +244,11 @@ export type CollectionView_Serialize = {
 	certificateCheck: CertificateCheckView,
 	/**  Files that could not be loaded. */
 	problems: UserText[],
+	/**
+	 *  Not saved yet (an import): lives in a temporary folder until saved
+	 *  with "save as", gone when closed or when the app ends.
+	 */
+	temporary: boolean,
 };
 
 /**  Something the user wants the application to do. */
@@ -384,8 +394,20 @@ certificateCheck: CertificateCheckView }) & { environment?: never; file?: never;
 ({ type: "importCollection"; 
 /**  The file to import. */
 file: string; 
-/**  The folder for the new collection (created if needed). */
-path: string }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; itemId?: never; name?: never; parentId?: never; recipients?: never; request?: never; variables?: never } | 
+/**
+ *  The folder for the new collection (created if needed); without
+ *  one the collection stays unsaved until `SaveCollectionAs`.
+ */
+path?: string | null }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; itemId?: never; name?: never; parentId?: never; recipients?: never; request?: never; variables?: never } | 
+/**
+ *  Save an unsaved collection: move it to `path` (which must not exist
+ *  or be an empty folder).
+ */
+({ type: "saveCollectionAs"; 
+/**  The collection. */
+collectionId: string; 
+/**  Where it goes. */
+path: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; itemId?: never; name?: never; parentId?: never; recipients?: never; request?: never; variables?: never } | 
 /**
  *  Set who the collection's secrets are encrypted for and re-encrypt
  *  the secrets of every environment. Nothing changes if any of them
@@ -488,8 +510,20 @@ certificateCheck: CertificateCheckView }) & { environment?: never; file?: never;
 ({ type: "importCollection"; 
 /**  The file to import. */
 file: string; 
-/**  The folder for the new collection (created if needed). */
-path: string }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; itemId?: never; name?: never; parentId?: never; recipients?: never; request?: never; variables?: never } | 
+/**
+ *  The folder for the new collection (created if needed); without
+ *  one the collection stays unsaved until `SaveCollectionAs`.
+ */
+path: string | null }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; itemId?: never; name?: never; parentId?: never; recipients?: never; request?: never; variables?: never } | 
+/**
+ *  Save an unsaved collection: move it to `path` (which must not exist
+ *  or be an empty folder).
+ */
+({ type: "saveCollectionAs"; 
+/**  The collection. */
+collectionId: string; 
+/**  Where it goes. */
+path: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; itemId?: never; name?: never; parentId?: never; recipients?: never; request?: never; variables?: never } | 
 /**
  *  Set who the collection's secrets are encrypted for and re-encrypt
  *  the secrets of every environment. Nothing changes if any of them

@@ -38,6 +38,10 @@ pub enum SkippedKind {
     Body(String),
     /// Headers of a folder or the collection (only requests have headers).
     Headers,
+    /// An `OpenAPI` server given relative to where the description is
+    /// served, e.g. `/api/v3`: the host is unknown, so `baseUrl` got
+    /// `http://localhost` in front.
+    RelativeServer(String),
 }
 
 /// Why a file cannot be imported.

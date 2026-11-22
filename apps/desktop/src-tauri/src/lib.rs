@@ -128,8 +128,16 @@ pub fn run() {
             tauri_app.manage(app);
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("failed to start the desktop app");
+        .build(tauri::generate_context!())
+        .expect("failed to start the desktop app")
+        .run(|handle, event| {
+            // Unsaved collections (imports) end with the app.
+            if let tauri::RunEvent::Exit = event {
+                for error in handle.state::<DesktopApp>().discard_unsaved() {
+                    eprintln!("cannot delete an unsaved collection: {error}");
+                }
+            }
+        });
 }
 
 /// Forwards application events to the window until the app shuts down.

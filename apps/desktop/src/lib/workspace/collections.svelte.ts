@@ -83,11 +83,14 @@ export class CollectionsState {
     );
   }
 
+  /** Remembers the saved collections; unsaved ones end with the app. */
   #persist(): void {
     writeJson(
       this.#storage,
       STORAGE_KEY,
-      this.collections.map((collection) => collection.root),
+      this.collections
+        .filter((collection) => !collection.temporary)
+        .map((collection) => collection.root),
     );
   }
 }

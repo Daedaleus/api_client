@@ -69,6 +69,9 @@ pub enum AppError {
     /// The script checker cannot answer.
     #[error(transparent)]
     Assist(#[from] AssistError),
+    /// "Save as" for a collection that is saved already.
+    #[error("collection is saved already")]
+    AlreadySaved,
     /// The collection is not open.
     #[error("collection is not open")]
     UnknownCollection,
@@ -140,6 +143,7 @@ impl AppError {
                 UserText::new(keys::NOTHING_TO_RUN).with("path", path.clone())
             }
             Self::UnknownCollection => UserText::new(keys::UNKNOWN_COLLECTION),
+            Self::AlreadySaved => UserText::new(keys::ALREADY_SAVED),
             Self::UnknownItem => UserText::new(keys::UNKNOWN_ITEM),
             Self::NotAFolder => UserText::new(keys::NOT_A_FOLDER),
             Self::EmptyName => UserText::new(keys::NAME_EMPTY),

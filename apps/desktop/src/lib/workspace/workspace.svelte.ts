@@ -103,8 +103,8 @@ export class Workspace {
 
   /**
    * Imports another tool's collection: the user picks the file (for Bruno
-   * the folder), then the folder for the new collection. What could not be
-   * taken over is shown afterwards.
+   * the folder). The collection stays unsaved – in a temporary folder –
+   * until "save as". What could not be taken over is shown afterwards.
    */
   async importCollection(format: ImportFormat): Promise<void> {
     const options = sourceOptions(format);
@@ -113,11 +113,9 @@ export class Workspace {
       : await this.#api.pickFile(options);
     if (!picked) return;
     const file = sourceFile(format, picked);
-    const path = await this.#api.pickFolder(targetOptions());
-    if (!path) return;
     this.collections.error = null;
     try {
-      const ack = await this.#api.execute({ type: 'importCollection', file, path });
+      const ack = await this.#api.execute({ type: 'importCollection', file, path: null });
       if (ack.type !== 'collectionImported') throw new Error(`unexpected answer ${ack.type}`);
       this.collections.apply(ack.collection);
       if (ack.skipped.length > 0) {
@@ -132,9 +130,26 @@ export class Workspace {
     }
   }
 
+  /** Saves an unsaved collection where the user chooses. */
+  async saveCollectionAs(collectionId: string): Promise<void> {
+    const path = await this.#api.pickFolder(targetOptions());
+    if (!path) return;
+    await this.collections.run({ type: 'saveCollectionAs', collectionId, path });
+  }
+
   async closeCollection(collectionId: string): Promise<void> {
     const dirty = this.tabs.tabs.some((tab) => tab.isFor(collectionId) && tab.dirty);
     if (dirty && !(await this.#confirmDiscard())) return;
+    const unsaved = this.collections.find(collectionId)?.temporary === true;
+    if (
+      unsaved &&
+      !(await this.dialogs.confirm(
+        { key: 'dialog.discard_collection', args: {} },
+        { key: 'dialog.discard_collection_message', args: {} },
+      ))
+    ) {
+      return;
+    }
     this.tabs.closeCollection(collectionId);
     await this.collections.close(collectionId);
   }

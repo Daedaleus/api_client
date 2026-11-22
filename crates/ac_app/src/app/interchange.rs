@@ -14,7 +14,7 @@ use crate::oauth::{TOKEN_PLACEHOLDER, authorize};
 use crate::ports::ScriptAssist;
 use crate::ports::{BrowserLogin, CollectionStore, HttpSender, ScriptRunner, SecretVault};
 use crate::text::{UserText, keys};
-use crate::view::{CollectionView, OutgoingRequest, RequestDraft};
+use crate::view::{OutgoingRequest, RequestDraft};
 
 impl<
     H: HttpSender,
@@ -25,24 +25,36 @@ impl<
     A: ScriptAssist,
 > App<H, S, V, B, R, A>
 {
-    /// Converts another tool's file into a new collection in `path` and
-    /// opens it; what has no counterpart is listed for the user. A Bruno
+    /// Converts another tool's file into a new collection in `path` – or,
+    /// without one, an unsaved collection in a temporary folder – and opens
+    /// it; what has no counterpart is listed for the user. A Bruno
     /// collection is a folder: it is chosen by its `bruno.json`.
-    pub(super) fn import_collection(&self, file: &str, path: &str) -> Result<CommandAck, AppError> {
+    pub(super) fn import_collection(
+        &self,
+        file: &str,
+        path: Option<&str>,
+    ) -> Result<CommandAck, AppError> {
         let file = Path::new(file);
         let imported = if file.file_name().is_some_and(|name| name == bruno::MARKER) {
             self.read_bruno(file.parent().unwrap_or(file))?
         } else {
             import_collection(&self.inner.store.read_text(file)?)?
         };
+        let root = match path {
+            Some(path) => Path::new(path).to_owned(),
+            None => self.inner.store.temporary_root()?,
+        };
         let opened = self.inner.store.import_collection(
-            Path::new(path),
+            &root,
             &imported.collection,
             &imported.environments,
         )?;
         self.remember(&opened);
+        if path.is_none() {
+            self.temporary().insert(opened.collection.id);
+        }
         Ok(CommandAck::CollectionImported {
-            collection: Box::new(CollectionView::from_opened(&opened)),
+            collection: Box::new(self.view(&opened)),
             skipped: imported.skipped.iter().map(skipped_text).collect(),
         })
     }
@@ -102,6 +114,9 @@ fn skipped_text(skipped: &Skipped) -> UserText {
         SkippedKind::Headers => UserText::new(keys::IMPORT_SKIPPED_HEADERS),
         SkippedKind::Body(mode) => {
             UserText::new(keys::IMPORT_SKIPPED_BODY).with("mode", mode.clone())
+        }
+        SkippedKind::RelativeServer(url) => {
+            UserText::new(keys::IMPORT_RELATIVE_SERVER).with("url", url.clone())
         }
     };
     text.with("item", skipped.item.clone())

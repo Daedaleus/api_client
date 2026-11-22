@@ -1,7 +1,7 @@
 //! The [`CollectionStore`] port of `ac_app`, implemented on the files of
 //! this crate.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use ac_app::ports::{
     CollectionStore, Location, OpenedCollection, StoreError, StoreErrorKind, TextFile,
@@ -12,21 +12,24 @@ use ac_domain::environment::Environment;
 use crate::error::StorageError;
 use crate::format::ENVIRONMENTS_FOLDER;
 use crate::load::{LoadedCollection, load_collection};
-use crate::{create, environment_file, remove, request_file, secrets_file, settings};
+use crate::{create, environment_file, remove, request_file, secrets_file, settings, temporary};
 
 /// How removed items are discarded.
 pub type Discard = fn(&Path) -> std::io::Result<()>;
 
 /// Collections as folders of TOML files.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct FileStore {
     discard: Discard,
+    /// Where unsaved collections live (see `temporary`).
+    temporary_base: PathBuf,
 }
 
 impl Default for FileStore {
     fn default() -> Self {
         Self {
             discard: move_to_trash,
+            temporary_base: std::env::temp_dir(),
         }
     }
 }
@@ -42,7 +45,18 @@ impl FileStore {
     /// must not touch the real trash).
     #[must_use]
     pub fn with_discard(discard: Discard) -> Self {
-        Self { discard }
+        Self {
+            discard,
+            ..Self::default()
+        }
+    }
+
+    /// The same store with unsaved collections below `base` instead of the
+    /// system's temp folder (tests).
+    #[must_use]
+    pub fn with_temporary_base(mut self, base: impl Into<PathBuf>) -> Self {
+        self.temporary_base = base.into();
+        self
     }
 }
 
@@ -163,11 +177,23 @@ impl CollectionStore for FileStore {
     fn write_recipients(&self, root: &Path, recipients: &[String]) -> Result<(), StoreError> {
         secrets_file::write_recipients(root, recipients).map_err(store_error)
     }
+
+    fn temporary_root(&self) -> Result<PathBuf, StoreError> {
+        Ok(temporary::temporary_root(&self.temporary_base))
+    }
+
+    fn move_collection(&self, from: &Path, to: &Path) -> Result<(), StoreError> {
+        temporary::move_collection(from, to).map_err(store_error)
+    }
+
+    fn discard_temporary(&self, root: &Path) -> Result<(), StoreError> {
+        temporary::discard(&self.temporary_base, root).map_err(store_error)
+    }
 }
 
 impl FileStore {
     /// Discards the secrets file of an environment, if there is one.
-    fn discard_secrets(self, environment_file: &Path) -> Result<(), StoreError> {
+    fn discard_secrets(&self, environment_file: &Path) -> Result<(), StoreError> {
         let path = secrets_file::secrets_path(environment_file);
         if !path.exists() {
             return Ok(());

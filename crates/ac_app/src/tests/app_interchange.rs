@@ -88,7 +88,7 @@ async fn postman_exports_become_new_open_collections() {
         .app
         .execute(Command::ImportCollection {
             file: "export.json".into(),
-            path: "imported".into(),
+            path: Some("imported".into()),
         })
         .unwrap();
     let CommandAck::CollectionImported {
@@ -124,7 +124,7 @@ async fn postman_exports_become_new_open_collections() {
         .app
         .execute(Command::ImportCollection {
             file: "export.json".into(),
-            path: "imported".into(),
+            path: Some("imported".into()),
         })
         .unwrap_err();
     assert_eq!(error.user_text().key, keys::COLLECTION_EXISTS);
@@ -133,7 +133,7 @@ async fn postman_exports_become_new_open_collections() {
         .app
         .execute(Command::ImportCollection {
             file: "broken.json".into(),
-            path: "other".into(),
+            path: Some("other".into()),
         })
         .unwrap_err();
     assert_eq!(error.user_text().key, keys::IMPORT_INVALID);
@@ -141,7 +141,7 @@ async fn postman_exports_become_new_open_collections() {
         .app
         .execute(Command::ImportCollection {
             file: "missing.json".into(),
-            path: "other".into(),
+            path: Some("other".into()),
         })
         .unwrap_err();
     assert_eq!(error.user_text().key, keys::STORE_IO);
@@ -159,7 +159,7 @@ async fn openapi_descriptions_are_imported_the_same_way() {
         .app
         .execute(Command::ImportCollection {
             file: "shop.yaml".into(),
-            path: "from-openapi".into(),
+            path: Some("from-openapi".into()),
         })
         .unwrap();
     let CommandAck::CollectionImported {
@@ -178,7 +178,7 @@ async fn openapi_descriptions_are_imported_the_same_way() {
         .app
         .execute(Command::ImportCollection {
             file: "old.yaml".into(),
-            path: "old".into(),
+            path: Some("old".into()),
         })
         .unwrap_err();
     assert_eq!(error.user_text().key, keys::IMPORT_INVALID);
@@ -212,7 +212,7 @@ async fn bruno_collections_are_imported_from_their_folder() {
                 .join("bruno.json")
                 .display()
                 .to_string(),
-            path: "from-bruno".into(),
+            path: Some("from-bruno".into()),
         })
         .unwrap();
     let CommandAck::CollectionImported {
@@ -235,7 +235,7 @@ async fn bruno_collections_are_imported_from_their_folder() {
                 .join("bruno.json")
                 .display()
                 .to_string(),
-            path: "other".into(),
+            path: Some("other".into()),
         })
         .unwrap_err();
     assert_eq!(error.user_text().key, keys::STORE_IO);
@@ -251,7 +251,7 @@ async fn bruno_collections_are_imported_from_their_folder() {
                 .join("bruno.json")
                 .display()
                 .to_string(),
-            path: "other".into(),
+            path: Some("other".into()),
         })
         .unwrap_err();
     assert_eq!(error.user_text().key, keys::IMPORT_INVALID);
@@ -278,4 +278,161 @@ async fn the_curl_command_holds_a_placeholder_for_an_oauth_token() {
     );
     assert!(!command.contains("pw"), "{command}");
     assert_eq!(fixture.http.sent().len(), 0);
+}
+
+/// The imported collection without a target folder, and its file.
+fn import_unsaved(fixture: &Fixture) -> crate::view::CollectionView {
+    use crate::command::{Command, CommandAck};
+    fixture.store.add_file(
+        "export.json",
+        r#"{"info": {"name": "Shop", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"}, "item": []}"#,
+    );
+    let ack = fixture
+        .app
+        .execute(Command::ImportCollection {
+            file: "export.json".into(),
+            path: None,
+        })
+        .unwrap();
+    let CommandAck::CollectionImported { collection, .. } = ack else {
+        panic!("expected an import, got {ack:?}");
+    };
+    *collection
+}
+
+#[tokio::test]
+async fn imports_stay_unsaved_until_saved_as() {
+    use crate::command::{Command, CommandAck};
+    use crate::testing::store::TEMPORARY;
+
+    let fixture = Fixture::new();
+    let collection = import_unsaved(&fixture);
+    assert!(collection.temporary);
+    assert!(
+        collection.root.starts_with(TEMPORARY),
+        "{}",
+        collection.root
+    );
+    // Edits work as in any collection and keep it unsaved.
+    let ack = fixture
+        .app
+        .execute(Command::CreateRequest {
+            collection_id: collection.id.clone(),
+            parent_id: collection.id.clone(),
+            name: "Health".into(),
+        })
+        .unwrap();
+    let CommandAck::CollectionChanged {
+        collection: changed,
+        ..
+    } = ack
+    else {
+        panic!("expected a change");
+    };
+    assert!(changed.temporary);
+
+    let ack = fixture
+        .app
+        .execute(Command::SaveCollectionAs {
+            collection_id: collection.id.clone(),
+            path: "saved/shop".into(),
+        })
+        .unwrap();
+    let CommandAck::CollectionChanged {
+        collection: saved, ..
+    } = ack
+    else {
+        panic!("expected a change");
+    };
+    assert!(!saved.temporary);
+    assert_eq!(
+        saved.root,
+        std::path::Path::new("saved/shop").display().to_string()
+    );
+    assert_eq!(saved.items.len(), 1);
+    assert_eq!(
+        fixture
+            .store
+            .collection(std::path::Path::new("saved/shop"))
+            .name,
+        "Shop"
+    );
+
+    // Saved is saved: no second "save as", and closing keeps the files.
+    let error = fixture
+        .app
+        .execute(Command::SaveCollectionAs {
+            collection_id: collection.id.clone(),
+            path: "elsewhere".into(),
+        })
+        .unwrap_err();
+    assert_eq!(error.user_text().key, keys::ALREADY_SAVED);
+    fixture
+        .app
+        .execute(Command::CloseCollection {
+            collection_id: collection.id.clone(),
+        })
+        .unwrap();
+    assert_eq!(
+        fixture
+            .store
+            .collection(std::path::Path::new("saved/shop"))
+            .name,
+        "Shop"
+    );
+}
+
+#[tokio::test]
+async fn unsaved_collections_vanish_when_closed_or_when_the_app_ends() {
+    use crate::command::{Command, Query};
+    use crate::ports::CollectionStore;
+
+    let fixture = Fixture::new();
+    let closed = import_unsaved(&fixture);
+    fixture
+        .app
+        .execute(Command::CloseCollection {
+            collection_id: closed.id.clone(),
+        })
+        .unwrap();
+    assert!(
+        fixture
+            .store
+            .open(std::path::Path::new(&closed.root))
+            .is_err()
+    );
+
+    let left_open = import_unsaved(&fixture);
+    assert_eq!(fixture.app.discard_unsaved(), []);
+    assert!(
+        fixture
+            .store
+            .open(std::path::Path::new(&left_open.root))
+            .is_err()
+    );
+    // The collection itself is still listed; asking about it fails cleanly.
+    assert!(
+        fixture
+            .app
+            .query(Query::Collection {
+                collection_id: left_open.id.clone()
+            })
+            .is_err()
+    );
+
+    // Saving to an occupied folder fails and keeps the collection unsaved.
+    let blocked = import_unsaved(&fixture);
+    let error = fixture
+        .app
+        .execute(Command::SaveCollectionAs {
+            collection_id: blocked.id.clone(),
+            path: fixture.root.display().to_string(),
+        })
+        .unwrap_err();
+    assert_eq!(error.user_text().key, keys::COLLECTION_EXISTS);
+    let unknown = fixture.app.execute(Command::SaveCollectionAs {
+        collection_id: crate::view::collection::non_empty("x").unwrap().into(),
+        path: "y".into(),
+    });
+    assert!(unknown.is_err());
 }

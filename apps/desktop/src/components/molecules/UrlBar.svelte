@@ -1,5 +1,6 @@
 <script lang="ts">
   import Button from '../atoms/Button.svelte';
+  import Alert from './Alert.svelte';
   import { i18n } from '../../lib/i18n/i18n.svelte';
   import { METHODS } from '../../lib/http';
   import type { UserText } from '../../lib/types';
@@ -10,9 +11,18 @@
     sending: boolean;
     error: UserText | null;
     onsend: () => void;
+    /** Closes the error message. */
+    ondismisserror?: (() => void) | undefined;
   }
 
-  let { method = $bindable(), url = $bindable(), sending, error, onsend }: Props = $props();
+  let {
+    method = $bindable(),
+    url = $bindable(),
+    sending,
+    error,
+    onsend,
+    ondismisserror,
+  }: Props = $props();
 
   // A saved request may use another method (e.g. PROPFIND): offer it too.
   let methods = $derived<readonly string[]>(
@@ -52,7 +62,7 @@
     </Button>
   </div>
   {#if error}
-    <p class="url-bar__error" role="alert">{i18n.text(error)}</p>
+    <Alert text={error} ondismiss={ondismisserror} />
   {/if}
 </form>
 
@@ -99,10 +109,5 @@
   .url-bar__input {
     width: 100%;
     font-family: var(--font-mono);
-  }
-
-  .url-bar__error {
-    margin: 0;
-    color: var(--color-error);
   }
 </style>

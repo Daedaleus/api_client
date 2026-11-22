@@ -124,6 +124,7 @@
     sending={tab.sending}
     error={tab.error}
     {onsend}
+    ondismisserror={() => (tab.error = null)}
   />
   {#if !checksCertificates}
     <p class="request-editor__insecure" role="status">{i18n.t('tls.warning')}</p>
