@@ -6,6 +6,11 @@ Write `{{name}}` in the URL, params, headers, body or auth fields; it is
 replaced when the request is sent. An unknown variable stops the request
 with a message naming it – nothing half-filled is sent.
 
+Typing `{{` in the URL, a header, parameter or path variable value suggests
+the variables that apply, with their value and where it comes from; arrows
+and **Enter** or **Tab** complete the name. Hovering a field shows the
+values of the variables in it, and unknown variables are underlined in red.
+
 Variables can be defined in several places:
 
 | Where | Applies to | Edited in |

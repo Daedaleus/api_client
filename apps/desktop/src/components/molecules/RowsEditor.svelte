@@ -31,8 +31,17 @@
   import Icon from '../atoms/Icon.svelte';
   import IconButton from '../atoms/IconButton.svelte';
   import { i18n } from '../../lib/i18n/i18n.svelte';
+  import type { VariableInfo } from '../../lib/variables';
+  import VariableField from './VariableField.svelte';
 
-  let { rows = $bindable(), labels }: { rows: Row[]; labels: RowLabels } = $props();
+  interface Props {
+    rows: Row[];
+    labels: RowLabels;
+    /** Variables for suggestions in the value fields (requests, not environments). */
+    variables?: ReadonlyMap<string, VariableInfo> | undefined;
+  }
+
+  let { rows = $bindable(), labels, variables }: Props = $props();
 
   function add() {
     rows.push(
@@ -85,15 +94,24 @@
               />
             </td>
             <td>
-              <input
-                class="rows-editor__input"
-                type={row.secret ? 'password' : 'text'}
-                spellcheck="false"
-                autocomplete="off"
-                aria-label={i18n.t(labels.value)}
-                placeholder={row.secret && labels.secret ? i18n.t(labels.secret.placeholder) : ''}
-                bind:value={row.value}
-              />
+              {#if variables && !row.secret}
+                <VariableField
+                  class="rows-editor__input"
+                  label={i18n.t(labels.value)}
+                  {variables}
+                  bind:value={row.value}
+                />
+              {:else}
+                <input
+                  class="rows-editor__input"
+                  type={row.secret ? 'password' : 'text'}
+                  spellcheck="false"
+                  autocomplete="off"
+                  aria-label={i18n.t(labels.value)}
+                  placeholder={row.secret && labels.secret ? i18n.t(labels.secret.placeholder) : ''}
+                  bind:value={row.value}
+                />
+              {/if}
             </td>
             {#if labels.secret}
               <td class="rows-editor__toggle-cell">
@@ -156,7 +174,8 @@
     text-align: center;
   }
 
-  .rows-editor__input {
+  /* Also the inputs inside VariableField (class passed down). */
+  .rows-editor :global(.rows-editor__input) {
     width: 100%;
     height: 30px;
     padding: 0 var(--space-s);
@@ -166,7 +185,7 @@
     font-family: var(--font-mono);
   }
 
-  .rows-editor__row--disabled .rows-editor__input {
+  .rows-editor__row--disabled :global(.rows-editor__input) {
     color: var(--color-muted);
     text-decoration: line-through;
   }

@@ -11,7 +11,7 @@
   import UrlBar from '../molecules/UrlBar.svelte';
   import { i18n } from '../../lib/i18n/i18n.svelte';
   import type { ScriptAssist } from '../../lib/script-assist';
-  import { hasPlaceholders, preview } from '../../lib/variables';
+  import { hasPlaceholders, preview, type VariableInfo } from '../../lib/variables';
   import type { RequestTab } from '../../lib/workspace/request-tab.svelte';
 
   interface Props {
@@ -20,6 +20,8 @@
     onsave: () => void;
     /** The values `{{variables}}` get (all places, the stronger winning). */
     variables?: ReadonlyMap<string, string>;
+    /** The same with where each comes from, for suggestions in the fields. */
+    variableInfo?: ReadonlyMap<string, VariableInfo>;
     /** The environment picker, shown next to the name of a saved request. */
     environment?: Snippet;
     /** Whether the server certificate is checked (all levels considered). */
@@ -37,6 +39,7 @@
     onsend,
     onsave,
     variables = new Map(),
+    variableInfo = new Map(),
     environment,
     onpickfile,
     checksCertificates = true,
@@ -139,6 +142,7 @@
     error={tab.error}
     {onsend}
     ondismisserror={() => (tab.error = null)}
+    variables={variableInfo}
   />
   {#if !checksCertificates}
     <p class="request-editor__insecure" role="status">{i18n.t('tls.warning')}</p>
@@ -194,9 +198,10 @@
         bind:url={tab.draft.url}
         bind:disabledQuery={tab.draft.disabledQuery}
         bind:pathParams={tab.draft.pathParams}
+        variables={variableInfo}
       />
     {:else if section === 'headers'}
-      <RowsEditor bind:rows={tab.draft.headers} labels={HEADER_LABELS} />
+      <RowsEditor bind:rows={tab.draft.headers} labels={HEADER_LABELS} variables={variableInfo} />
     {:else if section === 'body'}
       <BodyEditor bind:body={tab.draft.body} {onpickfile} />
     {:else if section === 'auth'}

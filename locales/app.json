@@ -445,6 +445,12 @@
     "en": "Encrypted – leave empty to keep"
   },
   "editor.preview": { "de": "Wird gesendet an: {url}", "en": "Sent to: {url}" },
+  "variables.source_collection": { "de": "Collection", "en": "collection" },
+  "variables.source_environment": { "de": "Umgebung", "en": "environment" },
+  "variables.source_folder": { "de": "Ordner", "en": "folder" },
+  "variables.source_request": { "de": "Request", "en": "request" },
+  "variables.unknown": { "de": "unbekannt", "en": "unknown" },
+  "variables.suggestions": { "de": "Variablen", "en": "Variables" },
   "editor.variables_missing": {
     "de": "Unbekannte Variablen: {names}",
     "en": "Unknown variables: {names}"

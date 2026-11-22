@@ -1449,4 +1449,16 @@ check(
 );
 check(!remembered.includes(secretValue), 'no secret in the remembered tabs');
 
+// --- 23. Variable suggestions -----------------------------------------------------
+
+// Typing {{ in the URL of a collection request suggests its variables.
+await waitFor(clickTreeEntry('Health'), 'request "Health" in the collection tree');
+await waitFor(`!!document.querySelector('.environment-picker__select')`, 'collection request');
+await evaluate(setValue('.url-bar__input', '{{'));
+const suggested = await waitFor(
+  `document.querySelector('.variable-field__list')?.textContent ?? null`,
+  'variable suggestions',
+);
+check(suggested.includes('baseUrl'), `variables suggested after {{ (${suggested.slice(0, 60)}…)`);
+
 finish(null);

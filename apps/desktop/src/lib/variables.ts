@@ -58,3 +58,83 @@ export function preview(text: string, values: ReadonlyMap<string, string>): Prev
   });
   return { text: filled, missing };
 }
+
+/** Where a variable's value comes from (the strongest place that has it). */
+export type VariableSource = 'collection' | 'environment' | 'folder' | 'request';
+
+/** A variable as the editor suggests and explains it. */
+export interface VariableInfo {
+  /** The value; secrets masked. */
+  value: string;
+  source: VariableSource;
+}
+
+/** The variables of several lists with where they come from, weakest first; stronger lists win. */
+export function scopeInfo(
+  layers: readonly { source: VariableSource; variables: readonly VariableDraft[] }[],
+): Map<string, VariableInfo> {
+  const info = new Map<string, VariableInfo>();
+  for (const layer of layers) {
+    for (const [name, value] of variableValues(layer.variables)) {
+      if (name !== '') info.set(name, { value, source: layer.source });
+    }
+  }
+  return info;
+}
+
+/** An unfinished `{{name` right before the caret: where the name starts and what is typed of it. */
+export interface Suggestion {
+  start: number;
+  typed: string;
+}
+
+/** The `{{…` being typed at `caret`, or `null` if the caret is not inside an open placeholder. */
+export function suggestionAt(text: string, caret: number): Suggestion | null {
+  const before = text.slice(0, caret);
+  const open = before.lastIndexOf('{{');
+  if (open < 0) return null;
+  const typed = before.slice(open + 2);
+  if (/[{}]/.test(typed)) return null;
+  return { start: open + 2, typed: typed.trimStart() };
+}
+
+/** Names of `variables` that fit what is typed: starting with it first, then containing it. */
+export function suggestionsFor(
+  variables: ReadonlyMap<string, VariableInfo>,
+  typed: string,
+): string[] {
+  const wanted = typed.toLowerCase();
+  const names = [...variables.keys()].sort((a, b) => a.localeCompare(b));
+  const starting = names.filter((name) => name.toLowerCase().startsWith(wanted));
+  const containing = names.filter(
+    (name) => !starting.includes(name) && name.toLowerCase().includes(wanted),
+  );
+  return [...starting, ...containing];
+}
+
+/** `text` with the placeholder at `suggestion` completed to `{{name}}`; the caret goes after it. */
+export function complete(
+  text: string,
+  caret: number,
+  suggestion: Suggestion,
+  name: string,
+): { text: string; caret: number } {
+  const after = text.slice(caret);
+  const closing = after.startsWith('}}') ? 2 : 0;
+  const completed = `${text.slice(0, suggestion.start)}${name}}}`;
+  return { text: completed + after.slice(closing), caret: completed.length };
+}
+
+/** The placeholders in `text` with what they are: known variables with value and source, or unknown. */
+export function placeholdersIn(
+  text: string,
+  variables: ReadonlyMap<string, VariableInfo>,
+): { name: string; info: VariableInfo | null }[] {
+  const found: { name: string; info: VariableInfo | null }[] = [];
+  for (const match of text.matchAll(PLACEHOLDER)) {
+    const name = match[1]!.trim();
+    if (found.some((entry) => entry.name === name)) continue;
+    found.push({ name, info: variables.get(name) ?? null });
+  }
+  return found;
+}

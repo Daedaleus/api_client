@@ -1,9 +1,11 @@
 <script lang="ts">
   import Button from '../atoms/Button.svelte';
   import Alert from './Alert.svelte';
+  import VariableField from './VariableField.svelte';
   import { i18n } from '../../lib/i18n/i18n.svelte';
   import { METHODS } from '../../lib/http';
   import type { UserText } from '../../lib/types';
+  import type { VariableInfo } from '../../lib/variables';
 
   interface Props {
     method: string;
@@ -13,6 +15,8 @@
     onsend: () => void;
     /** Closes the error message. */
     ondismisserror?: (() => void) | undefined;
+    /** Variables for suggestions after `{{` and the tooltip. */
+    variables?: ReadonlyMap<string, VariableInfo>;
   }
 
   let {
@@ -22,6 +26,7 @@
     error,
     onsend,
     ondismisserror,
+    variables = new Map(),
   }: Props = $props();
 
   // A saved request may use another method (e.g. PROPFIND): offer it too.
@@ -47,13 +52,12 @@
     </label>
     <label class="url-bar__url">
       <span class="url-bar__label">{i18n.t('request.url')}</span>
-      <input
+      <VariableField
         class="url-bar__input"
-        type="text"
-        spellcheck="false"
-        autocomplete="off"
+        label={i18n.t('request.url')}
         placeholder={i18n.t('request.url.placeholder')}
-        aria-invalid={error !== null}
+        {variables}
+        invalid={error !== null}
         bind:value={url}
       />
     </label>
@@ -95,8 +99,9 @@
     clip: rect(0 0 0 0);
   }
 
+  /* The input lives in VariableField; the class is passed down. */
   .url-bar__select,
-  .url-bar__input {
+  .url-bar :global(.url-bar__input) {
     height: var(--control-height);
     border: 1px solid var(--color-border);
     border-radius: var(--radius);
@@ -114,7 +119,7 @@
     min-width: 0;
   }
 
-  .url-bar__input {
+  .url-bar :global(.url-bar__input) {
     width: 100%;
     font-family: var(--font-mono);
   }

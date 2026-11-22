@@ -1,5 +1,7 @@
 <script lang="ts">
   import RowsEditor, { type Row, type RowLabels } from './RowsEditor.svelte';
+  import VariableField from './VariableField.svelte';
+  import type { VariableInfo } from '../../lib/variables';
   import { i18n } from '../../lib/i18n/i18n.svelte';
   import { pathParamNames, queryParams, withQueryParams, type Param } from '../../lib/params';
 
@@ -10,12 +12,15 @@
     disabledQuery: Param[];
     /** Values of the path variables (`:name`) in the URL. */
     pathParams: Param[];
+    /** Variables for suggestions in the value fields. */
+    variables?: ReadonlyMap<string, VariableInfo>;
   }
 
   let {
     url = $bindable(),
     disabledQuery = $bindable(),
     pathParams = $bindable(),
+    variables = new Map(),
   }: Props = $props();
 
   const QUERY_LABELS: RowLabels = {
@@ -88,7 +93,7 @@
 <div class="params-editor">
   <section class="params-editor__group" aria-label={i18n.t('params.query')}>
     <h3 class="params-editor__title">{i18n.t('params.query')}</h3>
-    <RowsEditor bind:rows labels={QUERY_LABELS} />
+    <RowsEditor bind:rows labels={QUERY_LABELS} {variables} />
   </section>
 
   <section class="params-editor__group" aria-label={i18n.t('params.path')}>
@@ -102,14 +107,11 @@
             <tr>
               <th class="params-editor__name" scope="row">:{name}</th>
               <td>
-                <input
+                <VariableField
                   class="params-editor__input"
-                  type="text"
-                  spellcheck="false"
-                  autocomplete="off"
-                  aria-label={i18n.t('params.path_value', { name })}
-                  value={pathValue(name)}
-                  oninput={(event) => setPathValue(name, event.currentTarget.value)}
+                  label={i18n.t('params.path_value', { name })}
+                  {variables}
+                  bind:value={() => pathValue(name), (value) => setPathValue(name, value)}
                 />
               </td>
             </tr>
@@ -159,7 +161,8 @@
     text-align: left;
   }
 
-  .params-editor__input {
+  /* The input lives in VariableField; the class is passed down. */
+  .params-editor :global(.params-editor__input) {
     width: 100%;
     height: 30px;
     padding: 0 var(--space-s);
