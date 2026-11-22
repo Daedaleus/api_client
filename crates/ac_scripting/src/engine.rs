@@ -7,14 +7,23 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
 use ac_app::ports::{ScriptError, ScriptJob, ScriptOutcome, ScriptRequest, TestResult};
+use rquickjs::context::EvalOptions;
 use rquickjs::{Context, Ctx, Function, Promise, Runtime, Value};
 use serde::Deserialize;
 use serde_json::json;
 
-use crate::strip::strip;
+use crate::strip::{Stripped, strip};
 
 /// The API implementation, see `prelude.js`.
 const PRELUDE: &str = include_str!("prelude.js");
+/// The file name of the script in stack traces.
+const SCRIPT_FILE: &str = "script.js";
+/// The script runs inside an async function, so scripts can `await`; then
+/// async tests settle.
+const WRAP_START: &str = "(async () => {\n";
+const WRAP_END: &str = "\n})().then(() => __settle())";
+/// Lines in front of the script's first line.
+const WRAP_LINES: u32 = 1;
 
 /// What a script may use.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -61,7 +70,7 @@ struct OutputRequest {
 
 /// Runs `job` to the end (blocking).
 pub(crate) fn run(job: &ScriptJob, limits: Limits) -> Result<ScriptOutcome, ScriptError> {
-    let javascript = strip(&job.source)?;
+    let stripped = strip(&job.source)?;
     let runtime = Runtime::new().map_err(|error| ScriptError::Failed(error.to_string()))?;
     runtime.set_memory_limit(limits.memory);
     let timed_out = Arc::new(AtomicBool::new(false));
@@ -76,21 +85,57 @@ pub(crate) fn run(job: &ScriptJob, limits: Limits) -> Result<ScriptOutcome, Scri
     })));
     let context =
         Context::full(&runtime).map_err(|error| ScriptError::Failed(error.to_string()))?;
-    let result = context.with(|ctx| execute(&ctx, job, &javascript));
+    let result = context.with(|ctx| execute(&ctx, job, &stripped.code));
     result.map_err(|failure| match failure {
         _ if timed_out.load(Ordering::Relaxed) => ScriptError::TimedOut {
             seconds: limits.time.as_secs(),
         },
-        Failure::Thrown(message) if message.contains("out of memory") => ScriptError::OutOfMemory {
-            megabytes: limits.memory / (1024 * 1024),
-        },
-        Failure::Thrown(message) => ScriptError::Failed(message),
+        Failure::Thrown { message, .. } if message.contains("out of memory") => {
+            ScriptError::OutOfMemory {
+                megabytes: limits.memory / (1024 * 1024),
+            }
+        }
+        Failure::Thrown { message, stack } => {
+            match stack.and_then(|stack| script_line(&stack, &stripped)) {
+                Some(line) => ScriptError::Thrown { line, message },
+                None => ScriptError::Failed(message),
+            }
+        }
     })
 }
 
 /// Why a run ended without a result (timeouts are told apart by the caller).
 enum Failure {
-    Thrown(String),
+    Thrown {
+        message: String,
+        /// The error's stack trace, if it has one.
+        stack: Option<String>,
+    },
+}
+
+impl Failure {
+    fn message(message: impl Into<String>) -> Self {
+        Self::Thrown {
+            message: message.into(),
+            stack: None,
+        }
+    }
+}
+
+/// The line of the script where the error happened: the innermost frame of
+/// the script in `stack` (`at f (script.js:3:7)`), mapped back to the script
+/// as written.
+fn script_line(stack: &str, stripped: &Stripped) -> Option<usize> {
+    let marker = format!("{SCRIPT_FILE}:");
+    let start = stack.find(&marker)? + marker.len();
+    let mut numbers = stack[start..]
+        .split(|c: char| !c.is_ascii_digit())
+        .take(2)
+        .map(str::parse::<u32>);
+    let line = numbers.next()?.ok()?;
+    // Columns are 1-based where QuickJS gives one.
+    let column = numbers.next().and_then(Result::ok).unwrap_or(1);
+    stripped.source_line(line.checked_sub(1 + WRAP_LINES)?, column.saturating_sub(1))
 }
 
 fn execute(ctx: &Ctx<'_>, job: &ScriptJob, javascript: &str) -> Result<ScriptOutcome, Failure> {
@@ -113,23 +158,23 @@ fn execute(ctx: &Ctx<'_>, job: &ScriptJob, javascript: &str) -> Result<ScriptOut
             .map(|(name, value)| (name.clone(), serde_json::Value::from(value.as_str())))
             .collect::<serde_json::Map<_, _>>(),
     });
-    let thrown = |error: rquickjs::Error| Failure::Thrown(describe(ctx, &error));
+    let thrown = |error: rquickjs::Error| describe(ctx, &error);
     ctx.globals()
         .set("__input", input.to_string())
         .map_err(thrown)?;
     ctx.eval::<(), _>(PRELUDE).map_err(thrown)?;
-    // An async function, so scripts can `await`; then async tests settle.
-    let wrapped = format!("(async () => {{\n{javascript}\n}})().then(() => __settle())");
+    let mut options = EvalOptions::default();
+    options.filename = Some(SCRIPT_FILE.into());
     let promise: Promise = ctx
-        .eval::<Value, _>(wrapped)
+        .eval_with_options::<Value, _>(format!("{WRAP_START}{javascript}{WRAP_END}"), options)
         .map_err(thrown)?
         .into_promise()
-        .ok_or_else(|| Failure::Thrown("script did not start".into()))?;
+        .ok_or_else(|| Failure::message("script did not start"))?;
     promise.finish::<Value>().map_err(thrown)?;
     let output: Function = ctx.globals().get("__output").map_err(thrown)?;
     let text: String = output.call(()).map_err(thrown)?;
     let output: Output =
-        serde_json::from_str(&text).map_err(|error| Failure::Thrown(error.to_string()))?;
+        serde_json::from_str(&text).map_err(|error| Failure::message(error.to_string()))?;
     Ok(ScriptOutcome {
         request: ScriptRequest {
             method: output.request.method,
@@ -151,27 +196,33 @@ fn execute(ctx: &Ctx<'_>, job: &ScriptJob, javascript: &str) -> Result<ScriptOut
     })
 }
 
-/// The message of a JavaScript exception (`Error: message` style).
-fn describe(ctx: &Ctx<'_>, error: &rquickjs::Error) -> String {
+/// A JavaScript exception: its message (`Error: message` style) and stack.
+fn describe(ctx: &Ctx<'_>, error: &rquickjs::Error) -> Failure {
     if !error.is_exception() {
-        return error.to_string();
+        return Failure::message(error.to_string());
     }
     let caught = ctx.catch();
     if let Some(exception) = caught.as_exception() {
         let message = exception.message().unwrap_or_default();
-        return match caught
+        let message = match caught
             .as_object()
             .and_then(|object| object.get::<_, String>("name").ok())
         {
             Some(name) if !name.is_empty() => format!("{name}: {message}"),
             _ => message,
         };
+        return Failure::Thrown {
+            message,
+            stack: exception.stack(),
+        };
     }
     // Thrown values that are not errors (`throw 'text'`).
-    caught
-        .as_string()
-        .and_then(|text| text.to_string().ok())
-        .unwrap_or_else(|| format!("{caught:?}"))
+    Failure::message(
+        caught
+            .as_string()
+            .and_then(|text| text.to_string().ok())
+            .unwrap_or_else(|| format!("{caught:?}")),
+    )
 }
 
 #[cfg(test)]

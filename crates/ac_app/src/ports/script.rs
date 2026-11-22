@@ -104,9 +104,17 @@ pub enum ScriptError {
         /// What is wrong.
         message: String,
     },
-    /// The script threw an error.
+    /// The script threw an error; its line is unknown.
     #[error("{0}")]
     Failed(String),
+    /// The script threw an error in a line of the script.
+    #[error("{message} (line {line})")]
+    Thrown {
+        /// 1-based line in the script as written.
+        line: usize,
+        /// The error, e.g. `TypeError: cannot read property 'x' of undefined`.
+        message: String,
+    },
     /// The script ran longer than allowed.
     #[error("stopped after {seconds} s")]
     TimedOut {

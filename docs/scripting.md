@@ -82,6 +82,8 @@ request means the request is not sent; one **after** the response leaves
 the response visible with the error above it. The command line runner
 counts a failing script after the response as a failed request.
 
-TypeScript types are removed before running, not checked; syntax errors are
-reported with their line. A checker and completion in the editor follow
-(ADR S2).
+TypeScript types are removed before running, not checked. Syntax errors and
+errors while running are reported with the line of the script as written,
+e.g. `TypeError: cannot read property 'length' of undefined (line 9)`. The
+editor checks types and completes the API while you type
+([ADR S2](adr/s2-script-assist.md)).
