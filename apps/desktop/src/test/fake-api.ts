@@ -66,9 +66,25 @@ export function shop(): CollectionView {
         auth: { kind: 'inherit' },
         certificateCheck: 'inherit',
         scripts: { preRequest: '', postResponse: '' },
-        items: [{ kind: 'request', id: 'r1', name: 'Login', method: 'POST', readOnly: false }],
+        items: [
+          {
+            kind: 'request',
+            id: 'r1',
+            name: 'Login',
+            method: 'POST',
+            url: '{{baseUrl}}/auth/login',
+            readOnly: false,
+          },
+        ],
       },
-      { kind: 'request', id: 'r2', name: 'Health', method: 'GET', readOnly: false },
+      {
+        kind: 'request',
+        id: 'r2',
+        name: 'Health',
+        method: 'GET',
+        url: '{{baseUrl}}/health',
+        readOnly: false,
+      },
     ],
   };
 }

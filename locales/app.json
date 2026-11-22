@@ -225,6 +225,15 @@
   },
   "response.failed": { "de": "Request fehlgeschlagen", "en": "Request failed" },
   "sidebar.title": { "de": "Collections", "en": "Collections" },
+  "search.title": { "de": "Request suchen", "en": "Find a request" },
+  "search.placeholder": {
+    "de": "Name, URL, Methode oder Ordner …",
+    "en": "Name, URL, method or folder …"
+  },
+  "search.none": { "de": "Kein Request gefunden.", "en": "No request found." },
+  "search.filter": { "de": "Collections filtern", "en": "Filter collections" },
+  "search.filter_placeholder": { "de": "Filtern … (Strg+K: suchen)", "en": "Filter … (Ctrl+K: find)" },
+  "shortcut.search": { "de": "Strg+K", "en": "Ctrl+K" },
   "sidebar.views": { "de": "Ansicht der Seitenleiste", "en": "Sidebar view" },
   "history.title": { "de": "Verlauf", "en": "History" },
   "history.filter": { "de": "Verlauf filtern", "en": "Filter history" },

@@ -1314,6 +1314,8 @@ id: string;
 name: string; 
 /**  Method, e.g. `GET`, for the label in the tree. */
 method: string; 
+/**  URL as entered, for searching. */
+url: string; 
 /**  The file is never written. */
 readOnly: boolean };
 
@@ -1345,6 +1347,8 @@ id: string;
 name: string; 
 /**  Method, e.g. `GET`, for the label in the tree. */
 method: string; 
+/**  URL as entered, for searching. */
+url: string; 
 /**  The file is never written. */
 readOnly: boolean };
 

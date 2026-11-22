@@ -154,6 +154,42 @@ describe('WorkspacePage', () => {
     expect(api.queries.filter((query) => query.type === 'request')).toEqual([]);
   });
 
+  it('finds requests with Ctrl+K and filters the tree', async () => {
+    const { api } = await setup();
+    await fireEvent.keyDown(window, { key: 'k', ctrlKey: true });
+    const search = await screen.findByRole('combobox', { name: 'Find a request' });
+    await userEvent.type(search, 'auth');
+    const results = screen.getByRole('listbox');
+    expect(
+      within(results)
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual([expect.stringContaining('Login')]);
+    await userEvent.type(search, 'xyz');
+    expect(screen.getByText('No request found.')).toBeInTheDocument();
+    await userEvent.clear(search);
+    await userEvent.type(search, 'e');
+    await userEvent.keyboard('{ArrowDown}{ArrowUp}{ArrowDown}{Enter}');
+    expect(screen.queryByRole('dialog', { name: 'Find a request' })).not.toBeInTheDocument();
+    await waitFor(() => expect(api.queries.at(-1)).toMatchObject({ type: 'request' }));
+
+    // Escape and a click outside close it.
+    await fireEvent.keyDown(window, { key: 'k', ctrlKey: true });
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog', { name: 'Find a request' })).not.toBeInTheDocument();
+
+    // The filter keeps matching requests and their folders, unfolded.
+    const sidebar = screen.getByRole('complementary', { name: 'Collections' });
+    await userEvent.click(within(sidebar).getByRole('button', { name: 'Auth' }));
+    expect(within(sidebar).queryByText('Login')).not.toBeInTheDocument();
+    await userEvent.type(
+      within(sidebar).getByRole('searchbox', { name: 'Filter collections' }),
+      'login',
+    );
+    expect(within(sidebar).getByText('Login')).toBeInTheDocument();
+    expect(within(sidebar).queryByText('Health')).not.toBeInTheDocument();
+  });
+
   it('opens a collection folder with its own button', async () => {
     const { api } = await setup();
     api.folder = 'C:\\apis\\billing';

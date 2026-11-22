@@ -59,11 +59,12 @@ fn tree_items_match_the_ui_contract() {
         id: "1".into(),
         name: "Login".into(),
         method: "POST".into(),
+        url: "{{baseUrl}}/login".into(),
         read_only: false,
     };
     assert_eq!(
         serde_json::to_value(item).unwrap(),
-        serde_json::json!({ "kind": "request", "id": "1", "name": "Login", "method": "POST", "readOnly": false })
+        serde_json::json!({ "kind": "request", "id": "1", "name": "Login", "method": "POST", "url": "{{baseUrl}}/login", "readOnly": false })
     );
 }
 

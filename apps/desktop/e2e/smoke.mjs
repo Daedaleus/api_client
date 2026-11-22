@@ -47,6 +47,8 @@
 //      parameter switched off there is not sent,
 //  20. a request is duplicated and the copy moved into a folder,
 //  21. the open tabs are remembered for the next start (without secrets),
+//  22. Ctrl+K finds a request and opens it,
+//  23. typing {{ in the URL suggests the variables that apply,
 // and the program is still running after each send.
 //
 // Usage: node e2e/smoke.mjs [path to the program]   (mise run e2e)
@@ -1448,6 +1450,22 @@ check(
   `open tabs remembered (${session.tabs.length})`,
 );
 check(!remembered.includes(secretValue), 'no secret in the remembered tabs');
+
+// --- 22. Quick search --------------------------------------------------------------
+
+// Ctrl+K, a word, Enter: the request opens.
+await pressCtrl('k', 'KeyK');
+await waitFor(`!!document.querySelector('.quick-search__input')`, 'quick search');
+await evaluate(setValue('.quick-search__input', 'health'));
+await waitFor(`document.querySelectorAll('.quick-search__hit').length > 0`, 'search hits');
+await evaluate(
+  `document.querySelector('.quick-search__dialog').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))`,
+);
+const openedName = await waitFor(
+  `(() => { const name = document.querySelector('.request-editor__input'); return name && !document.querySelector('.quick-search') ? name.value : null; })()`,
+  'request opened from the search',
+);
+check(openedName === 'Health', `quick search opened the request (${openedName})`);
 
 // --- 23. Variable suggestions -----------------------------------------------------
 

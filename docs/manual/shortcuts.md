@@ -8,6 +8,7 @@ On macOS use **Cmd** instead of **Ctrl**.
 | **Ctrl+S** | Save the active request |
 | **Ctrl+N** | New request (an unsaved tab) |
 | **Ctrl+E** | Go to the environment picker |
+| **Ctrl+K** | Find a request in all open collections |
 | **Ctrl+F** | Search in the response body |
 | **Ctrl+Space** | Suggestions in the script editor |
 | **Esc** | Close a dialog or menu |

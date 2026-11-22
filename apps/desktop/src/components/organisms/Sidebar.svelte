@@ -6,6 +6,7 @@
   import TreeNode from '../molecules/TreeNode.svelte';
   import HistoryList from './HistoryList.svelte';
   import { collectionMenu, newMenu } from '../../lib/workspace/menus';
+  import { filterTree } from '../../lib/search';
   import { i18n } from '../../lib/i18n/i18n.svelte';
   import type { Workspace } from '../../lib/workspace/workspace.svelte';
 
@@ -13,6 +14,7 @@
 
   let collections = $derived(workspace.collections.collections);
   let showHistory = $derived(workspace.history.visible);
+  let filtering = $derived(workspace.treeFilter.trim() !== '');
 </script>
 
 <svelte:window
@@ -65,6 +67,16 @@
 
     {#if collections.length === 0}
       <p class="sidebar__empty">{i18n.t('sidebar.empty')}</p>
+    {:else}
+      <input
+        class="sidebar__filter"
+        type="search"
+        spellcheck="false"
+        autocomplete="off"
+        aria-label={i18n.t('search.filter')}
+        placeholder={i18n.t('search.filter_placeholder')}
+        bind:value={workspace.treeFilter}
+      />
     {/if}
 
     {#each collections as collection (collection.id)}
@@ -108,8 +120,8 @@
           </div>
         {/if}
         <ul class="sidebar__tree">
-          {#each collection.items as item (item.id)}
-            <TreeNode {item} collectionId={collection.id} {workspace} depth={0} />
+          {#each filterTree(collection.items, workspace.treeFilter) as item (item.id)}
+            <TreeNode {item} collectionId={collection.id} {workspace} depth={0} open={filtering} />
           {/each}
         </ul>
       </section>
@@ -203,6 +215,16 @@
     color: var(--color-warning);
     font-size: var(--font-size-s);
     cursor: pointer;
+  }
+
+  .sidebar__filter {
+    height: var(--control-height);
+    padding: 0 var(--space-s);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-bg);
+    color: var(--color-text);
+    font: inherit;
   }
 
   .sidebar__tree {
