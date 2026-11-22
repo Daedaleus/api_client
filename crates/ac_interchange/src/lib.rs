@@ -5,8 +5,9 @@
 //! - [`curl`]: a resolved request as a cURL command, and a pasted cURL
 //!   command as a request.
 //! - [`import`]: importing a collection, the format detected from the
-//!   file – `postman` (Postman collections v2.1, v2.0) or `openapi`
-//!   (`OpenAPI` 3.0 and 3.1 descriptions, JSON or YAML).
+//!   file – `postman` (Postman collections v2.1, v2.0), `insomnia`
+//!   (Insomnia exports, format 4), `har` (recorded browser requests) or
+//!   `openapi` (`OpenAPI` 3.0 and 3.1 descriptions, JSON or YAML).
 //!
 //! - [`bruno`]: Bruno collections (a folder of `.bru` files) with their
 //!   environments.
@@ -17,7 +18,9 @@
 pub mod bruno;
 pub mod curl;
 pub mod export;
+mod har;
 pub mod import;
+mod insomnia;
 mod openapi;
 mod postman;
 pub mod snippet;

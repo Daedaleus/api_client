@@ -21,9 +21,13 @@ export function newMenu(workspace: Workspace): MenuItem[] {
       entry('import-postman', i18n.t('menu.import_postman'), () =>
         workspace.importCollection('postman'),
       ),
+      entry('import-insomnia', i18n.t('menu.import_insomnia'), () =>
+        workspace.importCollection('insomnia'),
+      ),
       entry('import-openapi', i18n.t('menu.import_openapi'), () =>
         workspace.importCollection('openapi'),
       ),
+      entry('import-har', i18n.t('menu.import_har'), () => workspace.importCollection('har')),
       entry('import-bruno', i18n.t('menu.import_bruno'), () => workspace.importCollection('bruno')),
       entry('import-url', i18n.t('menu.import_url'), () => workspace.importFromUrl()),
       separator,

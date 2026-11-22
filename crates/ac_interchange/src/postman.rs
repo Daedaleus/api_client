@@ -25,7 +25,7 @@ use ac_domain::tls::CertificateCheck;
 use ac_domain::transport::{Redirects, TransportSettings};
 use serde_json::Value;
 
-use crate::import::{Imported, Skipped, SkippedKind, loopback_redirect};
+use crate::import::{Imported, Skipped, SkippedKind, loopback_redirect, text_of};
 
 /// Name of a collection without one.
 const UNNAMED: &str = "Postman";
@@ -332,16 +332,6 @@ fn list(rows: Option<&Value>) -> impl Iterator<Item = (String, String, bool)> + 
 
 fn disabled(row: &Value) -> bool {
     row.get("disabled").and_then(Value::as_bool) == Some(true)
-}
-
-/// Text of a string value; numbers and booleans as written.
-fn text_of(value: Option<&Value>) -> Option<String> {
-    match value? {
-        Value::String(text) => Some(text.clone()),
-        Value::Number(number) => Some(number.to_string()),
-        Value::Bool(flag) => Some(flag.to_string()),
-        _ => None,
-    }
 }
 
 /// The scripts of an item (`event` with `prerequest` or `test` code), as

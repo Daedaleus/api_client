@@ -221,6 +221,15 @@ fn skipped_text(skipped: &Skipped) -> UserText {
             ItemSetting::Redirects => keys::EXPORT_REDIRECTS,
             ItemSetting::CertificateCheck => keys::EXPORT_CERTIFICATE_CHECK,
         }),
+        SkippedKind::Resources { kind, count } => UserText::new(keys::IMPORT_SKIPPED_RESOURCES)
+            .with("kind", kind.clone())
+            .with("count", count.to_string()),
+        SkippedKind::RequestKind(kind) => {
+            UserText::new(keys::IMPORT_SKIPPED_REQUEST_KIND).with("kind", kind.clone())
+        }
+        SkippedKind::TemplateTag(tag) => {
+            UserText::new(keys::IMPORT_TEMPLATE_TAG).with("tag", tag.clone())
+        }
         SkippedKind::RelativeServer(url) => {
             UserText::new(keys::IMPORT_RELATIVE_SERVER).with("url", url.clone())
         }

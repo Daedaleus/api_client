@@ -52,14 +52,22 @@ describe('sidebar menus', () => {
       'new-collection',
       'import',
       'import-postman',
+      'import-insomnia',
       'import-openapi',
+      'import-har',
       'import-bruno',
       'import-url',
       'import-curl',
     ]);
     expect(fake.tabs.openScratch).toHaveBeenCalledOnce();
     expect(fake.createCollection).toHaveBeenCalledOnce();
-    expect(fake.importCollection.mock.calls).toEqual([['postman'], ['openapi'], ['bruno']]);
+    expect(fake.importCollection.mock.calls).toEqual([
+      ['postman'],
+      ['insomnia'],
+      ['openapi'],
+      ['har'],
+      ['bruno'],
+    ]);
     expect(fake.curl.openImport).toHaveBeenCalledOnce();
   });
 

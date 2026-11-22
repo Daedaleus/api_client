@@ -6,7 +6,7 @@ use ac_domain::environment::Environment;
 use serde_json::Value;
 use url::Url;
 
-use crate::{openapi, postman};
+use crate::{har, insomnia, openapi, postman};
 
 /// A converted collection.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -40,6 +40,19 @@ pub enum SkippedKind {
     Body(String),
     /// Headers of a folder or the collection (only requests have headers).
     Headers,
+    /// Entries of a recording (HAR) that are no API calls, e.g. 12 of kind
+    /// `image`: only XHR and fetch requests are taken over.
+    Resources {
+        /// The recorded kind, e.g. `script`.
+        kind: String,
+        /// How many.
+        count: usize,
+    },
+    /// A request kind without counterpart, e.g. `gRPC`.
+    RequestKind(String),
+    /// A template tag without counterpart (Insomnia), e.g. `response`; it
+    /// stays in the text as written.
+    TemplateTag(String),
     /// An `OpenAPI` server given relative to where the description is
     /// served, e.g. `/api/v3`: the host is unknown, so `baseUrl` got
     /// `http://localhost` in front.
@@ -68,7 +81,7 @@ pub enum ImportError {
     #[error("neither JSON nor YAML: {0}")]
     Parse(String),
     /// A format this program does not read.
-    #[error("not a Postman collection or OpenAPI 3 description")]
+    #[error("not a Postman, Insomnia, HAR or OpenAPI 3 file")]
     Unknown,
     /// A folder without `bruno.json`: no Bruno collection.
     #[error("no Bruno collection here (bruno.json is missing)")]
@@ -76,10 +89,13 @@ pub enum ImportError {
     /// Swagger 2.0, the predecessor of `OpenAPI` 3.
     #[error("Swagger 2.0 is not supported; convert it to OpenAPI 3 first")]
     Swagger2,
+    /// Insomnia's export format 5 (YAML, Insomnia 11 and later).
+    #[error("Insomnia export format 5 is not supported yet; export as Insomnia v4 (JSON)")]
+    InsomniaV5,
 }
 
-/// Converts a Postman collection or an `OpenAPI` 3 description (JSON or
-/// YAML), whichever `text` is.
+/// Converts a Postman collection, an Insomnia export, a HAR file or an
+/// `OpenAPI` 3 description (JSON or YAML), whichever `text` is.
 ///
 /// # Errors
 /// [`ImportError`] if the text is none of them.
@@ -98,10 +114,31 @@ pub fn import_collection_from(text: &str, origin: Option<&Url>) -> Result<Import
     if document.get("swagger").is_some() {
         return Err(ImportError::Swagger2);
     }
-    if let Some(imported) = openapi::from_value(&document, origin) {
-        return Ok(imported);
+    if document
+        .get("type")
+        .and_then(Value::as_str)
+        .is_some_and(|kind| kind.starts_with(INSOMNIA_V5))
+    {
+        return Err(ImportError::InsomniaV5);
     }
-    postman::from_value(&document).ok_or(ImportError::Unknown)
+    openapi::from_value(&document, origin)
+        .or_else(|| insomnia::from_value(&document))
+        .or_else(|| har::from_value(&document))
+        .or_else(|| postman::from_value(&document))
+        .ok_or(ImportError::Unknown)
+}
+
+/// Start of the `type` of Insomnia's export format 5.
+const INSOMNIA_V5: &str = "collection.insomnia.rest/5";
+
+/// Text of a string value; numbers and booleans as written.
+pub(crate) fn text_of(value: Option<&Value>) -> Option<String> {
+    match value? {
+        Value::String(text) => Some(text.clone()),
+        Value::Number(number) => Some(number.to_string()),
+        Value::Bool(flag) => Some(flag.to_string()),
+        _ => None,
+    }
 }
 
 /// An imported OAuth 2 redirect URL if the app can receive it; empty (any

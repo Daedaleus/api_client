@@ -96,6 +96,13 @@ pub mod keys {
     pub const EXPORT_REDIRECTS: &str = "export.redirects";
     /// An export has no place for the certificate check. Argument: `item`.
     pub const EXPORT_CERTIFICATE_CHECK: &str = "export.certificate_check";
+    /// Recorded entries that are no API calls (HAR). Arguments: `item`,
+    /// `kind`, `count`.
+    pub const IMPORT_SKIPPED_RESOURCES: &str = "import.skipped_resources";
+    /// An import left out a request kind (gRPC …). Arguments: `item`, `kind`.
+    pub const IMPORT_SKIPPED_REQUEST_KIND: &str = "import.skipped_request_kind";
+    /// A template tag stayed as text (Insomnia). Arguments: `item`, `tag`.
+    pub const IMPORT_TEMPLATE_TAG: &str = "import.template_tag";
     /// A relative `OpenAPI` server. Placeholders: `item`, `url`.
     pub const IMPORT_RELATIVE_SERVER: &str = "import.relative_server";
     /// An import from a URL got nothing usable. Placeholder: `detail`.
@@ -155,7 +162,7 @@ pub mod keys {
 
     /// All keys with the names of their placeholders, checked against the
     /// translation file by a test.
-    pub const ALL: [(&str, &[&str]); 53] = [
+    pub const ALL: [(&str, &[&str]); 56] = [
         (URL_EMPTY, &[]),
         (URL_INVALID, &["reason"]),
         (URL_SCHEME, &["scheme"]),
@@ -183,6 +190,9 @@ pub mod keys {
         (EXPORT_TIMEOUT, &["item"]),
         (EXPORT_REDIRECTS, &["item"]),
         (EXPORT_CERTIFICATE_CHECK, &["item"]),
+        (IMPORT_SKIPPED_RESOURCES, &["item", "kind", "count"]),
+        (IMPORT_SKIPPED_REQUEST_KIND, &["item", "kind"]),
+        (IMPORT_TEMPLATE_TAG, &["item", "tag"]),
         (IMPORT_DOWNLOAD, &["detail"]),
         (IMPORT_SKIPPED_HEADERS, &["item"]),
         (REQUEST, &["detail"]),
