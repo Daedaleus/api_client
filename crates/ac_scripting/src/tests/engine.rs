@@ -193,10 +193,18 @@ fn runaway_scripts_are_stopped() {
         ScriptPhase::PreRequest,
         "const a = []; while (true) a.push(new Array(100000).fill(1));",
     );
-    assert_eq!(
-        run(&hog, limits).unwrap_err(),
-        ScriptError::OutOfMemory { megabytes: 16 }
+    // QuickJS reports running out of memory as an error – or, if it cannot
+    // even create that (macOS), by throwing `null`.
+    let error = run(&hog, limits).unwrap_err();
+    assert!(
+        error == ScriptError::OutOfMemory { megabytes: 16 }
+            || matches!(&error, ScriptError::Failed(message) if message.contains("16 MB")),
+        "{error:?}"
     );
+    assert!(matches!(
+        run(&job(ScriptPhase::PreRequest, "throw null"), limits).unwrap_err(),
+        ScriptError::Failed(message) if message.contains("stopped without an error")
+    ));
     assert_eq!(Limits::default().time, Duration::from_secs(5));
 }
 
