@@ -13,7 +13,12 @@ function setup() {
   return { api, workspace };
 }
 
-const skipped = [{ key: 'import.skipped_scripts', args: { item: 'Login' } }];
+const skipped = [
+  {
+    key: 'import.skipped_assertion',
+    args: { item: 'Login', assertion: 'res.status: between 1 2' },
+  },
+];
 
 describe('collection import', () => {
   beforeEach(() => i18n.setLocale('en'));
@@ -31,7 +36,9 @@ describe('collection import', () => {
     api.answers.push({ type: 'collectionImported', collection: shop(), skipped });
     const importing = workspace.importCollection('postman');
     expect(await screen.findByRole('dialog')).toHaveTextContent('Import finished');
-    expect(screen.getByText('“Login”: scripts (not taken over yet)')).toBeInTheDocument();
+    expect(
+      screen.getByText('“Login”: assertion “res.status: between 1 2” (not taken over)'),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'OK' }));
     await importing;

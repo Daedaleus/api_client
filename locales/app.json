@@ -14,9 +14,9 @@
     "de": "Diese Datei lässt sich nicht importieren: {detail}",
     "en": "This file cannot be imported: {detail}"
   },
-  "import.skipped_scripts": {
-    "de": "„{item}“: Skripte (werden noch nicht übernommen)",
-    "en": "“{item}”: scripts (not taken over yet)"
+  "import.skipped_assertion": {
+    "de": "„{item}“: Prüfung „{assertion}“ (nicht übernommen)",
+    "en": "“{item}”: assertion “{assertion}” (not taken over)"
   },
   "import.skipped_auth": {
     "de": "„{item}“: Auth-Art {kind}",

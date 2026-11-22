@@ -279,3 +279,128 @@ fn expect_outside_a_test_fails_the_script() {
         }
     );
 }
+
+/// The names of the tests that failed, with their messages.
+fn failures(outcome: &ScriptOutcome) -> Vec<(String, String)> {
+    outcome
+        .tests
+        .iter()
+        .filter(|test| !test.passed)
+        .map(|test| (test.name.clone(), test.message.clone().unwrap_or_default()))
+        .collect()
+}
+
+#[test]
+fn postman_scripts_run_unchanged() {
+    let pre = r"
+        pm.environment.set('stamp', 7);
+        pm.request.headers.add({ key: 'X-Stamp', value: pm.variables.get('stamp') });
+        pm.request.headers.remove('X-Old');
+        pm.request.method = 'put';
+        pm.request.url.update(pm.variables.replaceIn('{{baseUrl}}/users/{{user}}/{{nope}}'));
+        log(pm.info.eventName, pm.collectionVariables.has('user'), pm.request.url.toString().length > 0);
+    ";
+    let outcome = run_default(&job(ScriptPhase::PreRequest, pre)).unwrap();
+    assert_eq!(outcome.request.method, "PUT");
+    assert_eq!(
+        outcome.request.url,
+        "https://api.example.com/users/alice/{{nope}}"
+    );
+    assert_eq!(
+        outcome.request.headers,
+        [pair("Accept", "application/json"), pair("X-Stamp", "7")]
+    );
+    assert_eq!(outcome.logs, ["prerequest true true"]);
+
+    let post = r"
+        pm.test('status', () => {
+            pm.response.to.have.status(201);
+            pm.response.to.have.status('Created');
+            pm.response.to.be.success;
+            pm.response.to.have.header('Content-Type');
+        });
+        pm.test('body', () => {
+            const body = pm.response.json();
+            pm.expect(body.token).to.be.a('string').and.to.equal('t0k');
+            pm.expect(body.items).to.have.lengthOf(2).and.to.include(2);
+            pm.expect(body).to.have.property('items').that.deep.equals([1, 2]);
+            pm.expect(body).to.deep.include({ token: 't0k' });
+            pm.expect(pm.response.code).to.be.within(200, 299).and.not.equal(200);
+            pm.expect(pm.response.responseTime).to.be.below(1000);
+            pm.expect(pm.response.headers.get('content-type')).to.match(/json/);
+            pm.expect(null).to.be.null;
+            pm.expect([]).to.be.empty;
+            pm.expect(body).to.have.keys('token', 'items');
+            pm.expect('b').to.be.oneOf(['a', 'b']);
+        });
+        pm.test('fails', () => pm.expect(pm.response.code).to.eql(200));
+        pm.test('fails too', () => pm.response.to.be.ok.and.to.have.status(404));
+        pm.environment.set('token', pm.response.json().token);
+    ";
+    let outcome = run_default(&job(ScriptPhase::PostResponse, post)).unwrap();
+    assert_eq!(
+        failures(&outcome),
+        [
+            (
+                "fails".to_owned(),
+                "expected 201 to deeply equal 200".to_owned()
+            ),
+            (
+                "fails too".to_owned(),
+                "expected response 201 to have status 404".to_owned()
+            ),
+        ]
+    );
+    assert_eq!(outcome.variables, [pair("token", "t0k")]);
+
+    let error = run_default(&job(ScriptPhase::PreRequest, "pm.sendRequest('x')")).unwrap_err();
+    assert!(
+        matches!(&error, ScriptError::Thrown { message, .. } | ScriptError::Failed(message)
+        if message == "Error: pm.sendRequest is not supported"),
+        "{error:?}"
+    );
+}
+
+#[test]
+fn bruno_scripts_run_unchanged() {
+    let pre = r"
+        bru.setVar('id', 3);
+        req.setUrl(bru.interpolate('{{baseUrl}}/items/{{id}}'));
+        req.setMethod('patch');
+        req.setBody({ ...req.getBody(), name: bru.getEnvVar('user') });
+        req.deleteHeader('X-Old');
+        log(req.getMethod(), req.getUrl(), Object.keys(req.getHeaders()).join(','));
+    ";
+    let outcome = run_default(&job(ScriptPhase::PreRequest, pre)).unwrap();
+    assert_eq!(outcome.request.method, "PATCH");
+    assert_eq!(outcome.request.body.as_deref(), Some(r#"{"name":"alice"}"#));
+    assert_eq!(
+        outcome.logs,
+        ["PATCH https://api.example.com/items/3 Accept"]
+    );
+    assert_eq!(outcome.variables, [pair("id", "3")]);
+
+    let post = r"
+        test('status', () => {
+            expect(res.getStatus()).to.equal(201);
+            expect(res.getBody().items).to.have.length(2);
+            expect(res.getHeader('content-type')).to.contain('json');
+            expect(res.getResponseTime()).to.be.at.most(100);
+            expect(res.getBody()).not.to.have.property('missing');
+            expect(res.getStatus()).toBe(201);
+        });
+        test('fails', () => expect(res.getStatus()).not.to.be.above(200));
+        bru.setEnvVar('token', res.body.token);
+        log(bru.hasVar('token'), typeof res.getHeaders(), res.responseTime);
+    ";
+    let outcome = run_default(&job(ScriptPhase::PostResponse, post)).unwrap();
+    assert_eq!(
+        failures(&outcome),
+        [(
+            "fails".to_owned(),
+            "expected 201 not to be above 200".to_owned()
+        )]
+    );
+    assert_eq!(outcome.logs, ["true object 12"]);
+    assert_eq!(outcome.variables, [pair("token", "t0k")]);
+}

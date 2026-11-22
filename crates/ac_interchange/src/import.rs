@@ -31,8 +31,9 @@ pub struct Skipped {
 /// Kinds of [`Skipped`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SkippedKind {
-    /// Pre-request or test scripts (scripting comes later).
-    Scripts,
+    /// A declarative assertion without counterpart (Bruno `assert`), as
+    /// written, e.g. `res.status: between 200 299`.
+    Assertion(String),
     /// An auth type without counterpart, e.g. `oauth2`.
     Auth(String),
     /// A body type without counterpart, e.g. `graphql` or `application/xml`.

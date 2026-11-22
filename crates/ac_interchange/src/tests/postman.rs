@@ -152,10 +152,6 @@ fn what_has_no_counterpart_is_reported() {
         imported.skipped,
         [
             Skipped {
-                item: "Login".into(),
-                what: SkippedKind::Scripts
-            },
-            Skipped {
                 item: "GraphQL".into(),
                 what: SkippedKind::Body("graphql".into())
             },
@@ -172,6 +168,36 @@ fn what_has_no_counterpart_is_reported() {
     );
     assert_eq!(graphql.body, Body::None);
     assert_eq!(graphql.auth, Auth::Inherit);
+}
+
+#[test]
+fn scripts_are_taken_over() {
+    let imported = shop();
+    let login = request(&folder(&imported.collection.items, "Auth").items, "Login");
+    assert_eq!(
+        login.scripts.post_response,
+        "pm.environment.set(\"token\", pm.response.json().token);"
+    );
+    assert_eq!(login.scripts.pre_request, "");
+    // The collection's pre-request script is empty: none.
+    assert!(imported.collection.scripts.is_empty());
+
+    let text = from_postman(
+        r#"{"info": {}, "event": [{"listen": "prerequest", "script": {"exec": "log(1);"}}], "item": [{"name": "F", "event": [{"listen": "test", "script": {"exec": ["a();", "b();"]}}, {"listen": "test", "script": {"exec": ["c();"]}}, {"listen": "other", "script": {"exec": ["x"]}}], "item": []}]}"#,
+    )
+    .unwrap();
+    assert_eq!(text.collection.scripts.pre_request, "log(1);");
+    let Item::Folder(folder) = &text.collection.items[0] else {
+        panic!("expected a folder");
+    };
+    assert_eq!(
+        folder.scripts.post_response,
+        "a();
+b();
+
+c();"
+    );
+    assert_eq!(folder.scripts.pre_request, "");
 }
 
 #[test]

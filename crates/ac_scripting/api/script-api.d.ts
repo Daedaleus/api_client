@@ -72,7 +72,7 @@ declare const console: {
  * A named test: runs `check` and records whether it passed. A failing
  * `expect` inside fails only this test; the script goes on.
  */
-declare function test(name: string, check: () => void | Promise<void>): void;
+declare function test(name: string, check: () => unknown): void;
 
 /** Checks for `expect(actual)`; `.not` turns each one around. */
 interface Matchers {

@@ -27,7 +27,8 @@
 //      opens as a new tab and is sent; a request is copied as a cURL command,
 //  13. a Postman export, an OpenAPI description and a Bruno collection are
 //      imported as new collections on disk (through the real IPC command: native file
-//      dialogs cannot be driven from here); an import without a folder stays
+//      dialogs cannot be driven from here), Postman scripts taken over; an
+//      import without a folder stays
 //      unsaved until "save as" moves it; a description from a URL gets its
 //      relative server resolved,
 //  14. large JSON responses (0.9 MB shown formatted, 10 MB shown truncated)
@@ -964,7 +965,7 @@ const importAck = await evaluate(`window.__TAURI_INTERNALS__.invoke('execute', {
 check(
   importAck?.type === 'collectionImported' &&
     importAck.collection.name === 'Shop API' &&
-    importAck.skipped.length === 3,
+    importAck.skipped.length === 2,
   'Postman export imported, left-out parts reported',
 );
 const importedSettings = readFileSync(path.join(importedDir, 'collection.toml'), 'utf8');
@@ -974,6 +975,10 @@ check(
 );
 const login = readFileSync(path.join(importedDir, 'auth', 'login.toml'), 'utf8');
 check(login.includes('url = "{{baseUrl}}/auth/login"'), 'imported request written to its folder');
+check(
+  login.includes('[request.scripts]') && login.includes('pm.environment.set'),
+  'imported Postman test script taken over',
+);
 const openapiFile = path.join(ROOT, 'crates/ac_interchange/src/tests/fixtures/shop.openapi.yaml');
 const fromOpenapi = path.join(collections, 'imported-from-openapi');
 const openapiAck = await evaluate(`window.__TAURI_INTERNALS__.invoke('execute', {

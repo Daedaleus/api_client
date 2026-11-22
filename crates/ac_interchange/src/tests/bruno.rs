@@ -215,11 +215,81 @@ fn what_has_no_counterpart_is_reported() {
         reported,
         [
             ("Authentication", SkippedKind::Headers),
-            ("Login", SkippedKind::Scripts),
             ("Products (GraphQL)", SkippedKind::Body("graphql".into())),
             ("Products (GraphQL)", SkippedKind::Body("graphql".into())),
             ("Search", SkippedKind::Auth("oauth2".into())),
         ]
+    );
+}
+
+#[test]
+fn scripts_and_assertions_are_taken_over() {
+    let imported = shop();
+    let login = request(
+        &folder(&imported.collection.items, "Authentication").items,
+        "Login",
+    );
+    assert_eq!(login.scripts.pre_request, "");
+    assert_eq!(
+        login.scripts.post_response,
+        "bru.setEnvVar(\"token\", res.body.token);"
+    );
+
+    let root = Path::new("/bruno");
+    let imported = from_files(
+        root,
+        &[
+            BrunoFile {
+                path: "collection.bru".into(),
+                text: "script:pre-request {
+  req.setHeader('X-Team', 'a');
+}
+"
+                .into(),
+            },
+            BrunoFile {
+                path: "check.bru".into(),
+                text: "get {
+  url: x
+}
+script:pre-request {
+  log(1);
+}
+script:post-response {
+  log(2);
+}
+tests {
+  test('t', () => {});
+}
+assert {
+  res.status: eq 200
+  res.status: between 1 2
+}
+"
+                .into(),
+            },
+        ],
+    );
+    assert_eq!(
+        imported.collection.scripts.pre_request,
+        "req.setHeader('X-Team', 'a');"
+    );
+    let check = request(&imported.collection.items, "check");
+    assert_eq!(check.scripts.pre_request, "log(1);");
+    assert_eq!(
+        check.scripts.post_response,
+        "log(2);
+
+test('t', () => {});
+
+test(\"res.status: eq 200\", () => expect(res.getStatus()).to.eql(200));"
+    );
+    assert_eq!(
+        imported.skipped,
+        [Skipped {
+            item: "check".into(),
+            what: SkippedKind::Assertion("res.status: between 1 2".into()),
+        }]
     );
 }
 

@@ -6,6 +6,8 @@
 //! - `strip`: TypeScript → JavaScript.
 //! - `engine`: one run in a fresh, limited runtime.
 //! - `prelude.js`: the script API, built from the run's input in JavaScript.
+//! - `chai.js`, `compat.js`: chai-style assertions and the `pm` / `bru`
+//!   objects, so scripts imported from Postman and Bruno run unchanged.
 //! - [`assist`]: checking and completing scripts ([`TsAssist`], ADR S2).
 //!
 //! Scripts reach nothing but the API in [`API_DECLARATIONS`]: `QuickJS` has no
@@ -22,7 +24,12 @@ use ac_app::ports::{ScriptError, ScriptJob, ScriptOutcome, ScriptRunner};
 
 /// The script API as TypeScript declarations – for the checker, completion
 /// and documentation.
-pub const API_DECLARATIONS: &str = include_str!("../api/script-api.d.ts");
+pub const API_DECLARATIONS: &str = concat!(
+    include_str!("../api/script-api.d.ts"),
+    "
+",
+    include_str!("../api/compat.d.ts"),
+);
 
 /// Runs every script in a fresh `QuickJS` runtime on Tokio's blocking pool.
 #[derive(Debug, Clone, Copy, Default)]
