@@ -12,7 +12,7 @@ use crate::text::UserText;
 use crate::view::{
     AuthDraft, CertificateCheckView, CollectionView, EnvironmentDraft, HistoryItemView,
     OutgoingRequest, RecipientsView, RequestDraft, RunOutcomeView, ScriptsDraft, SettingsView,
-    TransportDraft, VariableDraft,
+    SnippetLanguageView, TransportDraft, VariableDraft,
 };
 
 /// Something the user wants the application to do.
@@ -256,6 +256,15 @@ pub enum Query {
         #[serde(flatten)]
         request: Box<OutgoingRequest>,
     },
+    /// Code that sends a request as entered, in `language` (variables and
+    /// inherited auth applied, as when sending).
+    Snippet {
+        /// The language.
+        language: SnippetLanguageView,
+        /// The request as entered.
+        #[serde(flatten)]
+        request: Box<OutgoingRequest>,
+    },
     /// The request history, newest first.
     History,
     /// The app's settings.
@@ -301,6 +310,11 @@ pub enum QueryResult {
     Curl {
         /// For a POSIX shell, one option per line.
         command: String,
+    },
+    /// Code that sends the request.
+    Snippet {
+        /// The code.
+        code: String,
     },
     /// The app's settings.
     Settings {

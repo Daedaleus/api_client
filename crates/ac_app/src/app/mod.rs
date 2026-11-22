@@ -267,6 +267,7 @@ impl<
             } => self.query_request(&collection_id, &request_id),
             Query::Recipients { collection_id } => self.query_recipients(&collection_id),
             Query::Curl { request } => self.query_curl(&request),
+            Query::Snippet { language, request } => self.query_snippet(&request, language),
             Query::ParseCurl { text } => interchange::parse_curl(&text),
             Query::History => self.query_history(),
             Query::Settings => self.query_settings(),

@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { i18n } from '../../lib/i18n/i18n.svelte';
+import type { SnippetLanguage } from '../../lib/types';
 import { RequestTab } from '../../lib/workspace/request-tab.svelte';
 import { draft } from '../../test/fake-api';
 import RequestEditor from './RequestEditor.svelte';
@@ -169,6 +170,41 @@ describe('RequestEditor', () => {
 
     writeText.mockRejectedValueOnce(new Error('denied'));
     await userEvent.click(screen.getByRole('button', { name: 'cURL copied' }));
+  });
+
+  it('copies the request as code in other languages', async () => {
+    const writeText = vi.fn(() => Promise.resolve());
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    const tab = new RequestTab(draft('r1', 'Login'), null);
+    const oncopysnippet = vi
+      .fn<(language: SnippetLanguage) => Promise<string | null>>()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValue('import requests');
+    render(RequestEditor, { tab, onsend: vi.fn(), onsave: vi.fn(), oncopysnippet });
+    const open = () => userEvent.click(screen.getByRole('button', { name: /As code|Code copied/ }));
+    await open();
+    expect(screen.getAllByRole('menuitem').map((item) => item.textContent?.trim())).toEqual([
+      'JavaScript (fetch)',
+      'JavaScript (axios)',
+      'Python (requests)',
+      'Go (net/http)',
+      'HTTPie',
+    ]);
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Python (requests)' }));
+    expect(oncopysnippet).toHaveBeenCalledWith('python');
+    expect(writeText).not.toHaveBeenCalled();
+    await open();
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Python (requests)' }));
+    expect(writeText).toHaveBeenCalledWith('import requests');
+    expect(screen.getByRole('button', { name: 'Code copied' })).toHaveAttribute(
+      'title',
+      'Copy as code',
+    );
+
+    writeText.mockRejectedValueOnce(new Error('denied'));
+    await open();
+    await userEvent.click(screen.getByRole('menuitem', { name: 'HTTPie' }));
+    expect(oncopysnippet).toHaveBeenLastCalledWith('httpie');
   });
 
   it('edits the request variables', async () => {

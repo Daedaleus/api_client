@@ -43,6 +43,14 @@
     "de": "Das ist kein verwendbarer cURL-Befehl: {detail}",
     "en": "This is no usable cURL command: {detail}"
   },
+  "snippet.more": { "de": "Als Code …", "en": "As code …" },
+  "snippet.copied": { "de": "Code kopiert", "en": "Code copied" },
+  "snippet.title": { "de": "Als Code kopieren", "en": "Copy as code" },
+  "snippet.fetch": { "de": "JavaScript (fetch)", "en": "JavaScript (fetch)" },
+  "snippet.axios": { "de": "JavaScript (axios)", "en": "JavaScript (axios)" },
+  "snippet.python": { "de": "Python (requests)", "en": "Python (requests)" },
+  "snippet.go": { "de": "Go (net/http)", "en": "Go (net/http)" },
+  "snippet.httpie": { "de": "HTTPie", "en": "HTTPie" },
   "curl.copy": { "de": "Als cURL kopieren", "en": "Copy as cURL" },
   "curl.copied": { "de": "cURL kopiert", "en": "cURL copied" },
   "curl.import_title": {

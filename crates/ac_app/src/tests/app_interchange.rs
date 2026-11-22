@@ -487,3 +487,47 @@ async fn descriptions_are_imported_from_a_url_with_their_relative_server() {
     assert_eq!(empty.user_text().key, keys::URL_EMPTY);
     assert_eq!(fixture.http.sent().len(), 4);
 }
+
+#[tokio::test]
+async fn snippets_are_what_would_be_sent_in_every_language() {
+    use crate::view::SnippetLanguageView;
+    let fixture = Fixture::new();
+    let mut request = OutgoingRequest::get("{{baseUrl}}/health");
+    request.context = Some(SendContext {
+        collection_id: fixture.collection.clone(),
+        request_id: Some(fixture.health.clone()),
+        environment_id: Some(fixture.dev.clone()),
+    });
+    for language in [
+        SnippetLanguageView::Curl,
+        SnippetLanguageView::Fetch,
+        SnippetLanguageView::Axios,
+        SnippetLanguageView::Python,
+        SnippetLanguageView::Go,
+        SnippetLanguageView::Httpie,
+    ] {
+        let result = fixture
+            .app
+            .query(Query::Snippet {
+                language,
+                request: Box::new(request.clone()),
+            })
+            .unwrap();
+        let QueryResult::Snippet { code } = result else {
+            panic!("expected code");
+        };
+        assert!(
+            code.contains("https://dev.example.com/health"),
+            "{language:?}: {code}"
+        );
+    }
+    // An unknown variable is reported, not exported half-filled.
+    let error = fixture
+        .app
+        .query(Query::Snippet {
+            language: SnippetLanguageView::Python,
+            request: Box::new(OutgoingRequest::get("{{nope}}/x")),
+        })
+        .unwrap_err();
+    assert_eq!(error.user_text().key, keys::VARIABLE_UNKNOWN);
+}

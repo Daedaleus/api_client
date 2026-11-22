@@ -33,6 +33,27 @@ describe('cURL', () => {
     expect(tab.error?.args.detail).toBe('unexpected answer recipients');
   });
 
+  it('builds code in other languages exactly as it would be sent', async () => {
+    const { api, workspace } = setup();
+    await workspace.openRequest('c1', 'r1');
+    const tab = workspace.tabs.active!;
+    api.queryAnswers.push({ type: 'snippet', code: 'import requests' });
+    expect(await workspace.snippetFor(tab, 'python')).toBe('import requests');
+    expect(api.queries.at(-1)).toMatchObject({
+      type: 'snippet',
+      language: 'python',
+      url: 'https://example.com/r1',
+    });
+
+    api.queryAnswers.push({ fail: { key: 'error.variable_unknown', args: { name: 'x' } } });
+    expect(await workspace.snippetFor(tab, 'go')).toBeNull();
+    expect(tab.error?.key).toBe('error.variable_unknown');
+
+    api.queryAnswers.push({ type: 'curl', command: 'curl' });
+    expect(await workspace.snippetFor(tab, 'fetch')).toBeNull();
+    expect(tab.error?.args.detail).toBe('unexpected answer curl');
+  });
+
   it('opens a pasted command as a new tab and says what was left out', async () => {
     const { api, workspace } = setup();
     const curl = workspace.curl;
