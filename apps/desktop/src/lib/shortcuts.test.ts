@@ -20,6 +20,7 @@ describe('shortcutFor', () => {
     expect(press('S', { metaKey: true })).toBe('save');
     expect(press('n', { ctrlKey: true })).toBe('newRequest');
     expect(press('e', { ctrlKey: true })).toBe('environment');
+    expect(press('k', { ctrlKey: true })).toBe('search');
   });
 
   it('ignores other keys and modifiers', () => {

@@ -6,6 +6,7 @@
   import RecipientsDialog from '../components/organisms/RecipientsDialog.svelte';
   import CurlImportDialog from '../components/organisms/CurlImportDialog.svelte';
   import DefaultsDialog from '../components/organisms/DefaultsDialog.svelte';
+  import QuickSearch from '../components/organisms/QuickSearch.svelte';
   import RequestEditor from '../components/organisms/RequestEditor.svelte';
   import ResponseViewer from '../components/organisms/ResponseViewer.svelte';
   import Sidebar from '../components/organisms/Sidebar.svelte';
@@ -65,6 +66,9 @@
       case 'send':
         if (!tab || tab.sending) return;
         void workspace.send(tab);
+        break;
+      case 'search':
+        workspace.searching = true;
         break;
       case 'environment': {
         // Only saved requests of a collection have an environment picker.
@@ -129,6 +133,7 @@
     />
   {/if}
   <CurlImportDialog curl={workspace.curl} />
+  <QuickSearch {workspace} />
   {#if workspace.defaults.editing}
     <DefaultsDialog defaults={workspace.defaults} assist={workspace.scriptAssist} />
   {/if}

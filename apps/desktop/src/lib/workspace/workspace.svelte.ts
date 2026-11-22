@@ -63,6 +63,10 @@ export class Workspace {
   readonly drag = new TreeDrag();
   /** Requests sent before (sidebar). */
   readonly history: HistoryState;
+  /** The quick search (Ctrl+K) is open. */
+  searching = $state(false);
+  /** The filter above the sidebar tree. */
+  treeFilter = $state('');
   /** The environment being edited, if the editor is open. */
   editing = $state<EnvironmentEdit | null>(null);
   readonly #api: Api;

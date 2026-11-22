@@ -2,7 +2,7 @@
 // Ctrl on Windows and Linux, Cmd on macOS.
 
 /** What a shortcut does. */
-export type ShortcutAction = 'send' | 'save' | 'newRequest' | 'environment';
+export type ShortcutAction = 'send' | 'save' | 'newRequest' | 'environment' | 'search';
 
 type KeyEvent = Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'shiftKey' | 'altKey'>;
 
@@ -20,6 +20,8 @@ export function shortcutFor(event: KeyEvent): ShortcutAction | null {
       return 'newRequest';
     case 'e':
       return 'environment';
+    case 'k':
+      return 'search';
     default:
       return null;
   }

@@ -82,6 +82,8 @@ pub enum TreeItemView {
         name: String,
         /// Method, e.g. `GET`, for the label in the tree.
         method: String,
+        /// URL as entered, for searching.
+        url: String,
         /// The file is never written.
         read_only: bool,
     },
@@ -142,6 +144,7 @@ fn tree(items: &[Item], opened: &OpenedCollection) -> Vec<TreeItemView> {
                 id: request.id.to_string(),
                 name: request.name.clone(),
                 method: request.method.to_string(),
+                url: request.url.clone(),
                 read_only: read_only(request.id),
             },
         })
