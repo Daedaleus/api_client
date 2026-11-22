@@ -4,13 +4,13 @@ use std::collections::VecDeque;
 use std::sync::Mutex;
 
 use super::lock;
-use crate::ports::{AssistError, ScriptAssist, ScriptCompletion, ScriptDiagnostic};
+use crate::ports::{AssistError, ScriptAssist, ScriptCheck, ScriptCompletion, ScriptDiagnostic};
 
 /// A [`ScriptAssist`] with queued answers; records what it was asked.
 /// Without a queued answer it finds nothing and suggests nothing.
 #[derive(Debug, Default)]
 pub struct FakeScriptAssist {
-    diagnostics: Mutex<VecDeque<Result<Vec<ScriptDiagnostic>, AssistError>>>,
+    checks: Mutex<VecDeque<Result<ScriptCheck, AssistError>>>,
     completions: Mutex<VecDeque<Result<Vec<ScriptCompletion>, AssistError>>>,
     asked: Mutex<Vec<(String, Option<usize>)>>,
 }
@@ -22,10 +22,16 @@ impl FakeScriptAssist {
         Self::default()
     }
 
-    /// Queues the answer to the next check.
+    /// Queues the answer to the next check (a full check).
     #[must_use]
     pub fn diagnostics(self, answer: Result<Vec<ScriptDiagnostic>, AssistError>) -> Self {
-        lock(&self.diagnostics).push_back(answer);
+        self.check_answer(answer.map(ScriptCheck::complete))
+    }
+
+    /// Queues the answer to the next check.
+    #[must_use]
+    pub fn check_answer(self, answer: Result<ScriptCheck, AssistError>) -> Self {
+        lock(&self.checks).push_back(answer);
         self
     }
 
@@ -47,12 +53,12 @@ impl ScriptAssist for FakeScriptAssist {
     fn check(
         &self,
         source: String,
-    ) -> impl Future<Output = Result<Vec<ScriptDiagnostic>, AssistError>> + Send {
+    ) -> impl Future<Output = Result<ScriptCheck, AssistError>> + Send {
         lock(&self.asked).push((source, None));
         std::future::ready(
-            lock(&self.diagnostics)
+            lock(&self.checks)
                 .pop_front()
-                .unwrap_or(Ok(Vec::new())),
+                .unwrap_or(Ok(ScriptCheck::default())),
         )
     }
 

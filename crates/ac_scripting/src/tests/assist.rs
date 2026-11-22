@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 use std::sync::LazyLock;
+use std::time::Duration;
 
 use super::*;
 
@@ -12,11 +13,22 @@ static ASSIST: LazyLock<TsAssist> = LazyLock::new(|| {
     })
 });
 
+/// A full check of `source` (waits until the service has started).
+async fn full_check(assist: &TsAssist, source: &str) -> Result<ScriptCheck, AssistError> {
+    loop {
+        let check = assist.check(source.into()).await?;
+        if !check.partial {
+            return Ok(check);
+        }
+        std::thread::sleep(Duration::from_millis(20));
+    }
+}
+
 async fn messages(source: &str) -> Vec<(String, usize, usize)> {
-    ASSIST
-        .check(source.into())
+    full_check(&ASSIST, source)
         .await
         .unwrap()
+        .diagnostics
         .into_iter()
         .map(|diagnostic| (diagnostic.message, diagnostic.from, diagnostic.to))
         .collect()
@@ -115,7 +127,7 @@ async fn a_checker_that_cannot_load_says_so_every_time() {
     let broken = TsAssist::new(|| Err("no TypeScript here".into()));
     for _ in 0..2 {
         assert_eq!(
-            broken.check(String::new()).await.unwrap_err(),
+            full_check(&broken, "").await.unwrap_err(),
             AssistError("no TypeScript here".into())
         );
     }
@@ -129,7 +141,30 @@ async fn a_checker_that_cannot_load_says_so_every_time() {
             libraries: Vec::new(),
         })
     });
-    let error = invalid.check(String::new()).await.unwrap_err();
+    let error = full_check(&invalid, "").await.unwrap_err();
     assert!(error.0.starts_with("cannot start"), "{error}");
     assert_eq!(stopped().0, "the checker stopped");
+}
+
+#[tokio::test]
+async fn syntax_errors_come_at_once_while_the_service_starts() {
+    let (release, wait) = std::sync::mpsc::channel::<()>();
+    let slow = TsAssist::new(move || {
+        // Starts only when the test says so.
+        let _ = wait.recv();
+        Err("stopped on purpose".into())
+    });
+    assert!(!slow.is_started());
+    let first = slow.check("const ä = 1;\nconst = ;".into()).await.unwrap();
+    assert!(first.partial);
+    assert_eq!(first.diagnostics.len(), 1, "{first:?}");
+    assert!(first.diagnostics[0].from >= 13, "{first:?}");
+    // Still starting: again at once.
+    assert!(slow.check("1;".into()).await.unwrap().partial);
+    release.send(()).unwrap();
+    assert_eq!(
+        full_check(&slow, "1;").await.unwrap_err(),
+        AssistError("stopped on purpose".into())
+    );
+    assert!(slow.is_started());
 }

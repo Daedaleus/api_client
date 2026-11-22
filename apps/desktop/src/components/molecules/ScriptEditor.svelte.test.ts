@@ -37,14 +37,28 @@ describe('ScriptEditor', () => {
 
   it('marks what the checker finds and offers its completions', async () => {
     const assist: ScriptAssist = {
-      check: vi.fn(async () => [
-        { from: 4, to: 9, severity: 'error' as const, message: "Property 'methd' does not exist" },
-      ]),
+      check: vi
+        .fn()
+        // The checker is still starting: nothing found yet, asked again.
+        .mockResolvedValueOnce({ items: [], partial: true })
+        .mockResolvedValue({
+          items: [
+            {
+              from: 4,
+              to: 9,
+              severity: 'error' as const,
+              message: "Property 'methd' does not exist",
+            },
+          ],
+          partial: false,
+        }),
       complete: vi.fn(async () => [{ label: 'setHeader', kind: 'function' as const }]),
     };
     const { view } = setup('req.methd', assist);
     forceLinting(view);
-    await waitFor(() => expect(diagnosticCount(view.state)).toBe(1));
+    // Checked again after the partial answer (recheck and check delay).
+    await waitFor(() => expect(diagnosticCount(view.state)).toBe(1), { timeout: 3000 });
+    expect(assist.check).toHaveBeenCalledTimes(2);
     expect(assist.check).toHaveBeenCalledWith('req.methd');
 
     view.dispatch({

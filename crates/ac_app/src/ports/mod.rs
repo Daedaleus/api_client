@@ -16,8 +16,8 @@ pub mod secrets;
 pub mod store;
 
 pub use assist::{
-    AssistError, CompletionKind, NoAssist, ScriptAssist, ScriptCompletion, ScriptDiagnostic,
-    Severity,
+    AssistError, CompletionKind, NoAssist, ScriptAssist, ScriptCheck, ScriptCompletion,
+    ScriptDiagnostic, Severity,
 };
 pub use http::{HttpSender, TransportError};
 pub use login::{BrowserLogin, LoginError, PendingLogin};

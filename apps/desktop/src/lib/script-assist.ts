@@ -10,9 +10,16 @@ import { toUserText } from './errors';
 import { i18n } from './i18n/i18n.svelte';
 import type { CompletionView, DiagnosticView } from './types';
 
+/** The answer to a check. */
+export interface Checked {
+  items: DiagnosticView[];
+  /** Only syntax errors: the checker is still starting, ask again soon. */
+  partial: boolean;
+}
+
 /** Checks and completes scripts. */
 export interface ScriptAssist {
-  check(source: string): Promise<DiagnosticView[]>;
+  check(source: string): Promise<Checked>;
   complete(source: string, offset: number): Promise<CompletionView[]>;
 }
 
@@ -22,9 +29,12 @@ export function apiAssist(api: Api): ScriptAssist {
     async check(source) {
       try {
         const result = await api.assist({ type: 'check', source });
-        return result.type === 'diagnostics' ? result.items : [];
+        return result.type === 'diagnostics'
+          ? { items: result.items, partial: result.partial }
+          : { items: [], partial: false };
       } catch (error) {
-        return [{ from: 0, to: 0, severity: 'info', message: i18n.text(toUserText(error)) }];
+        const message = i18n.text(toUserText(error));
+        return { items: [{ from: 0, to: 0, severity: 'info', message }], partial: false };
       }
     },
     async complete(source, offset) {
