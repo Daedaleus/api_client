@@ -20,6 +20,11 @@ export interface PickOptions {
   filters?: FileFilter[];
 }
 
+/** A save dialog: like a pick, with a suggested file name. */
+export interface SaveOptions extends PickOptions {
+  defaultPath?: string;
+}
+
 /**
  * Everything the UI needs from the backend and the host. The Tauri
  * implementation lives in `tauri.ts`; tests use a fake. Components never call
@@ -40,4 +45,6 @@ export interface Api {
   pickFolder(options?: PickOptions): Promise<string | null>;
   /** Lets the user pick a file; resolves to its path, or `null` if cancelled. */
   pickFile(options?: PickOptions): Promise<string | null>;
+  /** Lets the user choose where to save a file; resolves to its path, or `null` if cancelled. */
+  pickSaveFile(options?: SaveOptions): Promise<string | null>;
 }

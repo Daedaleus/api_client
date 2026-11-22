@@ -19,7 +19,8 @@ code. No account, no cloud: everything stays on your machine.
    which value wins, environments, encrypted secrets for a team.
 5. [Scripts and tests](../scripting.md) – TypeScript before the request and
    after the response, tests, scripts from Postman and Bruno.
-6. [Import and export](import-export.md) – Postman, Bruno, OpenAPI, cURL.
+6. [Import and export](import-export.md) – Postman (also export), Bruno,
+   OpenAPI, cURL.
 7. [History](history.md) – every request you sent.
 8. [Keyboard shortcuts](shortcuts.md)
 9. [Settings](settings.md) – language, proxy, extra CA certificates.

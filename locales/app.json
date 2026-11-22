@@ -26,6 +26,29 @@
     "de": "„{item}“: Body-Art {mode}",
     "en": "“{item}”: body type {mode}"
   },
+  "collection.export_postman": { "de": "Als Postman-Collection exportieren …", "en": "Export as Postman collection …" },
+  "export.title_postman": { "de": "Als Postman-Collection exportieren", "en": "Export as Postman collection" },
+  "export.done": { "de": "Export abgeschlossen", "en": "Export finished" },
+  "export.left_out_intro": {
+    "de": "Die Datei ist geschrieben. Nicht enthalten:",
+    "en": "The file was written. Not included:"
+  },
+  "export.secret_value": {
+    "de": "„{item}“: Der Wert des Secrets {name} wird nicht exportiert",
+    "en": "“{item}”: the value of the secret {name} is not exported"
+  },
+  "export.timeout": {
+    "de": "„{item}“: Das Zeitlimit hat dort keinen Platz",
+    "en": "“{item}”: the time limit has no place there"
+  },
+  "export.redirects": {
+    "de": "„{item}“: Die Einstellung für Weiterleitungen hat dort nur bei Ordnern und Requests Platz",
+    "en": "“{item}”: the redirect setting has a place there only on folders and requests"
+  },
+  "export.certificate_check": {
+    "de": "„{item}“: Die Zertifikatsprüfung hat dort nur bei Ordnern und Requests Platz",
+    "en": "“{item}”: the certificate check has a place there only on folders and requests"
+  },
   "import.relative_server": {
     "de": "„{item}“: Der Server „{url}“ ist relativ zum Ort der Beschreibung. baseUrl ist vorläufig http://localhost{url} – bitte den Host in den Variablen der Collection anpassen.",
     "en": "“{item}”: the server “{url}” is relative to where the description is served. baseUrl is http://localhost{url} for now – please adjust the host in the collection's variables."

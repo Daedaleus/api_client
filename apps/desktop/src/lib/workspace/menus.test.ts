@@ -25,6 +25,7 @@ function workspace() {
     remove: vi.fn(),
     closeCollection: vi.fn(),
     saveCollectionAs: vi.fn(),
+    exportCollection: vi.fn(),
   };
 }
 
@@ -69,11 +70,13 @@ describe('sidebar menus', () => {
       'new-request',
       'new-folder',
       'settings',
+      'export-postman',
       'close',
     ]);
     expect(fake.newRequest).toHaveBeenCalledWith('c1', 'c1');
     expect(fake.newFolder).toHaveBeenCalledWith('c1', 'c1');
     expect(fake.defaults.open).toHaveBeenCalledWith('c1', 'c1');
+    expect(fake.exportCollection).toHaveBeenCalledWith('c1');
     expect(fake.closeCollection).toHaveBeenCalledWith('c1');
   });
 

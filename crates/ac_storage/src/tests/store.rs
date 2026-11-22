@@ -185,6 +185,14 @@ fn imports_read_text_files_and_write_new_collections() {
         .unwrap_err();
     assert_eq!(error.kind, StoreErrorKind::Io);
 
+    // Exports replace the picked file; a missing folder is an error.
+    store.write_text(&file, "exported").unwrap();
+    assert_eq!(std::fs::read_to_string(&file).unwrap(), "exported");
+    let error = store
+        .write_text(&temp.path().join("missing").join("x.json"), "x")
+        .unwrap_err();
+    assert_eq!(error.kind, StoreErrorKind::Io);
+
     let mut collection = store
         .create_collection(&temp.path().join("source"), "Source")
         .unwrap()

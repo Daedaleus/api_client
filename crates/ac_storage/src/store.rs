@@ -159,6 +159,10 @@ impl CollectionStore for FileStore {
             .map_err(|error| store_error(crate::error::StorageError::io(file, error)))
     }
 
+    fn write_text(&self, file: &Path, text: &str) -> Result<(), StoreError> {
+        crate::document::write_atomically(file, text).map_err(store_error)
+    }
+
     fn read_secrets(&self, environment_file: &Path) -> Result<Option<Vec<u8>>, StoreError> {
         secrets_file::read_secrets(environment_file).map_err(store_error)
     }

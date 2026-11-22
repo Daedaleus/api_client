@@ -385,6 +385,12 @@ impl CollectionStore for MemoryStore {
             .ok_or_else(|| not_found(file))
     }
 
+    fn write_text(&self, file: &Path, text: &str) -> Result<(), StoreError> {
+        self.check_failure()?;
+        lock(&self.files).insert(file.to_owned(), text.to_owned());
+        Ok(())
+    }
+
     fn read_secrets(&self, environment_file: &Path) -> Result<Option<Vec<u8>>, StoreError> {
         self.check_failure()?;
         Ok(lock(&self.secrets).get(environment_file).cloned())

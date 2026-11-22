@@ -42,5 +42,13 @@ relative server (`/api/v3`) is resolved against that URL.
   request. Options without a counterpart are named.
 - *Copy as cURL* in the request editor does the opposite.
 
-Export to other tools' formats is planned
-([issues](https://github.com/Daedaleus/api_client/issues)).
+## Export to Postman
+
+*Export as Postman collection …* in a collection's menu writes the
+collection as a Postman collection (v2.1) – to hand it to someone who uses
+Postman. Folders, requests, headers, bodies, auth, variables, scripts (as
+written) and the redirect and certificate settings of folders and requests
+are included. **Secret values are never written**: secret variables are
+exported without a value. What Postman has no place for – time limits, the
+collection's own redirect and certificate settings – is listed afterwards.
+Importing the file again gives the same collection.

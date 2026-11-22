@@ -10,9 +10,9 @@ use serde::{Deserialize, Serialize};
 use crate::text::UserText;
 
 use crate::view::{
-    AuthDraft, CertificateCheckView, CollectionView, EnvironmentDraft, HistoryItemView,
-    OutgoingRequest, RecipientsView, RequestDraft, RunOutcomeView, ScriptsDraft, SettingsView,
-    SnippetLanguageView, TransportDraft, VariableDraft,
+    AuthDraft, CertificateCheckView, CollectionView, EnvironmentDraft, ExportFormatView,
+    HistoryItemView, OutgoingRequest, RecipientsView, RequestDraft, RunOutcomeView, ScriptsDraft,
+    SettingsView, SnippetLanguageView, TransportDraft, VariableDraft,
 };
 
 /// Something the user wants the application to do.
@@ -156,6 +156,16 @@ pub enum Command {
         #[serde(default)]
         path: Option<String>,
     },
+    /// Write a collection in another tool's format to `file` (replacing
+    /// it); what the format has no place for is listed.
+    ExportCollection {
+        /// The collection.
+        collection_id: String,
+        /// The format.
+        format: ExportFormatView,
+        /// The file to write.
+        file: String,
+    },
     /// Save an unsaved collection: move it to `path` (which must not exist
     /// or be an empty folder).
     SaveCollectionAs {
@@ -216,6 +226,11 @@ pub enum CommandAck {
         collection: Box<CollectionView>,
         /// What could not be taken over, to show the user.
         skipped: Vec<UserText>,
+    },
+    /// A collection was exported.
+    CollectionExported {
+        /// What the format has no place for, to show the user.
+        left_out: Vec<UserText>,
     },
     /// A collection was closed.
     CollectionClosed {

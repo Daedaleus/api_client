@@ -10,16 +10,19 @@
 //!
 //! - [`bruno`]: Bruno collections (a folder of `.bru` files) with their
 //!   environments.
+//! - [`export`]: a collection in another tool's format (Postman v2.1).
 //! - [`snippet`]: a resolved request as code (cURL, JavaScript, Python, Go,
 //!   `HTTPie`).
 
 pub mod bruno;
 pub mod curl;
+pub mod export;
 pub mod import;
 mod openapi;
 mod postman;
 pub mod snippet;
 
 pub use import::{
-    ImportError, Imported, Skipped, SkippedKind, import_collection, import_collection_from,
+    ImportError, Imported, ItemSetting, Skipped, SkippedKind, import_collection,
+    import_collection_from,
 };
