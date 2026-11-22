@@ -34,7 +34,14 @@ export function newMenu(workspace: Workspace): MenuItem[] {
 /** What can be done with an open collection. */
 export function collectionMenu(workspace: Workspace, collection: CollectionView): MenuItem[] {
   const id = collection.id;
+  const unsaved: MenuItem[] = collection.temporary
+    ? [
+        entry('save-as', i18n.t('menu.save_collection_as'), () => workspace.saveCollectionAs(id)),
+        separator,
+      ]
+    : [];
   return [
+    ...unsaved,
     entry('new-request', i18n.t('collection.new_request'), () => workspace.newRequest(id, id)),
     entry('new-folder', i18n.t('collection.new_folder'), () => workspace.newFolder(id, id)),
     entry('settings', i18n.t('collection.variables'), () => workspace.defaults.open(id, id)),

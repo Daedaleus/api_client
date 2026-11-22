@@ -297,3 +297,37 @@ fn authorization_code_flows_become_oauth2_sign_ins() {
         })
     );
 }
+
+#[test]
+fn relative_servers_get_a_host_and_are_pointed_out() {
+    let import = |servers: &str| {
+        import_collection(&format!(
+            r#"{{"openapi": "3.0.4", "info": {{"title": "Petstore"}}, "paths": {{}}, "servers": {servers}}}"#
+        ))
+        .unwrap()
+    };
+    let petstore = import(r#"[{"url": "/api/v3"}]"#);
+    assert_eq!(
+        petstore.collection.variables,
+        [Variable::plain("baseUrl", "http://localhost/api/v3")]
+    );
+    assert_eq!(
+        petstore.skipped,
+        [skipped(
+            "Petstore",
+            SkippedKind::RelativeServer("/api/v3".into())
+        )]
+    );
+
+    let root = import(r#"[{"url": "/"}]"#);
+    assert_eq!(
+        root.collection.variables,
+        [Variable::plain("baseUrl", "http://localhost")]
+    );
+    let absolute = import(r#"[{"url": "https://api.example.com/v1/"}]"#);
+    assert_eq!(
+        absolute.collection.variables,
+        [Variable::plain("baseUrl", "https://api.example.com/v1")]
+    );
+    assert_eq!(absolute.skipped.len(), 0);
+}

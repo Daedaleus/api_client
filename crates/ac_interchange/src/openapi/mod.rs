@@ -3,7 +3,9 @@
 //! Every operation becomes a request, grouped in folders by its first tag
 //! (in the order of the description's `tags`, then of appearance);
 //! operations without a tag stay at the top. The first server becomes the
-//! collection variable `baseUrl`. Path parameters and required query
+//! collection variable `baseUrl`; a relative one (`/api/v3`, relative to
+//! where the description is served, which an imported file does not tell)
+//! gets `http://localhost` in front and is pointed out. Path parameters and required query
 //! parameters become `{{variables}}` of the request with their example as
 //! value; header parameters become headers. Bodies are filled with the
 //! example of the description, or one built from its schema. Security
@@ -23,7 +25,7 @@ use ac_domain::environment::Variable;
 use ac_domain::tls::CertificateCheck;
 use serde_json::Value;
 
-use crate::import::{Imported, Skipped};
+use crate::import::{Imported, Skipped, SkippedKind};
 use schema::Document;
 
 /// HTTP methods of a path item, in a stable order.
@@ -85,11 +87,18 @@ pub(crate) fn from_value(root: &Value) -> Option<Imported> {
             folders.add(tag, Item::Request(converted));
         }
     }
+    let (base_url, relative) = server_url(root);
+    if let Some(url) = relative {
+        skipped.push(Skipped {
+            item: name.clone(),
+            what: SkippedKind::RelativeServer(url),
+        });
+    }
     Some(Imported {
         collection: Collection {
             id: ItemId::new(),
             items: folders.into_items(),
-            variables: vec![Variable::plain(BASE_URL, server_url(root))],
+            variables: vec![Variable::plain(BASE_URL, base_url)],
             auth,
             certificate_check: CertificateCheck::Inherit,
             name,
@@ -99,10 +108,11 @@ pub(crate) fn from_value(root: &Value) -> Option<Imported> {
     })
 }
 
-/// The first server's URL with its variables' defaults filled in.
-fn server_url(root: &Value) -> String {
+/// The first server's URL with its variables' defaults filled in, and the
+/// URL as given if it was relative (then put below [`NO_SERVER`]).
+fn server_url(root: &Value) -> (String, Option<String>) {
     let Some(server) = root.pointer("/servers/0") else {
-        return NO_SERVER.to_owned();
+        return (NO_SERVER.to_owned(), None);
     };
     let mut url = server
         .get("url")
@@ -119,7 +129,17 @@ fn server_url(root: &Value) -> String {
             url = url.replace(&format!("{{{name}}}"), default);
         }
     }
-    url.trim_end_matches('/').to_owned()
+    let url = url.trim_end_matches('/');
+    if url.contains("://") {
+        return (url.to_owned(), None);
+    }
+    let path = url.trim_start_matches('/');
+    let absolute = if path.is_empty() {
+        NO_SERVER.to_owned()
+    } else {
+        format!("{NO_SERVER}/{path}")
+    };
+    (absolute, Some(url.to_owned()))
 }
 
 /// Requests sorted into folders by tag, keeping the order of `tags`.

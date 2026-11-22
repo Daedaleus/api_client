@@ -88,6 +88,8 @@ pub mod keys {
     pub const IMPORT_SKIPPED_HEADERS: &str = "import.skipped_headers";
     /// An import left out a body. Arguments: `item`, `mode`.
     pub const IMPORT_SKIPPED_BODY: &str = "import.skipped_body";
+    /// A relative `OpenAPI` server. Placeholders: `item`, `url`.
+    pub const IMPORT_RELATIVE_SERVER: &str = "import.relative_server";
     /// Any other transport failure. Argument: `detail`.
     pub const REQUEST: &str = "error.request";
     /// No OAuth 2 access token. Placeholder: `detail`.
@@ -119,6 +121,8 @@ pub mod keys {
     pub const NOTHING_TO_RUN: &str = "error.nothing_to_run";
     /// The collection is not open (any more).
     pub const UNKNOWN_COLLECTION: &str = "error.unknown_collection";
+    /// "Save as" for a saved collection.
+    pub const ALREADY_SAVED: &str = "error.already_saved";
     /// The item does not exist (any more), e.g. changed outside the app.
     pub const UNKNOWN_ITEM: &str = "error.unknown_item";
     /// New items can only be created in the collection or a folder.
@@ -128,7 +132,7 @@ pub mod keys {
 
     /// All keys with the names of their placeholders, checked against the
     /// translation file by a test.
-    pub const ALL: [(&str, &[&str]); 41] = [
+    pub const ALL: [(&str, &[&str]); 43] = [
         (URL_EMPTY, &[]),
         (URL_INVALID, &["reason"]),
         (URL_SCHEME, &["scheme"]),
@@ -151,6 +155,7 @@ pub mod keys {
         (IMPORT_SKIPPED_SCRIPTS, &["item"]),
         (IMPORT_SKIPPED_AUTH, &["item", "kind"]),
         (IMPORT_SKIPPED_BODY, &["item", "mode"]),
+        (IMPORT_RELATIVE_SERVER, &["item", "url"]),
         (IMPORT_SKIPPED_HEADERS, &["item"]),
         (REQUEST, &["detail"]),
         (OAUTH_TOKEN, &["detail"]),
@@ -167,6 +172,7 @@ pub mod keys {
         (UNKNOWN_ENVIRONMENT, &["name"]),
         (NOTHING_TO_RUN, &["path"]),
         (UNKNOWN_COLLECTION, &[]),
+        (ALREADY_SAVED, &[]),
         (UNKNOWN_ITEM, &[]),
         (NOT_A_FOLDER, &[]),
         (NAME_EMPTY, &[]),

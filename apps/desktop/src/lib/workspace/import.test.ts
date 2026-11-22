@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import DialogHost from '../../components/organisms/DialogHost.svelte';
-import { FakeApi, shop } from '../../test/fake-api';
+import { FakeApi, memoryStorage, shop } from '../../test/fake-api';
 import { i18n } from '../i18n/i18n.svelte';
 import { Workspace } from './workspace.svelte';
 
@@ -18,10 +18,8 @@ const skipped = [{ key: 'import.skipped_scripts', args: { item: 'Login' } }];
 describe('collection import', () => {
   beforeEach(() => i18n.setLocale('en'));
 
-  it('does nothing when the file or the folder is not chosen', async () => {
+  it('does nothing when no file is chosen', async () => {
     const { api, workspace } = setup();
-    await workspace.importCollection('postman');
-    api.file = 'C:\\exports\\shop.json';
     await workspace.importCollection('postman');
     expect(api.commands).toEqual([]);
   });
@@ -30,16 +28,15 @@ describe('collection import', () => {
     const { api, workspace } = setup();
     render(DialogHost, { dialogs: workspace.dialogs });
     api.file = 'C:\\exports\\shop.json';
-    api.folder = 'C:\\apis\\shop';
     api.answers.push({ type: 'collectionImported', collection: shop(), skipped });
     const importing = workspace.importCollection('postman');
     expect(await screen.findByRole('dialog')).toHaveTextContent('Import finished');
-    expect(screen.getByText('“Login”: scripts (scripting comes later)')).toBeInTheDocument();
+    expect(screen.getByText('“Login”: scripts (not taken over yet)')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'OK' }));
     await importing;
     expect(api.commands).toEqual([
-      { type: 'importCollection', file: 'C:\\exports\\shop.json', path: 'C:\\apis\\shop' },
+      { type: 'importCollection', file: 'C:\\exports\\shop.json', path: null },
     ]);
     expect(workspace.collections.find('c1')?.name).toBe('Shop');
     expect(workspace.dialogs.current).toBeNull();
@@ -62,7 +59,7 @@ describe('collection import', () => {
     expect(workspace.collections.error?.args.detail).toBe('unexpected answer runStarted');
   });
 
-  it('offers a file filter per format and names both dialogs', async () => {
+  it('offers a file filter per format and asks for no target folder', async () => {
     const { api, workspace } = setup();
     api.file = 'C:\\exports\\shop.yaml';
     api.folder = 'C:\\apis\\shop';
@@ -79,8 +76,53 @@ describe('collection import', () => {
           ],
         },
       },
-      { kind: 'folder', options: { title: 'Choose the folder for the new collection' } },
     ]);
+  });
+
+  it('saves an unsaved collection where the user chooses and forgets it unsaved', async () => {
+    const storage = memoryStorage();
+    const api = new FakeApi();
+    const workspace = new Workspace(api, storage);
+    api.file = 'C:\\exports\\shop.json';
+    const unsaved = { ...shop(), temporary: true, root: 'C:\\Temp\\api-client-unsaved\\x' };
+    api.answers.push({ type: 'collectionImported', collection: unsaved, skipped: [] });
+    await workspace.importCollection('postman');
+    expect(storage.data.get('openCollections')).toBe('[]');
+
+    await workspace.saveCollectionAs('c1');
+    expect(api.commands).toHaveLength(1);
+    api.folder = 'C:\\apis\\shop';
+    api.answers.push({ type: 'collectionChanged', collection: shop(), createdId: null });
+    await workspace.saveCollectionAs('c1');
+    expect(api.commands.at(-1)).toEqual({
+      type: 'saveCollectionAs',
+      collectionId: 'c1',
+      path: 'C:\\apis\\shop',
+    });
+    expect(api.picks.at(-1)).toEqual({
+      kind: 'folder',
+      options: { title: 'Choose the folder for the new collection' },
+    });
+    expect(workspace.collections.find('c1')?.temporary).toBe(false);
+    expect(storage.data.get('openCollections')).toBe(JSON.stringify(['C:\\apis\\shop']));
+  });
+
+  it('asks before closing an unsaved collection', async () => {
+    const { api, workspace } = setup();
+    render(DialogHost, { dialogs: workspace.dialogs });
+    workspace.collections.apply({ ...shop(), temporary: true });
+    const closing = workspace.closeCollection('c1');
+    expect(await screen.findByRole('dialog')).toHaveTextContent('Discard collection?');
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await closing;
+    expect(workspace.collections.find('c1')).toBeDefined();
+
+    const confirmed = workspace.closeCollection('c1');
+    await screen.findByRole('dialog');
+    await userEvent.click(screen.getByRole('button', { name: 'OK' }));
+    await confirmed;
+    expect(api.commands.at(-1)).toEqual({ type: 'closeCollection', collectionId: 'c1' });
+    expect(workspace.collections.find('c1')).toBeUndefined();
   });
 
   it('imports a Bruno collection from its folder', async () => {

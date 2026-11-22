@@ -40,6 +40,7 @@ export function shop(): CollectionView {
     name: 'Shop',
     root: 'C:\\apis\\shop',
     problems: [],
+    temporary: false,
     variables: [],
     auth: { kind: 'inherit' },
     certificateCheck: 'inherit',

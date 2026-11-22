@@ -146,6 +146,27 @@ pub trait CollectionStore: Send + Sync + 'static {
     /// # Errors
     /// If the list cannot be read or written.
     fn write_recipients(&self, root: &Path, recipients: &[String]) -> Result<(), StoreError>;
+
+    /// A new, unused folder for a collection that is not saved yet
+    /// (imports); see [`CollectionStore::discard_temporary`].
+    ///
+    /// # Errors
+    /// If no such folder can be chosen.
+    fn temporary_root(&self) -> Result<PathBuf, StoreError>;
+
+    /// Moves the whole collection at `from` to `to` (saving an unsaved
+    /// collection). `to` must not exist or be an empty folder.
+    ///
+    /// # Errors
+    /// If `to` holds something or the collection cannot be moved.
+    fn move_collection(&self, from: &Path, to: &Path) -> Result<(), StoreError>;
+
+    /// Deletes an unsaved collection for good. Refuses any folder that
+    /// [`CollectionStore::temporary_root`] did not hand out.
+    ///
+    /// # Errors
+    /// If `root` is no unsaved collection or cannot be deleted.
+    fn discard_temporary(&self, root: &Path) -> Result<(), StoreError>;
 }
 
 impl<T: CollectionStore> CollectionStore for Arc<T> {
@@ -221,6 +242,15 @@ impl<T: CollectionStore> CollectionStore for Arc<T> {
     }
     fn write_recipients(&self, root: &Path, recipients: &[String]) -> Result<(), StoreError> {
         T::write_recipients(self, root, recipients)
+    }
+    fn temporary_root(&self) -> Result<PathBuf, StoreError> {
+        T::temporary_root(self)
+    }
+    fn move_collection(&self, from: &Path, to: &Path) -> Result<(), StoreError> {
+        T::move_collection(self, from, to)
+    }
+    fn discard_temporary(&self, root: &Path) -> Result<(), StoreError> {
+        T::discard_temporary(self, root)
     }
 }
 

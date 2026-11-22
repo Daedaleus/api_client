@@ -20,6 +20,7 @@ function workspace() {
     rename: vi.fn(),
     remove: vi.fn(),
     closeCollection: vi.fn(),
+    saveCollectionAs: vi.fn(),
   };
 }
 
@@ -69,6 +70,13 @@ describe('sidebar menus', () => {
     expect(fake.newFolder).toHaveBeenCalledWith('c1', 'c1');
     expect(fake.defaults.open).toHaveBeenCalledWith('c1', 'c1');
     expect(fake.closeCollection).toHaveBeenCalledWith('c1');
+  });
+
+  it('offers to save an unsaved collection first', () => {
+    const fake = workspace();
+    const items = collectionMenu(fake as unknown as Workspace, { ...shop(), temporary: true });
+    expect(chooseAll(items)[0]).toBe('save-as');
+    expect(fake.saveCollectionAs).toHaveBeenCalledWith('c1');
   });
 
   it('acts on folders and requests in the tree', () => {

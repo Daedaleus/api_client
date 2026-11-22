@@ -121,7 +121,17 @@ pub enum Command {
     ImportCollection {
         /// The file to import.
         file: String,
-        /// The folder for the new collection (created if needed).
+        /// The folder for the new collection (created if needed); without
+        /// one the collection stays unsaved until `SaveCollectionAs`.
+        #[serde(default)]
+        path: Option<String>,
+    },
+    /// Save an unsaved collection: move it to `path` (which must not exist
+    /// or be an empty folder).
+    SaveCollectionAs {
+        /// The collection.
+        collection_id: String,
+        /// Where it goes.
         path: String,
     },
     /// Set who the collection's secrets are encrypted for and re-encrypt

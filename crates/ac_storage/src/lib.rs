@@ -49,6 +49,7 @@ mod scripts;
 pub mod secrets_file;
 pub mod settings;
 pub mod store;
+pub mod temporary;
 #[cfg(test)]
 #[path = "tests/support.rs"]
 mod test_support;

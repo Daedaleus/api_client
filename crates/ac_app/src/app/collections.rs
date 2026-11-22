@@ -32,18 +32,19 @@ impl<
     pub(super) fn open_collection(&self, path: &str) -> Result<CommandAck, AppError> {
         let opened = self.inner.store.open(Path::new(path))?;
         self.remember(&opened);
-        Ok(changed(&opened, None))
+        Ok(self.changed(&opened, None))
     }
 
     pub(super) fn create_collection(&self, path: &str, name: &str) -> Result<CommandAck, AppError> {
         let name = non_empty(name)?;
         let opened = self.inner.store.create_collection(Path::new(path), name)?;
         self.remember(&opened);
-        Ok(changed(&opened, None))
+        Ok(self.changed(&opened, None))
     }
 
     pub(super) fn close_collection(&self, collection_id: &str) -> Result<CommandAck, AppError> {
         let id = collection_id_from(collection_id)?;
+        let root = self.root_of(id)?;
         let mut open = self.open_collections();
         let before = open.len();
         open.retain(|(open_id, _)| *open_id != id);
@@ -51,6 +52,9 @@ impl<
             return Err(AppError::UnknownCollection);
         }
         drop(open);
+        if self.temporary().remove(&id) {
+            self.inner.store.discard_temporary(&root)?;
+        }
         self.forget_runtime_variables(&id.to_string());
         Ok(CommandAck::CollectionClosed {
             collection_id: id.to_string(),
@@ -149,7 +153,7 @@ impl<
     pub(super) fn query_collection(&self, collection_id: &str) -> Result<QueryResult, AppError> {
         let opened = self.current(collection_id)?;
         Ok(QueryResult::Collection {
-            collection: CollectionView::from_opened(&opened),
+            collection: self.view(&opened),
         })
     }
 
@@ -188,7 +192,68 @@ impl<
         created: Option<ItemId>,
     ) -> Result<CommandAck, AppError> {
         let opened = self.inner.store.open(root)?;
-        Ok(changed(&opened, created))
+        Ok(self.changed(&opened, created))
+    }
+
+    /// The view of an opened collection, marked if it is unsaved.
+    pub(super) fn view(&self, opened: &OpenedCollection) -> CollectionView {
+        let mut view = CollectionView::from_opened(opened);
+        view.temporary = self.temporary().contains(&opened.collection.id);
+        view
+    }
+
+    fn changed(&self, opened: &OpenedCollection, created: Option<ItemId>) -> CommandAck {
+        CommandAck::CollectionChanged {
+            collection: Box::new(self.view(opened)),
+            created_id: created.map(|id| id.to_string()),
+        }
+    }
+
+    /// Saves an unsaved collection by moving it to `path`.
+    pub(super) fn save_collection_as(
+        &self,
+        collection_id: &str,
+        path: &str,
+    ) -> Result<CommandAck, AppError> {
+        let id = collection_id_from(collection_id)?;
+        let from = self.root_of(id)?;
+        if !self.temporary().contains(&id) {
+            return Err(AppError::AlreadySaved);
+        }
+        let to = Path::new(path).to_owned();
+        self.inner.store.move_collection(&from, &to)?;
+        for entry in self.open_collections().iter_mut() {
+            if entry.0 == id {
+                entry.1.clone_from(&to);
+            }
+        }
+        self.temporary().remove(&id);
+        self.reload(&to, None)
+    }
+
+    /// Deletes every unsaved collection (when the app ends); errors are
+    /// returned per collection, the others are deleted anyway.
+    #[must_use = "errors say which unsaved collections stayed on disk"]
+    pub fn discard_unsaved(&self) -> Vec<AppError> {
+        let ids: Vec<ItemId> = self.temporary().drain().collect();
+        ids.into_iter()
+            .filter_map(|id| {
+                let root = self.root_of(id).ok()?;
+                self.inner
+                    .store
+                    .discard_temporary(&root)
+                    .err()
+                    .map(AppError::from)
+            })
+            .collect()
+    }
+
+    fn root_of(&self, id: ItemId) -> Result<PathBuf, AppError> {
+        self.open_collections()
+            .iter()
+            .find(|(open_id, _)| *open_id == id)
+            .map(|(_, root)| root.clone())
+            .ok_or(AppError::UnknownCollection)
     }
 
     /// Adds the collection to the open ones (once).
@@ -198,13 +263,6 @@ impl<
         if !open.iter().any(|(open_id, _)| *open_id == id) {
             open.push((id, opened.root.clone()));
         }
-    }
-}
-
-fn changed(opened: &OpenedCollection, created: Option<ItemId>) -> CommandAck {
-    CommandAck::CollectionChanged {
-        collection: Box::new(CollectionView::from_opened(opened)),
-        created_id: created.map(|id| id.to_string()),
     }
 }
 

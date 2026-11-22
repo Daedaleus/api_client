@@ -1,5 +1,6 @@
 <script lang="ts">
   import IconButton from '../atoms/IconButton.svelte';
+  import Alert from '../molecules/Alert.svelte';
   import ContextMenu from '../molecules/ContextMenu.svelte';
   import MenuButton from '../molecules/MenuButton.svelte';
   import TreeNode from '../molecules/TreeNode.svelte';
@@ -28,7 +29,10 @@
   </div>
 
   {#if workspace.collections.error}
-    <p class="sidebar__error" role="alert">{i18n.text(workspace.collections.error)}</p>
+    <Alert
+      text={workspace.collections.error}
+      ondismiss={() => (workspace.collections.error = null)}
+    />
   {/if}
 
   {#if collections.length === 0}
@@ -43,6 +47,16 @@
       >
         <div class="sidebar__collection-header">
           <span class="sidebar__collection-name" title={collection.root}>{collection.name}</span>
+          {#if collection.temporary}
+            <button
+              type="button"
+              class="sidebar__unsaved"
+              title={i18n.t('collection.unsaved_hint')}
+              onclick={() => workspace.saveCollectionAs(collection.id)}
+            >
+              {i18n.t('collection.unsaved')}
+            </button>
+          {/if}
           <IconButton
             icon="plus"
             label={i18n.t('collection.new_request')}
@@ -100,7 +114,6 @@
     color: var(--color-muted);
   }
 
-  .sidebar__error,
   .sidebar__problems {
     margin: 0;
     padding: var(--space-s) var(--space-m);
@@ -135,6 +148,17 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .sidebar__unsaved {
+    flex: none;
+    padding: 0 var(--space-s);
+    border: 1px solid var(--color-warning);
+    border-radius: 9px;
+    background: transparent;
+    color: var(--color-warning);
+    font-size: var(--font-size-s);
+    cursor: pointer;
   }
 
   .sidebar__tree {

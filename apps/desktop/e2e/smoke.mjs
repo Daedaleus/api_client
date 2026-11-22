@@ -27,7 +27,8 @@
 //      opens as a new tab and is sent; a request is copied as a cURL command,
 //  13. a Postman export, an OpenAPI description and a Bruno collection are
 //      imported as new collections on disk (through the real IPC command: native file
-//      dialogs cannot be driven from here),
+//      dialogs cannot be driven from here); an import without a folder stays
+//      unsaved until "save as" moves it,
 //  14. large JSON responses (0.9 MB shown formatted, 10 MB shown truncated)
 //      appear in time without blocking the window for long,
 //  15. scripts: the pre-request script sets a header and a variable used in
@@ -48,7 +49,15 @@
 // Likewise its own key file for secrets, so the user's key is never touched.
 
 import { spawn, spawnSync } from 'node:child_process';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import http from 'node:http';
 import net from 'node:net';
 import os from 'node:os';
@@ -981,6 +990,29 @@ const brunoEnvironment = readFileSync(path.join(fromBruno, 'environments', 'loca
 check(
   brunoEnvironment.includes('baseUrl') && brunoEnvironment.includes('secret = true'),
   'Bruno environment written, secrets marked',
+);
+// Without a target folder an import stays unsaved until "save as".
+const unsavedAck = await evaluate(`window.__TAURI_INTERNALS__.invoke('execute', {
+  command: { type: 'importCollection', file: ${JSON.stringify(openapiFile)}, path: null },
+})`);
+const unsavedRoot = unsavedAck?.collection?.root ?? '';
+check(
+  unsavedAck?.collection?.temporary === true && unsavedRoot.includes('api-client-unsaved'),
+  'import without a folder stays unsaved in a temporary folder',
+);
+const savedAs = path.join(collections, 'saved-from-unsaved');
+const savedAck = await evaluate(`window.__TAURI_INTERNALS__.invoke('execute', {
+  command: {
+    type: 'saveCollectionAs',
+    collectionId: ${JSON.stringify(unsavedAck?.collection?.id ?? '')},
+    path: ${JSON.stringify(savedAs)},
+  },
+})`);
+check(
+  savedAck?.collection?.temporary === false &&
+    readFileSync(path.join(savedAs, 'collection.toml'), 'utf8').includes('Shop API') &&
+    !existsSync(unsavedRoot),
+  'save as moves the collection to the chosen folder',
 );
 check(exitCode === null, 'program still running after importing');
 

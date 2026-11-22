@@ -34,6 +34,9 @@ pub struct CollectionView {
     pub certificate_check: CertificateCheckView,
     /// Files that could not be loaded.
     pub problems: Vec<UserText>,
+    /// Not saved yet (an import): lives in a temporary folder until saved
+    /// with "save as", gone when closed or when the app ends.
+    pub temporary: bool,
 }
 
 /// An entry of the request tree.
@@ -100,6 +103,7 @@ impl CollectionView {
             auth: AuthDraft::from_auth(&collection.auth),
             certificate_check: CertificateCheckView::from_check(collection.certificate_check),
             problems: opened.problems.iter().map(StoreError::user_text).collect(),
+            temporary: false,
         }
     }
 }

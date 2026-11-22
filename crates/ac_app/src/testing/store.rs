@@ -393,6 +393,65 @@ impl CollectionStore for MemoryStore {
         self.set_recipients(root, recipients.to_vec());
         Ok(())
     }
+
+    fn temporary_root(&self) -> Result<PathBuf, StoreError> {
+        self.check_failure()?;
+        Ok(Path::new(TEMPORARY).join(ItemId::new().to_string()))
+    }
+
+    fn move_collection(&self, from: &Path, to: &Path) -> Result<(), StoreError> {
+        self.check_failure()?;
+        if lock(&self.collections).contains_key(to) {
+            return Err(StoreError {
+                kind: StoreErrorKind::AlreadyExists,
+                path: to.to_owned(),
+                detail: "collection exists".into(),
+            });
+        }
+        let moved = |path: &Path| -> Option<PathBuf> {
+            path.strip_prefix(from).ok().map(|rest| to.join(rest))
+        };
+        rekey(&self.collections, moved);
+        rekey(&self.environments, moved);
+        rekey(&self.secrets, moved);
+        rekey(&self.recipients, moved);
+        Ok(())
+    }
+
+    fn discard_temporary(&self, root: &Path) -> Result<(), StoreError> {
+        self.check_failure()?;
+        if !root.starts_with(TEMPORARY) {
+            return Err(StoreError {
+                kind: StoreErrorKind::Io,
+                path: root.to_owned(),
+                detail: "not an unsaved collection".into(),
+            });
+        }
+        let inside = |path: &PathBuf| path.starts_with(root);
+        lock(&self.collections).retain(|path, _| !inside(path));
+        lock(&self.environments).retain(|path, _| !inside(path));
+        lock(&self.secrets).retain(|path, _| !inside(path));
+        lock(&self.recipients).retain(|path, _| !inside(path));
+        Ok(())
+    }
+}
+
+/// Where [`MemoryStore`] puts unsaved collections.
+pub const TEMPORARY: &str = "unsaved";
+
+/// Moves the entries of `map` whose path `moved` maps elsewhere.
+fn rekey<T>(map: &Mutex<HashMap<PathBuf, T>>, moved: impl Fn(&Path) -> Option<PathBuf>) {
+    let mut map = lock(map);
+    let keys: Vec<PathBuf> = map
+        .keys()
+        .filter(|path| moved(path).is_some())
+        .cloned()
+        .collect();
+    for key in keys {
+        if let (Some(target), Some(value)) = (moved(&key), map.remove(&key)) {
+            map.insert(target, value);
+        }
+    }
 }
 
 impl MemoryStore {

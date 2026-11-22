@@ -15,8 +15,8 @@
     "en": "This file cannot be imported: {detail}"
   },
   "import.skipped_scripts": {
-    "de": "„{item}“: Skripte (Scripting folgt später)",
-    "en": "“{item}”: scripts (scripting comes later)"
+    "de": "„{item}“: Skripte (werden noch nicht übernommen)",
+    "en": "“{item}”: scripts (not taken over yet)"
   },
   "import.skipped_auth": {
     "de": "„{item}“: Auth-Art {kind}",
@@ -26,10 +26,14 @@
     "de": "„{item}“: Body-Art {mode}",
     "en": "“{item}”: body type {mode}"
   },
+  "import.relative_server": {
+    "de": "„{item}“: Der Server „{url}“ ist relativ zum Ort der Beschreibung. baseUrl ist vorläufig http://localhost{url} – bitte den Host in den Variablen der Collection anpassen.",
+    "en": "“{item}”: the server “{url}” is relative to where the description is served. baseUrl is http://localhost{url} for now – please adjust the host in the collection's variables."
+  },
   "import.done": { "de": "Import abgeschlossen", "en": "Import finished" },
   "import.skipped_intro": {
-    "de": "Die Collection ist angelegt. Nicht übernommen wurde:",
-    "en": "The collection was created. Not taken over:"
+    "de": "Die Collection ist angelegt. Bitte beachten:",
+    "en": "The collection was created. Please note:"
   },
   "error.curl_invalid": {
     "de": "Das ist kein verwendbarer cURL-Befehl: {detail}",
@@ -217,11 +221,13 @@
   "response.failed": { "de": "Request fehlgeschlagen", "en": "Request failed" },
   "sidebar.title": { "de": "Collections", "en": "Collections" },
   "menu.new": { "de": "Neu", "en": "New" },
+  "alert.dismiss": { "de": "Meldung schließen", "en": "Close message" },
   "menu.new_title": {
     "de": "Neuer Request, neue Collection, öffnen oder importieren",
     "en": "New request, new collection, open or import"
   },
   "menu.new_collection": { "de": "Neue Collection …", "en": "New collection …" },
+  "menu.save_collection_as": { "de": "Speichern unter …", "en": "Save as …" },
   "menu.open_collection": { "de": "Collection öffnen …", "en": "Open collection …" },
   "menu.import": { "de": "Importieren", "en": "Import" },
   "menu.import_postman": { "de": "Postman-Collection …", "en": "Postman collection …" },
@@ -266,6 +272,11 @@
     "en": "Close collection"
   },
   "collection.read_only": { "de": "nur lesbar", "en": "read-only" },
+  "collection.unsaved": { "de": "nicht gespeichert", "en": "not saved" },
+  "collection.unsaved_hint": {
+    "de": "Nur vorläufig – verschwindet beim Schließen und Beenden. Klicken zum Speichern.",
+    "en": "Temporary only – gone when closed or when the app ends. Click to save."
+  },
   "tab.list": { "de": "Offene Requests", "en": "Open requests" },
   "tab.untitled": { "de": "Neuer Request", "en": "New request" },
   "tab.new": { "de": "Neuer Tab", "en": "New tab" },
@@ -405,6 +416,14 @@
   },
   "dialog.new_environment": { "de": "Neue Umgebung", "en": "New environment" },
   "dialog.discard": { "de": "Änderungen verwerfen?", "en": "Discard changes?" },
+  "dialog.discard_collection": {
+    "de": "Collection verwerfen?",
+    "en": "Discard collection?"
+  },
+  "dialog.discard_collection_message": {
+    "de": "Die Collection ist nicht gespeichert und geht beim Schließen verloren.",
+    "en": "The collection is not saved and is lost when closed."
+  },
   "dialog.discard_message": {
     "de": "Es gibt ungespeicherte Änderungen. Trotzdem schließen?",
     "en": "There are unsaved changes. Close anyway?"
@@ -484,6 +503,10 @@
   "error.script_pre_request": {
     "de": "Skript vor dem Request: {detail}",
     "en": "Pre-request script: {detail}"
+  },
+  "error.already_saved": {
+    "de": "Die Collection ist bereits gespeichert.",
+    "en": "The collection is saved already."
   },
   "error.script_assist": {
     "de": "Skriptprüfung nicht möglich: {detail}",

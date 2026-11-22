@@ -26,6 +26,7 @@ mod secrets;
 
 pub use runner::RunPlan;
 
+use std::collections::HashSet;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicU64;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
@@ -89,6 +90,8 @@ struct Inner<H, S, V, B, R, A> {
     /// contents are read anew for every command, so changes made outside the
     /// app are picked up.
     open: Mutex<Vec<(ItemId, PathBuf)>>,
+    /// Open collections that are not saved yet (in a temporary folder).
+    temporary: Mutex<HashSet<ItemId>>,
 }
 
 impl<H, S, V, B, R, A> Clone for App<H, S, V, B, R, A> {
@@ -127,6 +130,7 @@ impl<
                 next_run: AtomicU64::new(1),
                 tokens: TokenCache::default(),
                 open: Mutex::new(Vec::new()),
+                temporary: Mutex::default(),
             }),
         }
     }
@@ -192,7 +196,13 @@ impl<
                 &auth,
                 certificate_check,
             ),
-            Command::ImportCollection { file, path } => self.import_collection(&file, &path),
+            Command::ImportCollection { file, path } => {
+                self.import_collection(&file, path.as_deref())
+            }
+            Command::SaveCollectionAs {
+                collection_id,
+                path,
+            } => self.save_collection_as(&collection_id, &path),
             Command::SetRecipients {
                 collection_id,
                 recipients,
@@ -215,6 +225,14 @@ impl<
             Query::Curl { request } => self.query_curl(&request),
             Query::ParseCurl { text } => interchange::parse_curl(&text),
         }
+    }
+
+    fn temporary(&self) -> MutexGuard<'_, HashSet<ItemId>> {
+        // Ids are inserted or removed whole; a panic leaves the set usable.
+        self.inner
+            .temporary
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
     }
 
     fn open_collections(&self) -> MutexGuard<'_, Vec<(ItemId, PathBuf)>> {

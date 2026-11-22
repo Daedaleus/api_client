@@ -147,6 +147,27 @@ describe('WorkspacePage', () => {
     expect(screen.getByText(/“a.toml” is damaged/)).toBeInTheDocument();
   });
 
+  it('lets error messages be closed', async () => {
+    const api = new FakeApi();
+    // The remembered collection cannot be opened any more.
+    api.answers.push({ fail: { key: 'error.not_a_collection', args: { path: 'C:/gone' } } });
+    render(WorkspacePage, {
+      api,
+      storage: memoryStorage({ openCollections: JSON.stringify(['C:/gone']) }),
+    });
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('gone');
+    await userEvent.click(screen.getByRole('button', { name: 'Close message' }));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+    // The error under the URL closes the same way.
+    api.answers.push({ fail: { key: 'error.url_empty', args: {} } });
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('URL');
+    await userEvent.click(screen.getByRole('button', { name: 'Close message' }));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
   it('invites to open a collection when none is open', async () => {
     render(WorkspacePage, { api: new FakeApi(), storage: null });
     expect(await screen.findByText(/No collection open yet/)).toBeInTheDocument();
