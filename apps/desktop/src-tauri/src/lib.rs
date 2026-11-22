@@ -1,7 +1,7 @@
 //! Desktop app: composition root and thin Tauri adapter.
 //!
-//! Wires the adapters into [`ac_app::App`], exposes three Tauri commands
-//! (`execute`, `query`, `assist`) and forwards every [`AppEvent`] to the window as
+//! Wires the adapters into [`ac_app::App`], exposes four Tauri commands
+//! (`execute`, `query`, `assist`, `import_url`) and forwards every [`AppEvent`] to the window as
 //! [`AppEventMessage`]. No logic lives here – it belongs in `ac_app`.
 //!
 //! The TypeScript side of this interface (`apps/desktop/src/lib/bindings.ts`)
@@ -75,11 +75,21 @@ async fn assist(
     app.assist(request).await.map_err(|error| error.user_text())
 }
 
+/// Imports a collection from a URL (downloads it first). Async: the
+/// download must not block the window.
+#[tauri::command]
+#[specta::specta]
+async fn import_url(app: State<'_, DesktopApp>, url: String) -> Result<CommandAck, UserText> {
+    app.import_from_url(&url)
+        .await
+        .map_err(|error| error.user_text())
+}
+
 /// Commands and events of the app, the single source for both the Tauri
 /// handlers and the TypeScript bindings.
 fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
     tauri_specta::Builder::<tauri::Wry>::new()
-        .commands(collect_commands![execute, query, assist])
+        .commands(collect_commands![execute, query, assist, import_url])
         .events(collect_events![AppEventMessage])
         // Run ids, milliseconds and byte counts stay far below 2^53.
         .dangerously_cast_bigints_to_number()

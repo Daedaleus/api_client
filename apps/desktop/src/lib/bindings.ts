@@ -17,6 +17,11 @@ export const commands = {
 	 *  about a second to start, which must not block the window.
 	 */
 	assist: (request: AssistRequest, options?: InvokeOptions) => __TAURI_INVOKE<AssistResult>("assist", { request }, options),
+	/**
+	 *  Imports a collection from a URL (downloads it first). Async: the
+	 *  download must not block the window.
+	 */
+	importUrl: (url: string, options?: InvokeOptions) => __TAURI_INVOKE<CommandAck_Serialize>("import_url", { url }, options),
 };
 
 /** Events */

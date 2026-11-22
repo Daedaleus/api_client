@@ -53,7 +53,7 @@
         <h2 id="dialog-title" class="dialog-host__title">{i18n.text(current.title)}</h2>
         {#if current.kind === 'name'}
           <label class="dialog-host__field">
-            <span>{i18n.t('dialog.name')}</span>
+            <span>{i18n.text(current.label)}</span>
             <!-- svelte-ignore a11y_autofocus -->
             <input class="dialog-host__input" type="text" bind:value bind:this={input} autofocus />
           </label>

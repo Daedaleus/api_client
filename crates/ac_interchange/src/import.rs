@@ -4,6 +4,7 @@
 use ac_domain::collection::Collection;
 use ac_domain::environment::Environment;
 use serde_json::Value;
+use url::Url;
 
 use crate::{openapi, postman};
 
@@ -67,11 +68,21 @@ pub enum ImportError {
 /// # Errors
 /// [`ImportError`] if the text is none of them.
 pub fn import_collection(text: &str) -> Result<Imported, ImportError> {
+    import_collection_from(text, None)
+}
+
+/// Like [`import_collection`] for a description downloaded from `origin`:
+/// relative `OpenAPI` servers (`/api/v3`) are resolved against it, as a
+/// browser would.
+///
+/// # Errors
+/// [`ImportError`] if the text is none of the formats.
+pub fn import_collection_from(text: &str, origin: Option<&Url>) -> Result<Imported, ImportError> {
     let document = parse(text)?;
     if document.get("swagger").is_some() {
         return Err(ImportError::Swagger2);
     }
-    if let Some(imported) = openapi::from_value(&document) {
+    if let Some(imported) = openapi::from_value(&document, origin) {
         return Ok(imported);
     }
     postman::from_value(&document).ok_or(ImportError::Unknown)

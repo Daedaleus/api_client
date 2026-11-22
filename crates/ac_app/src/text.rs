@@ -90,6 +90,8 @@ pub mod keys {
     pub const IMPORT_SKIPPED_BODY: &str = "import.skipped_body";
     /// A relative `OpenAPI` server. Placeholders: `item`, `url`.
     pub const IMPORT_RELATIVE_SERVER: &str = "import.relative_server";
+    /// An import from a URL got nothing usable. Placeholder: `detail`.
+    pub const IMPORT_DOWNLOAD: &str = "error.import_download";
     /// Any other transport failure. Argument: `detail`.
     pub const REQUEST: &str = "error.request";
     /// No OAuth 2 access token. Placeholder: `detail`.
@@ -132,7 +134,7 @@ pub mod keys {
 
     /// All keys with the names of their placeholders, checked against the
     /// translation file by a test.
-    pub const ALL: [(&str, &[&str]); 43] = [
+    pub const ALL: [(&str, &[&str]); 44] = [
         (URL_EMPTY, &[]),
         (URL_INVALID, &["reason"]),
         (URL_SCHEME, &["scheme"]),
@@ -156,6 +158,7 @@ pub mod keys {
         (IMPORT_SKIPPED_AUTH, &["item", "kind"]),
         (IMPORT_SKIPPED_BODY, &["item", "mode"]),
         (IMPORT_RELATIVE_SERVER, &["item", "url"]),
+        (IMPORT_DOWNLOAD, &["detail"]),
         (IMPORT_SKIPPED_HEADERS, &["item"]),
         (REQUEST, &["detail"]),
         (OAUTH_TOKEN, &["detail"]),
