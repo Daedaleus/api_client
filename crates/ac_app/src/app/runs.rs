@@ -9,10 +9,7 @@ use ac_domain::exchange::Response;
 use ac_domain::scope::Scope;
 use ac_domain::script::ScriptPhase;
 use ac_domain::tls::checks_certificates;
-use std::sync::PoisonError;
 use std::sync::atomic::Ordering;
-
-use crate::ports::SharedCookieJar;
 
 use super::environments::Context;
 use super::secrets::explain;
@@ -129,27 +126,6 @@ impl<
             prepared.cookies = Some(self.cookie_jar(collection));
         }
         Ok(prepared)
-    }
-
-    /// The cookie jar of a collection (`None`: outside a collection),
-    /// created empty when first needed.
-    pub(super) fn cookie_jar(&self, collection: Option<String>) -> SharedCookieJar {
-        self.inner
-            .cookie_jars
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .entry(collection)
-            .or_default()
-            .clone()
-    }
-
-    /// Discards the cookies of a closed collection.
-    pub(super) fn forget_cookies(&self, collection_id: &str) {
-        self.inner
-            .cookie_jars
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .remove(&Some(collection_id.to_owned()));
     }
 }
 

@@ -19,6 +19,7 @@
 mod arrange;
 mod assist;
 mod collections;
+mod cookies;
 mod defaults;
 mod environments;
 mod history;
@@ -260,6 +261,16 @@ impl<
                 collection_id,
                 recipients,
             } => self.set_recipients(&collection_id, &recipients),
+            Command::SaveCookie {
+                collection_id,
+                original,
+                cookie,
+            } => self.save_cookie(collection_id.as_deref(), original.as_ref(), &cookie),
+            Command::DeleteCookie {
+                collection_id,
+                cookie,
+            } => self.delete_cookie(collection_id.as_deref(), &cookie),
+            Command::ClearCookies { collection_id } => self.clear_cookies(collection_id.as_deref()),
             Command::ClearHistory => self.clear_history(),
             Command::SaveSettings { settings } => self.save_settings(&settings),
         }
@@ -277,6 +288,7 @@ impl<
                 request_id,
             } => self.query_request(&collection_id, &request_id),
             Query::Recipients { collection_id } => self.query_recipients(&collection_id),
+            Query::Cookies { collection_id } => self.query_cookies(collection_id.as_deref()),
             Query::Curl { request } => self.query_curl(&request),
             Query::Snippet { language, request } => self.query_snippet(&request, language),
             Query::ParseCurl { text } => interchange::parse_curl(&text),

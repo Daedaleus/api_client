@@ -20,6 +20,7 @@ import { apiAssist, type ScriptAssist } from '../script-assist';
 import { scopeInfo, scopeValues, type VariableInfo, type VariableSource } from '../variables';
 import { CollectionsState } from './collections.svelte';
 import { Dialogs } from './dialogs.svelte';
+import { CookiesState } from './cookies.svelte';
 import { EnvironmentChoice } from './environments.svelte';
 import { exportOptions } from './export-target';
 import {
@@ -56,6 +57,7 @@ export class Workspace {
   readonly environments: EnvironmentChoice;
   /** Who secrets are encrypted for (dialog). */
   readonly recipients: RecipientsState;
+  readonly cookies: CookiesState;
   /** Variables and authentication of a collection or folder (dialog). */
   readonly defaults: DefaultsState;
   /** cURL export and import. */
@@ -87,6 +89,7 @@ export class Workspace {
     this.tabs = new TabsState(api);
     this.environments = new EnvironmentChoice(storage);
     this.recipients = new RecipientsState(api, this.collections);
+    this.cookies = new CookiesState(api, this.dialogs);
     this.defaults = new DefaultsState(api, this.collections);
     this.curl = new CurlState(api, this.tabs);
     this.history = new HistoryState(api, this.tabs, this.dialogs);

@@ -96,6 +96,9 @@ pub enum AppError {
     /// A name is empty.
     #[error("name is empty")]
     EmptyName,
+    /// A cookie entered by hand is not usable.
+    #[error(transparent)]
+    Cookie(#[from] ac_domain::cookie::CookieProblem),
     /// Reading or writing a collection failed.
     #[error(transparent)]
     Store(#[from] StoreError),
@@ -165,6 +168,12 @@ impl AppError {
             Self::NotAFolder => UserText::new(keys::NOT_A_FOLDER),
             Self::MoveIntoItself => UserText::new(keys::MOVE_INTO_ITSELF),
             Self::EmptyName => UserText::new(keys::NAME_EMPTY),
+            Self::Cookie(problem) => UserText::new(match problem {
+                ac_domain::cookie::CookieProblem::Name => keys::COOKIE_NAME,
+                ac_domain::cookie::CookieProblem::Value => keys::COOKIE_VALUE,
+                ac_domain::cookie::CookieProblem::Domain => keys::COOKIE_DOMAIN,
+                ac_domain::cookie::CookieProblem::Path => keys::COOKIE_PATH,
+            }),
             Self::Store(error) => error.user_text(),
         }
     }
