@@ -11,7 +11,7 @@ use crate::text::UserText;
 
 use crate::view::{
     AuthDraft, CertificateCheckView, CollectionView, CookieKeyView, CookieView, EnvironmentDraft,
-    ExportFormatView, HistoryItemView, OutgoingRequest, RecipientsView, RequestDraft,
+    ExampleView, ExportFormatView, HistoryItemView, OutgoingRequest, RecipientsView, RequestDraft,
     RunOutcomeView, ScriptsDraft, SettingsView, SnippetLanguageView, TransportDraft, VariableDraft,
 };
 
@@ -219,6 +219,26 @@ pub enum Command {
         /// The file to write.
         file: String,
     },
+    /// Keep the response of a run as an example of a saved request.
+    SaveExample {
+        /// The collection.
+        collection_id: String,
+        /// The request.
+        request_id: String,
+        /// The run whose response is kept.
+        run_id: RunId,
+        /// The example's name.
+        name: String,
+    },
+    /// Remove an example of a saved request.
+    DeleteExample {
+        /// The collection.
+        collection_id: String,
+        /// The request.
+        request_id: String,
+        /// Its position in the list.
+        index: usize,
+    },
     /// Remove every entry of the request history.
     ClearHistory,
     /// Apply and save the app's settings (checked first: nothing is saved
@@ -262,6 +282,11 @@ pub enum CommandAck {
         collection: Box<CollectionView>,
         /// What could not be taken over, to show the user.
         skipped: Vec<UserText>,
+    },
+    /// The examples of a request changed.
+    ExamplesChanged {
+        /// All of them now.
+        examples: Vec<ExampleView>,
     },
     /// A cookie jar changed.
     CookiesChanged {
@@ -343,6 +368,13 @@ pub enum Query {
         /// The collection.
         collection_id: String,
     },
+    /// The response examples of a saved request.
+    Examples {
+        /// The collection.
+        collection_id: String,
+        /// The request.
+        request_id: String,
+    },
     /// The cookies of a jar that have not expired.
     Cookies {
         /// The collection; `null` for requests outside a collection.
@@ -415,5 +447,10 @@ pub enum QueryResult {
     Cookies {
         /// In the order they were first set.
         cookies: Vec<CookieView>,
+    },
+    /// The examples of a request.
+    Examples {
+        /// In order.
+        examples: Vec<ExampleView>,
     },
 }

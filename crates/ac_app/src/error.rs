@@ -99,6 +99,9 @@ pub enum AppError {
     /// The response of a run is no longer kept.
     #[error("response no longer kept")]
     ResponseGone,
+    /// An example needs a text body.
+    #[error("the body is no text")]
+    ExampleNotText,
     /// A cookie entered by hand is not usable.
     #[error(transparent)]
     Cookie(#[from] ac_domain::cookie::CookieProblem),
@@ -172,6 +175,7 @@ impl AppError {
             Self::MoveIntoItself => UserText::new(keys::MOVE_INTO_ITSELF),
             Self::EmptyName => UserText::new(keys::NAME_EMPTY),
             Self::ResponseGone => UserText::new(keys::RESPONSE_GONE),
+            Self::ExampleNotText => UserText::new(keys::EXAMPLE_NOT_TEXT),
             Self::Cookie(problem) => UserText::new(match problem {
                 ac_domain::cookie::CookieProblem::Name => keys::COOKIE_NAME,
                 ac_domain::cookie::CookieProblem::Value => keys::COOKIE_VALUE,

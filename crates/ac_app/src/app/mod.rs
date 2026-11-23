@@ -22,6 +22,7 @@ mod collections;
 mod cookies;
 mod defaults;
 mod environments;
+mod examples;
 mod history;
 mod interchange;
 mod recipients;
@@ -109,7 +110,7 @@ struct Inner<H, S, V, B, R, A, Y, Z> {
     /// OAuth 2 access tokens, in memory only.
     tokens: TokenCache,
     /// The bodies of the last responses (see `responses`).
-    responses: Mutex<responses::ResponseBodies>,
+    responses: Mutex<responses::KeptResponses>,
     /// Cookie jars per collection (`None`: requests outside a collection),
     /// in memory only – never written into the collection.
     cookie_jars: Mutex<HashMap<Option<String>, SharedCookieJar>>,
@@ -251,6 +252,15 @@ impl<
                     transport,
                 },
             ),
+            other => self.execute_more(other),
+        }
+    }
+
+    /// The commands around the collection tree: import and export,
+    /// recipients, cookies, response bodies and examples, history and
+    /// settings (split from [`App::execute`] to keep it readable).
+    fn execute_more(&self, command: Command) -> Result<CommandAck, AppError> {
+        match command {
             Command::ImportCollection { file, path } => {
                 self.import_collection(&file, path.as_deref())
             }
@@ -278,8 +288,20 @@ impl<
             } => self.delete_cookie(collection_id.as_deref(), &cookie),
             Command::ClearCookies { collection_id } => self.clear_cookies(collection_id.as_deref()),
             Command::SaveResponseBody { run_id, file } => self.save_response_body(run_id, &file),
+            Command::SaveExample {
+                collection_id,
+                request_id,
+                run_id,
+                name,
+            } => self.save_example(&collection_id, &request_id, run_id, &name),
+            Command::DeleteExample {
+                collection_id,
+                request_id,
+                index,
+            } => self.delete_example(&collection_id, &request_id, index),
             Command::ClearHistory => self.clear_history(),
             Command::SaveSettings { settings } => self.save_settings(&settings),
+            tree_command => unreachable!("handled by execute: {tree_command:?}"),
         }
     }
 
@@ -295,6 +317,10 @@ impl<
                 request_id,
             } => self.query_request(&collection_id, &request_id),
             Query::Recipients { collection_id } => self.query_recipients(&collection_id),
+            Query::Examples {
+                collection_id,
+                request_id,
+            } => self.query_examples(&collection_id, &request_id),
             Query::Cookies { collection_id } => self.query_cookies(collection_id.as_deref()),
             Query::Curl { request } => self.query_curl(&request),
             Query::Snippet { language, request } => self.query_snippet(&request, language),

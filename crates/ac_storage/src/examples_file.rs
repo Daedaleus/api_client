@@ -87,7 +87,7 @@ pub fn write(request: &Path, examples: &[ResponseExample]) -> Result<(), Storage
         }
         return Ok(());
     }
-    document::write_atomically(&path, &document_of(examples).to_string())
+    document::write_atomically(&path, document_of(examples).to_string())
 }
 
 fn examples_from(doc: &DocumentMut, path: &Path) -> Result<Vec<ResponseExample>, StorageError> {

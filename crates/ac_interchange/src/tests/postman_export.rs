@@ -41,6 +41,15 @@ fn login() -> Request {
         password: "{{password}}".into(),
     };
     login.docs = "Signs in.".into();
+    login.examples = vec![ac_domain::example::ResponseExample {
+        name: "OK".into(),
+        status: ac_domain::protocol::StatusCode::new(200).unwrap(),
+        headers: vec![ac_domain::exchange::Header::new(
+            "Content-Type",
+            "application/json",
+        )],
+        body: "{\"token\": \"t\"}".into(),
+    }];
     login.scripts = Scripts {
         pre_request: "pm.variables.set('a', 1);\nconsole.log('x');".into(),
         post_response: String::new(),
@@ -293,4 +302,20 @@ fn docs_become_descriptions() {
         "Signs in."
     );
     assert!(root["item"][1].get("description").is_none());
+}
+
+#[test]
+fn examples_become_saved_responses() {
+    let root = exported(&sample());
+    let login = &root["item"][0]["item"][0];
+    assert_eq!(
+        login["response"],
+        json!([{
+            "name": "OK",
+            "code": 200,
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": "{\"token\": \"t\"}",
+        }])
+    );
+    assert!(root["item"][0]["item"][1].get("response").is_none());
 }

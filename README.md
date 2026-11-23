@@ -30,6 +30,8 @@ collections, environments and secrets, scripts, import, shortcuts.
   preview shows the URL as it will be sent.
 - **Secrets encrypted with [age](https://age-encryption.org/)** for several
   recipients, so a team (and CI) can share them safely through git.
+- **Response examples** – keep a response with its request (in a file next
+  to it), imported from and exported to Postman.
 - **Docs** in Markdown for requests, folders and the collection, stored in
   the files and shown formatted (imported from Postman, Insomnia, Bruno and
   OpenAPI).

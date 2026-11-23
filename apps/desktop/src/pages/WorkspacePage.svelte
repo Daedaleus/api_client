@@ -107,6 +107,8 @@
             onpickfile={() => workspace.pickFile()}
             checksCertificates={workspace.checksCertificates(tab)}
             oncopycurl={() => workspace.curlFor(tab)}
+            onexamples={() => workspace.examples.load(tab)}
+            ondeleteexample={(index) => workspace.examples.remove(tab, index)}
             oncopysnippet={(language) => workspace.snippetFor(tab, language)}
           >
             {#snippet environment()}
@@ -126,6 +128,9 @@
             outcome={tab.outcome}
             sending={tab.sending}
             onsavebody={tab.outcomeRun === null ? undefined : () => workspace.saveResponse(tab)}
+            onsaveexample={workspace.examples.canSave(tab)
+              ? () => workspace.examples.saveFrom(tab)
+              : undefined}
           />
         </div>
       {/if}

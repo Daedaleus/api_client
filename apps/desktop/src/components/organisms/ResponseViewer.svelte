@@ -2,6 +2,7 @@
   import { formatBytes, formatDuration } from '../../lib/format';
   import { i18n } from '../../lib/i18n/i18n.svelte';
   import type { RunOutcome } from '../../lib/types';
+  import Button from '../atoms/Button.svelte';
   import ResponseBody from '../molecules/ResponseBody.svelte';
   import TestResults from '../molecules/TestResults.svelte';
 
@@ -10,9 +11,11 @@
     sending: boolean;
     /** Saves the shown body to a file; missing when it cannot be (history). */
     onsavebody?: (() => void) | undefined;
+    /** Keeps the response as an example of the request; missing when it cannot be. */
+    onsaveexample?: (() => void) | undefined;
   }
 
-  let { outcome, sending, onsavebody }: Props = $props();
+  let { outcome, sending, onsavebody, onsaveexample }: Props = $props();
 
   type Tab = 'body' | 'headers' | 'tests' | 'logs';
   let tab = $state<Tab>('body');
@@ -55,6 +58,11 @@
       <span class="response__figure">
         {i18n.t('response.size')} <strong>{formatBytes(outcome.sizeBytes)}</strong>
       </span>
+      {#if onsaveexample}
+        <span class="response__actions">
+          <Button onclick={onsaveexample}>{i18n.t('examples.save')}</Button>
+        </span>
+      {/if}
     </div>
 
     {#if outcome.scriptError}
@@ -184,6 +192,10 @@
   .response__status--serverError,
   .response__status--nonstandard {
     color: var(--color-error);
+  }
+
+  .response__actions {
+    margin-left: auto;
   }
 
   .response__figure {
