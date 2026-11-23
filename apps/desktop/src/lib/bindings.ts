@@ -236,6 +236,55 @@ export type CertificateCheckView =
 /**  Accept any certificate. */
 "off";
 
+/**
+ *  A client certificate as the dialog shows and returns it. The passphrase
+ *  travels only encrypted; a new one comes in as `new_passphrase` and is
+ *  encrypted by the app before it is saved.
+ */
+export type ClientCertificateView = ClientCertificateView_Serialize | ClientCertificateView_Deserialize;
+
+/**
+ *  A client certificate as the dialog shows and returns it. The passphrase
+ *  travels only encrypted; a new one comes in as `new_passphrase` and is
+ *  encrypted by the app before it is saved.
+ */
+export type ClientCertificateView_Deserialize = {
+	/**  Host pattern, e.g. `api.example.com` or `*.internal`. */
+	host: string,
+	/**  PEM or PKCS#12 file. */
+	certificate: string,
+	/**  PEM key file; empty if the key is in the certificate file. */
+	key?: string,
+	/**  The stored passphrase, encrypted; `null` if there is none. */
+	encryptedPassphrase?: string | null,
+	/**
+	 *  A new passphrase to store (`""` removes it); `null` keeps the
+	 *  stored one.
+	 */
+	newPassphrase?: string | null,
+};
+
+/**
+ *  A client certificate as the dialog shows and returns it. The passphrase
+ *  travels only encrypted; a new one comes in as `new_passphrase` and is
+ *  encrypted by the app before it is saved.
+ */
+export type ClientCertificateView_Serialize = {
+	/**  Host pattern, e.g. `api.example.com` or `*.internal`. */
+	host: string,
+	/**  PEM or PKCS#12 file. */
+	certificate: string,
+	/**  PEM key file; empty if the key is in the certificate file. */
+	key: string,
+	/**  The stored passphrase, encrypted; `null` if there is none. */
+	encryptedPassphrase: string | null,
+	/**
+	 *  A new passphrase to store (`""` removes it); `null` keeps the
+	 *  stored one.
+	 */
+	newPassphrase: string | null,
+};
+
 /**  An open collection. */
 export type CollectionView = CollectionView_Serialize | CollectionView_Deserialize;
 
@@ -1540,6 +1589,8 @@ export type SettingsView_Deserialize = {
 	proxy: ProxyView,
 	/**  Files with extra trusted CA certificates. */
 	caCertificates?: string[],
+	/**  Client certificates per host. */
+	clientCertificates?: ClientCertificateView_Deserialize[],
 };
 
 /**  The app's settings. */
@@ -1548,6 +1599,8 @@ export type SettingsView_Serialize = {
 	proxy: ProxyView,
 	/**  Files with extra trusted CA certificates. */
 	caCertificates: string[],
+	/**  Client certificates per host. */
+	clientCertificates: ClientCertificateView_Serialize[],
 };
 
 /**  How bad a problem is (the editor's names). */

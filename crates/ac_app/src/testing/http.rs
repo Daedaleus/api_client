@@ -16,7 +16,7 @@ pub const FAKE_NOW: UnixSeconds = 1_767_225_600;
 
 /// `Set-Cookie`, compared without case.
 const SET_COOKIE: &str = "set-cookie";
-use crate::settings::{NetworkSettings, ProxySetting};
+use crate::settings::{ClientIdentity, NetworkSettings, ProxySetting};
 
 /// An [`HttpSender`] that answers with queued replies and records what was
 /// sent. Without a queued reply it fails with [`TransportError::Other`].
@@ -26,6 +26,7 @@ pub struct FakeHttpSender {
     sent: Mutex<Vec<ResolvedRequest>>,
     cookies_sent: Mutex<Vec<Option<String>>>,
     network: Mutex<Option<NetworkSettings>>,
+    identities: Mutex<Vec<ClientIdentity>>,
 }
 
 impl FakeHttpSender {
@@ -53,6 +54,12 @@ impl FakeHttpSender {
     #[must_use]
     pub fn cookies_sent(&self) -> Vec<Option<String>> {
         lock(&self.cookies_sent).clone()
+    }
+
+    /// The client certificates applied last.
+    #[must_use]
+    pub fn identities(&self) -> Vec<ClientIdentity> {
+        lock(&self.identities).clone()
     }
 
     /// The network settings applied last, if any.
@@ -91,8 +98,22 @@ impl HttpSender for FakeHttpSender {
     }
 
     /// Refuses a manual proxy whose URL is not `http(s)://` or `socks5://`
-    /// (like the real sender would), else remembers the settings.
-    fn configure(&self, network: &NetworkSettings) -> Result<(), SettingsError> {
+    /// and a client certificate without file (like the real sender would),
+    /// else remembers the settings.
+    fn configure(
+        &self,
+        network: &NetworkSettings,
+        identities: &[ClientIdentity],
+    ) -> Result<(), SettingsError> {
+        if let Some(identity) = identities
+            .iter()
+            .find(|identity| identity.certificate.as_os_str().is_empty())
+        {
+            return Err(SettingsError(format!(
+                "no certificate file for {}",
+                identity.host.as_str()
+            )));
+        }
         if let ProxySetting::Manual { url, .. } = &network.proxy
             && !["http://", "https://", "socks5://"]
                 .iter()
@@ -101,6 +122,7 @@ impl HttpSender for FakeHttpSender {
             return Err(SettingsError(format!("invalid proxy URL {url}")));
         }
         *lock(&self.network) = Some(network.clone());
+        *lock(&self.identities) = identities.to_vec();
         Ok(())
     }
 }

@@ -12,7 +12,7 @@ async function setup() {
   const settings = new SettingsState(api);
   api.queryAnswers.push({
     type: 'settings',
-    settings: { proxy: { mode: 'system' }, caCertificates: [] },
+    settings: { proxy: { mode: 'system' }, caCertificates: [], clientCertificates: [] },
     problem: null,
   });
   render(SettingsDialog, { settings });
@@ -50,8 +50,63 @@ describe('SettingsDialog', () => {
       settings: {
         proxy: { mode: 'manual', url: 'http://proxy:8080', noProxy: 'localhost' },
         caCertificates: ['C:\\certs\\corp.pem'],
+        clientCertificates: [],
       },
     });
+  });
+
+  it('adds client certificates with files and a passphrase', async () => {
+    const { api, settings } = await setup();
+    const dialog = await screen.findByRole('dialog', { name: 'Settings' });
+    expect(within(dialog).getByText(/first entry whose host matches/)).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Add client certificate' }));
+    const entry = within(dialog).getByRole('group', { name: 'New certificate' });
+    await userEvent.type(within(entry).getByLabelText('Host'), '*.internal');
+    api.file = 'C:\\certs\\me.p12';
+    const [chooseCertificate, chooseKey] = within(entry).getAllByRole('button', {
+      name: 'Choose …',
+    });
+    await userEvent.click(chooseCertificate!);
+    expect(api.picks.at(-1)?.options?.filters?.[0]?.extensions).toContain('p12');
+    api.file = null;
+    await userEvent.click(chooseKey!);
+    expect(api.picks.at(-1)?.options?.filters?.[0]?.extensions).toContain('key');
+    const passphrase = within(dialog).getByLabelText('Passphrase');
+    expect(passphrase).toHaveAttribute('type', 'password');
+    expect(passphrase).toHaveAttribute('placeholder', 'none');
+    await userEvent.type(passphrase, 'pw');
+    expect(settings.editing!.clientCertificates[0]).toEqual({
+      host: '*.internal',
+      certificate: 'C:\\certs\\me.p12',
+      key: '',
+      encryptedPassphrase: null,
+      newPassphrase: 'pw',
+    });
+    await userEvent.clear(passphrase);
+    expect(settings.editing!.clientCertificates[0]!.newPassphrase).toBeNull();
+
+    // A stored passphrase: kept unless typed anew, removable.
+    settings.editing!.clientCertificates[0]!.encryptedPassphrase = 'c2VhbGVk';
+    expect(
+      await within(dialog).findByPlaceholderText('stored – type a new one to change it'),
+    ).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Remove passphrase' }));
+    expect(settings.editing!.clientCertificates[0]).toMatchObject({
+      encryptedPassphrase: null,
+      newPassphrase: '',
+    });
+    expect(within(dialog).queryByRole('button', { name: 'Remove passphrase' })).toBeNull();
+
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: 'Remove certificate for *.internal' }),
+    );
+    expect(settings.editing!.clientCertificates).toEqual([]);
+    // Entries that are gone change nothing.
+    settings.removeClientCertificate(3);
+    settings.typePassphrase(3, 'x');
+    settings.removePassphrase(3);
+    await settings.pickClientFile(3, 'key');
+    expect(settings.editing!.clientCertificates).toEqual([]);
   });
 
   it('removes certificates, switches the language and cancels', async () => {
@@ -74,12 +129,16 @@ describe('SettingsDialog', () => {
     const settings = new SettingsState(api);
     api.queryAnswers.push({ fail: { key: 'error.settings', args: { detail: 'damaged' } } });
     await settings.open();
-    expect(settings.editing).toEqual({ proxy: { mode: 'system' }, caCertificates: [] });
+    expect(settings.editing).toEqual({
+      proxy: { mode: 'system' },
+      caCertificates: [],
+      clientCertificates: [],
+    });
     expect(settings.error?.args['detail']).toBe('damaged');
 
     api.queryAnswers.push({
       type: 'settings',
-      settings: { proxy: { mode: 'none' }, caCertificates: [] },
+      settings: { proxy: { mode: 'none' }, caCertificates: [], clientCertificates: [] },
       problem: { key: 'error.settings', args: { detail: 'at start' } },
     });
     expect((await settings.startupProblem())?.args['detail']).toBe('at start');

@@ -7,7 +7,7 @@ use ac_domain::cookie::CookieJar;
 use ac_domain::exchange::{ResolvedRequest, Response};
 
 use crate::ports::SettingsError;
-use crate::settings::NetworkSettings;
+use crate::settings::{ClientIdentity, NetworkSettings};
 use crate::text::{UserText, keys};
 
 /// The cookies of one collection, shared between the requests sent for it.
@@ -29,13 +29,18 @@ pub trait HttpSender: Send + Sync + 'static {
         cookies: Option<SharedCookieJar>,
     ) -> impl Future<Output = Result<Response, TransportError>> + Send;
 
-    /// Applies the app's network settings (proxy, extra CA certificates) to
-    /// all later requests. Nothing changes if they cannot be applied.
+    /// Applies the app's network settings (proxy, extra CA certificates) and
+    /// the client certificates (passphrases decrypted) to all later
+    /// requests. Nothing changes if they cannot be applied.
     ///
     /// # Errors
-    /// [`SettingsError`] if the proxy URL is invalid or a certificate file
-    /// cannot be read or parsed.
-    fn configure(&self, network: &NetworkSettings) -> Result<(), SettingsError>;
+    /// [`SettingsError`] if the proxy URL is invalid or a certificate or key
+    /// file cannot be read, parsed or decrypted.
+    fn configure(
+        &self,
+        network: &NetworkSettings,
+        identities: &[ClientIdentity],
+    ) -> Result<(), SettingsError>;
 }
 
 impl<T: HttpSender> HttpSender for Arc<T> {
@@ -47,8 +52,12 @@ impl<T: HttpSender> HttpSender for Arc<T> {
         T::send(self, request, cookies)
     }
 
-    fn configure(&self, network: &NetworkSettings) -> Result<(), SettingsError> {
-        T::configure(self, network)
+    fn configure(
+        &self,
+        network: &NetworkSettings,
+        identities: &[ClientIdentity],
+    ) -> Result<(), SettingsError> {
+        T::configure(self, network, identities)
     }
 }
 

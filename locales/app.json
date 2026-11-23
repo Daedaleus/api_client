@@ -360,6 +360,33 @@
     "de": "Keine – es gelten die Zertifikate des Systems.",
     "en": "None – the system's certificates apply."
   },
+  "settings.client": { "de": "Client-Zertifikate (mTLS)", "en": "Client certificates (mTLS)" },
+  "settings.client_note": {
+    "de": "Für Server, die ein Zertifikat von dir verlangen. PEM (Zertifikat und Schlüssel, auch verschlüsselt) oder PKCS#12 (.p12, .pfx). Die Passphrase wird nur verschlüsselt mit deinem eigenen Schlüssel gespeichert. Es gilt der erste Eintrag, dessen Host passt.",
+    "en": "For servers that ask for a certificate from you. PEM (certificate and key, also encrypted) or PKCS#12 (.p12, .pfx). The passphrase is only stored encrypted with your own key. The first entry whose host matches is used."
+  },
+  "settings.client_new": { "de": "Neues Zertifikat", "en": "New certificate" },
+  "settings.client_host": { "de": "Host", "en": "Host" },
+  "settings.client_certificate": { "de": "Zertifikat", "en": "Certificate" },
+  "settings.client_key": { "de": "Schlüssel", "en": "Key" },
+  "settings.client_key_placeholder": {
+    "de": "nur nötig, wenn nicht in der Zertifikatsdatei",
+    "en": "only if not in the certificate file"
+  },
+  "settings.client_passphrase": { "de": "Passphrase", "en": "Passphrase" },
+  "settings.client_passphrase_none": { "de": "keine", "en": "none" },
+  "settings.client_passphrase_stored": {
+    "de": "gespeichert – zum Ändern neu eingeben",
+    "en": "stored – type a new one to change it"
+  },
+  "settings.client_passphrase_remove": { "de": "Passphrase entfernen", "en": "Remove passphrase" },
+  "settings.client_choose": { "de": "Wählen …", "en": "Choose …" },
+  "settings.client_remove": { "de": "Zertifikat für {host} entfernen", "en": "Remove certificate for {host}" },
+  "settings.client_add": { "de": "Client-Zertifikat hinzufügen", "en": "Add client certificate" },
+  "settings.client_pick": { "de": "Client-Zertifikat wählen", "en": "Choose a client certificate" },
+  "settings.client_pick_key": { "de": "Privaten Schlüssel wählen", "en": "Choose the private key" },
+  "settings.client_files": { "de": "Zertifikate (PEM, PKCS#12)", "en": "Certificates (PEM, PKCS#12)" },
+  "settings.client_key_files": { "de": "Schlüssel (PEM)", "en": "Keys (PEM)" },
   "settings.ca_add": { "de": "Zertifikat hinzufügen …", "en": "Add certificate …" },
   "settings.ca_remove": { "de": "„{file}“ entfernen", "en": "Remove “{file}”" },
   "settings.ca_pick": { "de": "CA-Zertifikat wählen", "en": "Choose a CA certificate" },

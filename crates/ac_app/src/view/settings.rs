@@ -4,7 +4,9 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-use crate::settings::{AppSettings, NetworkSettings, ProxySetting};
+use crate::settings::{
+    AppSettings, ClientCertificate, EncryptedPassphrase, HostPattern, NetworkSettings, ProxySetting,
+};
 
 /// How requests reach servers.
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
@@ -39,6 +41,32 @@ pub struct SettingsView {
     /// Files with extra trusted CA certificates.
     #[serde(default)]
     pub ca_certificates: Vec<String>,
+    /// Client certificates per host.
+    #[serde(default)]
+    pub client_certificates: Vec<ClientCertificateView>,
+}
+
+/// A client certificate as the dialog shows and returns it. The passphrase
+/// travels only encrypted; a new one comes in as `new_passphrase` and is
+/// encrypted by the app before it is saved.
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(rename_all = "camelCase")]
+pub struct ClientCertificateView {
+    /// Host pattern, e.g. `api.example.com` or `*.internal`.
+    pub host: String,
+    /// PEM or PKCS#12 file.
+    pub certificate: String,
+    /// PEM key file; empty if the key is in the certificate file.
+    #[serde(default)]
+    pub key: String,
+    /// The stored passphrase, encrypted; `null` if there is none.
+    #[serde(default)]
+    pub encrypted_passphrase: Option<String>,
+    /// A new passphrase to store (`""` removes it); `null` keeps the
+    /// stored one.
+    #[serde(default)]
+    pub new_passphrase: Option<String>,
 }
 
 impl SettingsView {
@@ -60,11 +88,29 @@ impl SettingsView {
                 .iter()
                 .map(|path| path.display().to_string())
                 .collect(),
+            client_certificates: network
+                .client_certificates
+                .iter()
+                .map(|certificate| ClientCertificateView {
+                    host: certificate.host.as_str().to_owned(),
+                    certificate: certificate.certificate.display().to_string(),
+                    key: certificate
+                        .key
+                        .as_ref()
+                        .map_or_default(|key| key.display().to_string()),
+                    encrypted_passphrase: certificate
+                        .passphrase
+                        .as_ref()
+                        .map(|passphrase| passphrase.0.clone()),
+                    new_passphrase: None,
+                })
+                .collect(),
         }
     }
 
     /// The settings the dialog describes (blank entries dropped, spaces
-    /// trimmed).
+    /// trimmed). Client certificates keep their stored passphrase; new
+    /// ones are encrypted by the app.
     #[must_use]
     pub fn to_settings(&self) -> AppSettings {
         AppSettings {
@@ -83,6 +129,21 @@ impl SettingsView {
                     .map(|path| path.trim())
                     .filter(|path| !path.is_empty())
                     .map(PathBuf::from)
+                    .collect(),
+                client_certificates: self
+                    .client_certificates
+                    .iter()
+                    .filter(|entry| {
+                        !entry.host.trim().is_empty() || !entry.certificate.trim().is_empty()
+                    })
+                    .map(|entry| ClientCertificate {
+                        host: HostPattern::new(&entry.host),
+                        certificate: PathBuf::from(entry.certificate.trim()),
+                        key: Some(entry.key.trim())
+                            .filter(|key| !key.is_empty())
+                            .map(PathBuf::from),
+                        passphrase: entry.encrypted_passphrase.clone().map(EncryptedPassphrase),
+                    })
                     .collect(),
             },
         }

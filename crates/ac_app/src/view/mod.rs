@@ -46,7 +46,7 @@ pub use request_body::{BodyDraft, FormFieldDraft, MultipartFieldDraft};
 pub use response::{HeaderView, ResponseView, RunOutcomeView, StatusClassView, TestResultView};
 pub use run_report::{RunReport, RunResult, RunResultOutcome};
 pub use scripts::ScriptsDraft;
-pub use settings::{ProxyView, SettingsView};
+pub use settings::{ClientCertificateView, ProxyView, SettingsView};
 pub use snippet::{ExportFormatView, SnippetLanguageView};
 pub use transport::{CookiesView, RedirectsView, TransportDraft};
 pub use variable::{SendContext, VariableDraft};

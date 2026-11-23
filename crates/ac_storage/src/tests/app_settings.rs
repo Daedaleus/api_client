@@ -8,6 +8,20 @@ fn manual() -> AppSettings {
                 no_proxy: "localhost,.internal".into(),
             },
             ca_certificates: vec![PathBuf::from("C:/certs/ca.pem")],
+            client_certificates: vec![
+                ClientCertificate {
+                    host: HostPattern::new("*.internal"),
+                    certificate: PathBuf::from("C:/certs/me.pem"),
+                    key: Some(PathBuf::from("C:/certs/me.key")),
+                    passphrase: Some(EncryptedPassphrase("c2VhbGVk".into())),
+                },
+                ClientCertificate {
+                    host: HostPattern::new("api.example.com:8443"),
+                    certificate: PathBuf::from("C:/certs/me.p12"),
+                    key: None,
+                    passphrase: None,
+                },
+            ],
         },
     }
 }
@@ -30,6 +44,7 @@ fn settings_round_trip_and_default_when_missing() {
             network: NetworkSettings {
                 proxy,
                 ca_certificates: Vec::new(),
+                client_certificates: Vec::new(),
             },
         };
         store.save(&settings).unwrap();
@@ -69,4 +84,25 @@ fn unreadable_places_are_errors() {
     std::fs::create_dir(temp.path().join(SETTINGS_FILE)).unwrap();
     let store = FileSettings::new(temp.path());
     assert!(store.load().is_err());
+}
+
+#[test]
+fn client_certificates_are_tables_and_checked() {
+    let temp = tempfile::tempdir().unwrap();
+    let store = FileSettings::new(temp.path());
+    store.save(&manual()).unwrap();
+    let text = std::fs::read_to_string(temp.path().join(SETTINGS_FILE)).unwrap();
+    assert!(text.contains("[[tls.client_certificates]]"), "{text}");
+    assert!(text.contains("passphrase = \"c2VhbGVk\""), "{text}");
+    for wrong in [
+        "[tls]\nclient_certificates = 1\n",
+        "[[tls.client_certificates]]\nhost = 1\n",
+    ] {
+        std::fs::write(
+            temp.path().join(SETTINGS_FILE),
+            format!("format = \"api-client/settings\"\nversion = 1\n{wrong}"),
+        )
+        .unwrap();
+        assert!(store.load().is_err(), "{wrong}");
+    }
 }

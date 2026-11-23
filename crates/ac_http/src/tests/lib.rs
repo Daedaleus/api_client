@@ -1,3 +1,4 @@
+use ac_app::settings::ProxySetting;
 use ac_domain::protocol::HttpMethod;
 use url::Url;
 use wiremock::matchers::{body_string, body_string_contains, header, header_regex, method, path};
@@ -275,13 +276,17 @@ async fn a_manual_proxy_carries_the_requests() {
         .await;
     let sender = sender();
     sender
-        .configure(&NetworkSettings {
-            proxy: ProxySetting::Manual {
-                url: proxy.uri(),
-                no_proxy: String::new(),
+        .configure(
+            &NetworkSettings {
+                proxy: ProxySetting::Manual {
+                    url: proxy.uri(),
+                    no_proxy: String::new(),
+                },
+                ca_certificates: Vec::new(),
+                client_certificates: Vec::new(),
             },
-            ca_certificates: Vec::new(),
-        })
+            &[],
+        )
         .unwrap();
     let response = sender
         .send(
@@ -298,10 +303,14 @@ async fn a_manual_proxy_carries_the_requests() {
 
     // Back to direct connections: the host cannot be reached any more.
     sender
-        .configure(&NetworkSettings {
-            proxy: ProxySetting::None,
-            ca_certificates: Vec::new(),
-        })
+        .configure(
+            &NetworkSettings {
+                proxy: ProxySetting::None,
+                ca_certificates: Vec::new(),
+                client_certificates: Vec::new(),
+            },
+            &[],
+        )
         .unwrap();
     assert!(
         sender
@@ -337,23 +346,27 @@ fn settings_that_cannot_work_are_refused_and_change_nothing() {
                 no_proxy: String::new(),
             },
             ca_certificates: Vec::new(),
+            client_certificates: Vec::new(),
         },
         NetworkSettings {
             proxy: ProxySetting::System,
             ca_certificates: vec![temp.path().join("missing.pem")],
+            client_certificates: Vec::new(),
         },
         NetworkSettings {
             proxy: ProxySetting::System,
             ca_certificates: vec![garbage.clone()],
+            client_certificates: Vec::new(),
         },
         NetworkSettings {
             proxy: ProxySetting::System,
             ca_certificates: vec![empty.clone()],
+            client_certificates: Vec::new(),
         },
     ] {
-        assert!(sender.configure(&settings).is_err(), "{settings:?}");
+        assert!(sender.configure(&settings, &[]).is_err(), "{settings:?}");
     }
-    assert!(sender.configure(&NetworkSettings::default()).is_ok());
+    assert!(sender.configure(&NetworkSettings::default(), &[]).is_ok());
 }
 
 #[tokio::test]
