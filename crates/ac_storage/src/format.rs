@@ -8,6 +8,11 @@ pub const FOLDER_FORMAT: &str = "api-client/folder";
 pub const ENVIRONMENT_FORMAT: &str = "api-client/environment";
 /// `format` of request files.
 pub const REQUEST_FORMAT: &str = "api-client/request";
+/// `format` of the response examples next to a request file.
+pub const EXAMPLES_FORMAT: &str = "api-client/examples";
+/// Added to a request's file stem for its examples file
+/// (`login.toml` → `login.examples.toml`).
+pub const EXAMPLES_SUFFIX: &str = ".examples";
 
 /// The format version this program writes and fully understands.
 pub const CURRENT_VERSION: i64 = 1;

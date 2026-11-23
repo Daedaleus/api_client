@@ -45,6 +45,7 @@ mod docs;
 mod document;
 pub mod environment_file;
 pub mod error;
+pub mod examples_file;
 pub mod format;
 pub mod history;
 pub mod load;

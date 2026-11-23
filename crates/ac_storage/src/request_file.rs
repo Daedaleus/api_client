@@ -81,6 +81,7 @@ pub(crate) fn request_from(doc: &DocumentMut, path: &Path) -> Result<Request, St
             })
             .collect(),
         docs: docs::read(table, path)?,
+        examples: Vec::new(),
     })
 }
 

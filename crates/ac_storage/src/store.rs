@@ -8,6 +8,7 @@ use ac_app::ports::{
 };
 use ac_domain::collection::{Collection, ItemId, Request, RequestDefaults};
 use ac_domain::environment::Environment;
+use ac_domain::example::ResponseExample;
 
 use crate::error::StorageError;
 use crate::format::ENVIRONMENTS_FOLDER;
@@ -80,6 +81,10 @@ impl CollectionStore for FileStore {
 
     fn save_request(&self, file: &Path, request: &Request) -> Result<(), StoreError> {
         request_file::save_request(file, request).map_err(store_error)
+    }
+
+    fn save_examples(&self, file: &Path, examples: &[ResponseExample]) -> Result<(), StoreError> {
+        crate::examples_file::write(file, examples).map_err(store_error)
     }
 
     fn create_request(&self, dir: &Path, request: &Request) -> Result<PathBuf, StoreError> {

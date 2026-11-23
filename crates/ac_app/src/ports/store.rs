@@ -8,6 +8,7 @@ use std::sync::Arc;
 
 use ac_domain::collection::{Collection, ItemId, Request, RequestDefaults};
 use ac_domain::environment::Environment;
+use ac_domain::example::ResponseExample;
 
 use crate::text::{UserText, keys};
 
@@ -31,6 +32,13 @@ pub trait CollectionStore: Send + Sync + 'static {
     /// # Errors
     /// If the file is damaged, read-only or cannot be written.
     fn save_request(&self, file: &Path, request: &Request) -> Result<(), StoreError>;
+
+    /// Writes the response examples of the request in `file` (next to it;
+    /// none remove them). `save_request` leaves them alone.
+    ///
+    /// # Errors
+    /// If they cannot be written.
+    fn save_examples(&self, file: &Path, examples: &[ResponseExample]) -> Result<(), StoreError>;
 
     /// Creates a file for `request` in the collection or folder `dir`;
     /// returns its path.
@@ -195,6 +203,9 @@ impl<T: CollectionStore> CollectionStore for Arc<T> {
     }
     fn save_request(&self, file: &Path, request: &Request) -> Result<(), StoreError> {
         T::save_request(self, file, request)
+    }
+    fn save_examples(&self, file: &Path, examples: &[ResponseExample]) -> Result<(), StoreError> {
+        T::save_examples(self, file, examples)
     }
     fn create_request(&self, dir: &Path, request: &Request) -> Result<PathBuf, StoreError> {
         T::create_request(self, dir, request)

@@ -47,6 +47,12 @@ pub fn move_item(path: &Path, to_dir: &Path, position: usize) -> Result<PathBuf,
             unique_file(to_dir, &file_stem(path))
         };
         std::fs::rename(path, &target).map_err(|error| StorageError::io(path, error))?;
+        // A request's examples follow it.
+        let examples = crate::examples_file::path_for(path);
+        if !path.is_dir() && examples.is_file() {
+            let to = crate::examples_file::path_for(&target);
+            std::fs::rename(&examples, &to).map_err(|error| StorageError::io(&examples, error))?;
+        }
         let name = file_name(path);
         write_order(from_dir, |order| order.retain(|entry| *entry != name))?;
         target

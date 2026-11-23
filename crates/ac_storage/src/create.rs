@@ -54,6 +54,7 @@ pub fn create_collection(root: &Path, name: &str) -> Result<LoadedCollection, St
 pub fn create_request(dir: &Path, request: &Request) -> Result<PathBuf, StorageError> {
     let path = unique_file(dir, &slug(&request.name, REQUEST_FALLBACK));
     save_request(&path, request)?;
+    crate::examples_file::write(&path, &request.examples)?;
     order::append(dir, &file_name(&path))?;
     Ok(path)
 }

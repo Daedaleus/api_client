@@ -302,6 +302,11 @@ impl Loader {
         match read_request(path) {
             Ok((mut request, read_only)) => {
                 request.id = self.unique(request.id, path);
+                // Damaged examples are reported; the request still opens.
+                match crate::examples_file::read(path) {
+                    Ok(examples) => request.examples = examples,
+                    Err(error) => self.problem(error),
+                }
                 self.entries.insert(
                     request.id,
                     Entry {
@@ -349,6 +354,7 @@ pub(crate) fn entry_names(dir: &Path, is_root: bool) -> Result<Vec<String>, Stor
             !(is_root && RESERVED_ROOT_FOLDERS.contains(&name.as_str()))
         } else {
             name != settings
+                && !crate::examples_file::is_examples_file(&name)
                 && path
                     .extension()
                     .is_some_and(|extension| extension == EXTENSION)

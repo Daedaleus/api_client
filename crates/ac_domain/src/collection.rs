@@ -278,6 +278,8 @@ pub struct Request {
     pub scripts: Scripts,
     /// Documentation in Markdown (empty if none).
     pub docs: String,
+    /// Responses kept as examples (stored next to the request file).
+    pub examples: Vec<crate::example::ResponseExample>,
     /// Values of the path variables (`:name`) in the URL.
     pub path_params: Vec<PathParam>,
     /// Query parameters switched off (the others are in the URL).
@@ -301,6 +303,7 @@ impl Request {
             transport: TransportSettings::default(),
             scripts: Scripts::default(),
             docs: String::new(),
+            examples: Vec::new(),
             path_params: Vec::new(),
             disabled_query: Vec::new(),
         }
