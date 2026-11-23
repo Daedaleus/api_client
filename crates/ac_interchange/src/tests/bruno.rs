@@ -353,6 +353,42 @@ fn bare_and_odd_files() {
 }
 
 #[test]
+fn digest_and_aws_signature_are_imported() {
+    let imported = from_files(
+        Path::new("/bruno"),
+        &[
+            BrunoFile {
+                path: "digest.bru".into(),
+                text: "meta {\n  name: Digest\n}\nget {\n  url: x\n  auth: digest\n}\nauth:digest {\n  username: bob\n  password: {{password}}\n}".into(),
+            },
+            BrunoFile {
+                path: "aws.bru".into(),
+                text: "meta {\n  name: Aws\n}\nget {\n  url: x\n  auth: awsv4\n}\nauth:awsv4 {\n  accessKeyId: AKID\n  secretAccessKey: {{awsSecret}}\n  sessionToken:\n  service: execute-api\n  region: eu-central-1\n  profileName:\n}".into(),
+            },
+        ],
+    );
+    let auth = |name: &str| request(&imported.collection.items, name).auth.clone();
+    assert_eq!(
+        auth("Digest"),
+        Auth::Digest {
+            username: "bob".into(),
+            password: "{{password}}".into(),
+        }
+    );
+    assert_eq!(
+        auth("Aws"),
+        Auth::AwsSigV4(ac_domain::auth::AwsSigV4 {
+            access_key_id: "AKID".into(),
+            secret_access_key: "{{awsSecret}}".into(),
+            session_token: String::new(),
+            region: "eu-central-1".into(),
+            service: "execute-api".into(),
+        })
+    );
+    assert_eq!(imported.skipped.len(), 0);
+}
+
+#[test]
 fn oauth2_client_credentials_are_imported() {
     let imported = from_files(
         Path::new("/bruno"),

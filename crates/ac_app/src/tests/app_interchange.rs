@@ -622,3 +622,46 @@ async fn collections_export_as_postman_collections() {
         assert_eq!(text.args["item"], "Login");
     }
 }
+
+#[tokio::test]
+async fn exports_sign_aws_requests_and_leave_digest_to_the_tool() {
+    let fixture = Fixture::new();
+    let mut aws = OutgoingRequest::get("https://api.example.com/items");
+    aws.auth = AuthDraft::AwsSigV4 {
+        access_key_id: "AKID".into(),
+        secret_access_key: "secret".into(),
+        session_token: "t0ken".into(),
+        region: "eu-central-1".into(),
+        service: "execute-api".into(),
+    };
+    let command = curl(&fixture, aws).unwrap();
+    assert!(
+        command.contains("'Authorization: AWS4-HMAC-SHA256 Credential=AKID/"),
+        "{command}"
+    );
+    assert!(command.contains("x-amz-date: ") && command.contains("x-amz-security-token: t0ken"));
+    assert!(!command.contains("secret'"), "{command}");
+
+    let mut digest = OutgoingRequest::get("https://api.example.com/items");
+    digest.auth = AuthDraft::Digest {
+        username: "bob".into(),
+        password: "pw".into(),
+    };
+    let command = curl(&fixture, digest.clone()).unwrap();
+    assert!(
+        command.contains("--digest") && command.contains("--user 'bob:pw'"),
+        "{command}"
+    );
+    assert!(!command.contains("Authorization"), "{command}");
+    let QueryResult::Snippet { code } = fixture
+        .app
+        .query(Query::Snippet {
+            language: crate::view::SnippetLanguageView::Python,
+            request: Box::new(digest),
+        })
+        .unwrap()
+    else {
+        panic!("expected a snippet");
+    };
+    assert!(code.contains("HTTPDigestAuth(\"bob\", \"pw\")"), "{code}");
+}

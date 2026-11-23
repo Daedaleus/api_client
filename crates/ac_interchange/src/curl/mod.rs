@@ -11,5 +11,5 @@
 mod export;
 mod import;
 
-pub use export::to_curl;
+pub use export::{DigestCredentials, to_curl};
 pub use import::{CurlError, Imported, from_curl};

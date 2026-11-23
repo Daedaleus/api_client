@@ -9,8 +9,10 @@
 //! - `httpie`: the `http` command.
 //!
 //! Variables and inherited auth are already applied (the caller resolves the
-//! request as for sending); files are referenced by path, so they are read
-//! when the code runs. Switched-off certificate checks and redirects are
+//! request as for sending, AWS signatures included); files are referenced by
+//! path, so they are read when the code runs. HTTP Digest needs the
+//! server's challenge, so it is left to the tool where it has it built in
+//! (cURL, `HTTPie`, Python) and pointed out in a comment elsewhere. Switched-off certificate checks and redirects are
 //! carried over where the library has a setting for them.
 
 mod go;
@@ -20,7 +22,7 @@ mod python;
 
 use ac_domain::exchange::ResolvedRequest;
 
-use crate::curl::to_curl;
+use crate::curl::{DigestCredentials, to_curl};
 
 /// What a snippet is written in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -39,16 +41,29 @@ pub enum SnippetLanguage {
     Httpie,
 }
 
-/// The code that sends `request` in `language`.
+/// Said where a language has no Digest authentication built in.
+const NO_DIGEST: &str = "Digest authentication is not built in here: send the request, then \
+     answer the server's 401 challenge (WWW-Authenticate) with user name and password.";
+
+/// The code that sends `request` in `language` (answering a Digest
+/// challenge with `digest`, if given).
 #[must_use]
-pub fn to_snippet(request: &ResolvedRequest, language: SnippetLanguage) -> String {
+pub fn to_snippet(
+    request: &ResolvedRequest,
+    language: SnippetLanguage,
+    digest: Option<&DigestCredentials>,
+) -> String {
+    let note = |code: String, comment: &str| match digest {
+        Some(_) => format!("{comment} {NO_DIGEST}\n{code}"),
+        None => code,
+    };
     match language {
-        SnippetLanguage::Curl => to_curl(request),
-        SnippetLanguage::JavaScriptFetch => javascript::fetch(request),
-        SnippetLanguage::JavaScriptAxios => javascript::axios(request),
-        SnippetLanguage::PythonRequests => python::requests(request),
-        SnippetLanguage::GoNetHttp => go::net_http(request),
-        SnippetLanguage::Httpie => httpie::command(request),
+        SnippetLanguage::Curl => to_curl(request, digest),
+        SnippetLanguage::JavaScriptFetch => note(javascript::fetch(request), "//"),
+        SnippetLanguage::JavaScriptAxios => note(javascript::axios(request), "//"),
+        SnippetLanguage::PythonRequests => python::requests(request, digest),
+        SnippetLanguage::GoNetHttp => note(go::net_http(request), "//"),
+        SnippetLanguage::Httpie => httpie::command(request, digest),
     }
 }
 

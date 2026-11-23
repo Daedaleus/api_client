@@ -9,11 +9,32 @@ use ac_domain::protocol::HttpMethod;
 /// Continues the command on the next line.
 const NEXT_LINE: &str = " \\\n  ";
 
-/// The command that sends `request` with cURL. Values are quoted for a
-/// POSIX shell; files are referenced with `@path`, so they are read when the
-/// command runs.
+/// User name and password of HTTP Digest: an export cannot answer the
+/// server's challenge itself, so the tool that runs the code does (cURL's
+/// `--digest`, `HTTPie`'s `--auth-type=digest`, Python's
+/// `HTTPDigestAuth`).
+#[derive(Clone, PartialEq, Eq)]
+pub struct DigestCredentials {
+    /// User name.
+    pub username: String,
+    /// Password.
+    pub password: String,
+}
+
+impl std::fmt::Debug for DigestCredentials {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DigestCredentials")
+            .field("username", &self.username)
+            .finish_non_exhaustive()
+    }
+}
+
+/// The command that sends `request` with cURL (answering a Digest
+/// challenge with `digest`, if given). Values are quoted for a POSIX shell;
+/// files are referenced with `@path`, so they are read when the command
+/// runs.
 #[must_use]
-pub fn to_curl(request: &ResolvedRequest) -> String {
+pub fn to_curl(request: &ResolvedRequest, digest: Option<&DigestCredentials>) -> String {
     let mut command = String::from("curl");
     let sends_body = request.body.is_some();
     // cURL infers POST from a body and GET without one.
@@ -50,6 +71,14 @@ pub fn to_curl(request: &ResolvedRequest) -> String {
                 option(&mut command, "--form", &format!("{}={value}", part.name));
             }
         }
+    }
+    if let Some(digest) = digest {
+        let _ = write!(command, "{NEXT_LINE}--digest");
+        option(
+            &mut command,
+            "--user",
+            &format!("{}:{}", digest.username, digest.password),
+        );
     }
     if !request.verify_tls {
         let _ = write!(command, "{NEXT_LINE}--insecure");

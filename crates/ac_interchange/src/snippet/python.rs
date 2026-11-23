@@ -6,11 +6,16 @@ use std::path::Path;
 use ac_domain::exchange::{PartContent, RequestBody, ResolvedRequest};
 
 use super::{literal, text_of};
+use crate::curl::DigestCredentials;
 
 /// `requests.request(…)`.
-pub(super) fn requests(request: &ResolvedRequest) -> String {
+pub(super) fn requests(request: &ResolvedRequest, digest: Option<&DigestCredentials>) -> String {
     let open = |path: &Path| format!("open({}, \"rb\")", literal(&path.display().to_string()));
-    let mut code = String::from("import requests\n\n");
+    let mut code = String::from("import requests\n");
+    if digest.is_some() {
+        code.push_str("from requests.auth import HTTPDigestAuth\n");
+    }
+    code.push('\n');
     code.push_str("response = requests.request(\n");
     let _ = writeln!(code, "    {},", literal(request.method.as_str()));
     let _ = writeln!(code, "    {},", literal(request.url.as_str()));
@@ -63,6 +68,14 @@ pub(super) fn requests(request: &ResolvedRequest) -> String {
                 code.push_str("    },\n");
             }
         }
+    }
+    if let Some(digest) = digest {
+        let _ = writeln!(
+            code,
+            "    auth=HTTPDigestAuth({}, {}),",
+            literal(&digest.username),
+            literal(&digest.password)
+        );
     }
     if !request.transport.follow_redirects {
         code.push_str("    allow_redirects=False,\n");

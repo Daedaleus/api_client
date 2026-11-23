@@ -7,7 +7,7 @@ use std::path::Path;
 use ac_domain::exchange::{Header, ResolvedRequest};
 use ac_domain::protocol::{HttpMethod, StatusClass, header};
 use ac_interchange::bruno::{self, BrunoFile};
-use ac_interchange::curl::{from_curl, to_curl};
+use ac_interchange::curl::{DigestCredentials, from_curl, to_curl};
 use ac_interchange::export::postman::to_postman;
 use ac_interchange::snippet::to_snippet;
 use ac_interchange::{
@@ -22,6 +22,7 @@ use crate::oauth::{TOKEN_PLACEHOLDER, authorize};
 use crate::ports::{BrowserLogin, CollectionStore, HttpSender, ScriptRunner, SecretVault};
 use crate::ports::{HistoryStore, ScriptAssist, SettingsStore};
 use crate::resolve::resolve_url;
+use crate::signing::{Signer, aws, unix_now};
 use crate::text::{UserText, keys};
 use crate::view::{ExportFormatView, OutgoingRequest, RequestDraft, SnippetLanguageView};
 
@@ -163,7 +164,10 @@ impl<
     /// token is fetched only when sending, so a placeholder stands in.
     pub(super) fn query_curl(&self, request: &OutgoingRequest) -> Result<QueryResult, AppError> {
         Ok(QueryResult::Curl {
-            command: to_curl(&self.resolved_for_export(request)?),
+            command: {
+                let (resolved, digest) = self.resolved_for_export(request)?;
+                to_curl(&resolved, digest.as_ref())
+            },
         })
     }
 
@@ -173,19 +177,37 @@ impl<
         language: SnippetLanguageView,
     ) -> Result<QueryResult, AppError> {
         Ok(QueryResult::Snippet {
-            code: to_snippet(&self.resolved_for_export(request)?, language.to_language()),
+            code: {
+                let (resolved, digest) = self.resolved_for_export(request)?;
+                to_snippet(&resolved, language.to_language(), digest.as_ref())
+            },
         })
     }
 
-    /// The request as it would be sent, an OAuth 2 token as a placeholder
-    /// (exports never fetch tokens).
-    fn resolved_for_export(&self, request: &OutgoingRequest) -> Result<ResolvedRequest, AppError> {
+    /// The request as it would be sent: an OAuth 2 token as a placeholder
+    /// (exports never fetch tokens), an AWS signature made now (valid for a
+    /// few minutes, like any), and the Digest credentials for the tool that
+    /// answers the challenge.
+    fn resolved_for_export(
+        &self,
+        request: &OutgoingRequest,
+    ) -> Result<(ResolvedRequest, Option<DigestCredentials>), AppError> {
         let prepared = self.prepare(request)?;
         let mut resolved = prepared.request;
         if prepared.oauth.is_some() {
             authorize(&mut resolved, TOKEN_PLACEHOLDER);
         }
-        Ok(resolved)
+        let digest = match prepared.signer {
+            Some(Signer::Aws(credentials)) => {
+                aws::sign(&mut resolved, &credentials, unix_now());
+                None
+            }
+            Some(Signer::Digest { username, password }) => {
+                Some(DigestCredentials { username, password })
+            }
+            None => None,
+        };
+        Ok((resolved, digest))
     }
 }
 

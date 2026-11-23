@@ -1,6 +1,6 @@
 //! One Insomnia request (and the auth and scripts of request groups).
 
-use ac_domain::auth::{Auth, KeyPlacement, OAuth2, OAuth2Grant};
+use ac_domain::auth::{Auth, AwsSigV4, KeyPlacement, OAuth2, OAuth2Grant};
 use ac_domain::collection::{Body, FormField, HeaderEntry, MultipartField, Request};
 use ac_domain::params::QueryParam;
 use ac_domain::protocol::grant_type::{AUTHORIZATION_CODE, CLIENT_CREDENTIALS};
@@ -183,6 +183,17 @@ fn auth_with(auth: Option<&Value>, templates: &mut Templates, skipped: &mut Vec<
             username: field("username"),
             password: field("password"),
         },
+        "digest" => Auth::Digest {
+            username: field("username"),
+            password: field("password"),
+        },
+        "iam" => Auth::AwsSigV4(AwsSigV4 {
+            access_key_id: field("accessKeyId"),
+            secret_access_key: field("secretAccessKey"),
+            session_token: field("sessionToken"),
+            region: field("region"),
+            service: field("service"),
+        }),
         "bearer" => Auth::Bearer {
             token: field("token"),
         },
