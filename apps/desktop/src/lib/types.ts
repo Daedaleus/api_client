@@ -8,6 +8,7 @@ import type {
   CollectionView_Serialize,
   CommandAck_Serialize,
   CookieView_Serialize,
+  ExampleView_Serialize,
   Command_Deserialize,
   EnvironmentDraft_Deserialize,
   EnvironmentDraft_Serialize,
@@ -58,6 +59,7 @@ export type Command = Command_Deserialize;
 export type CommandAck = CommandAck_Serialize;
 export type CollectionView = CollectionView_Serialize;
 export type CookieView = CookieView_Serialize;
+export type ExampleView = ExampleView_Serialize;
 export type TreeItemView = TreeItemView_Serialize;
 /** An environment as the app reports it. */
 export type EnvironmentDraft = EnvironmentDraft_Serialize;

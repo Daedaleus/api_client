@@ -2,7 +2,7 @@
 // run. Saved tabs belong to a request in a collection; a scratch tab is a
 // quick request that is not saved anywhere.
 
-import type { RequestDraft, RunOutcome, UserText } from '../types';
+import type { ExampleView, RequestDraft, RunOutcome, UserText } from '../types';
 
 /** The request in a collection a tab edits. */
 export interface SavedRequest {
@@ -28,6 +28,8 @@ export class RequestTab {
    * keeps it); `null` for one opened from the history.
    */
   outcomeRun = $state<number | null>(null);
+  /** Response examples of a saved request; `null` until loaded. */
+  examples = $state<ExampleView[] | null>(null);
   /** Why the last send or save failed. */
   error = $state<UserText | null>(null);
   /** Something to point out about the request (e.g. what an import left out). */

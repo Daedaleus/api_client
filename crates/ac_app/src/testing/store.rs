@@ -9,6 +9,7 @@ use std::sync::Mutex;
 
 use ac_domain::collection::{Collection, Folder, Item, ItemId, Request, RequestDefaults};
 use ac_domain::environment::Environment;
+use ac_domain::example::ResponseExample;
 
 use super::lock;
 use crate::ports::{
@@ -215,12 +216,33 @@ impl CollectionStore for MemoryStore {
         self.open(root)
     }
 
+    /// Like the file store: the examples (kept apart) stay as they are.
     fn save_request(&self, file: &Path, request: &Request) -> Result<(), StoreError> {
         let id = id_of(file)?;
         self.with_items(parent_of(file), |items| {
             for item in items.iter_mut() {
                 if item.id() == id {
-                    *item = Item::Request(request.clone());
+                    let examples = match item {
+                        Item::Request(old) => std::mem::take(&mut old.examples),
+                        Item::Folder(_) => Vec::new(),
+                    };
+                    *item = Item::Request(Request {
+                        examples,
+                        ..request.clone()
+                    });
+                }
+            }
+        })
+    }
+
+    fn save_examples(&self, file: &Path, examples: &[ResponseExample]) -> Result<(), StoreError> {
+        let id = id_of(file)?;
+        self.with_items(parent_of(file), |items| {
+            for item in items.iter_mut() {
+                if let Item::Request(request) = item
+                    && request.id == id
+                {
+                    request.examples = examples.to_vec();
                 }
             }
         })

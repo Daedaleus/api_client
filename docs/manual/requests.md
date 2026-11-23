@@ -105,6 +105,17 @@ request.
 domain, path and when they expire – and lets you add, edit and delete them
 or delete all (for example to sign in again).
 
+## Examples
+
+*Save as example* on a response keeps it – status, headers and the
+complete body – with the request, e.g. the answer for a successful login
+and the one for a wrong password. The *Examples* tab of a saved request
+lists them; pick one to see it like a response, or delete it. Examples are
+stored in a file next to the request (`login.examples.toml`), so they are
+versioned and reviewed with the API. Only responses with a text body can be
+kept (not images or other binary data). Postman's saved responses are
+imported as examples and exported again.
+
 ## Docs
 
 What a request is for, which parameters it expects, how it fits into a

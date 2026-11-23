@@ -83,6 +83,10 @@
     "de": "„[{selector}]“ an Stelle {at} wird nicht unterstützt (Filter-Ausdrücke gibt es noch nicht).",
     "en": "“[{selector}]” at position {at} is not supported (no filter expressions yet)."
   },
+  "error.example_not_text": {
+    "de": "Nur Antworten mit Text-Body können als Beispiel gespeichert werden.",
+    "en": "Only responses with a text body can be kept as examples."
+  },
   "error.response_gone": {
     "de": "Diese Antwort ist nicht mehr im Speicher – bitte den Request erneut senden.",
     "en": "This response is no longer kept – please send the request again."
@@ -242,6 +246,22 @@
   "defaults.auth": { "de": "Auth", "en": "Auth" },
   "defaults.scripts": { "de": "Skripte", "en": "Scripts" },
   "editor.docs": { "de": "Docs", "en": "Docs" },
+  "editor.examples": { "de": "Beispiele", "en": "Examples" },
+  "examples.save": { "de": "Als Beispiel speichern", "en": "Save as example" },
+  "examples.save_title": { "de": "Antwort als Beispiel speichern", "en": "Save response as example" },
+  "examples.name": { "de": "Name des Beispiels", "en": "Name of the example" },
+  "examples.loading": { "de": "Beispiele werden geladen …", "en": "Loading examples …" },
+  "examples.none": {
+    "de": "Noch keine Beispiele. Nach dem Senden: „Als Beispiel speichern“ an der Antwort.",
+    "en": "No examples yet. After sending: “Save as example” on the response."
+  },
+  "examples.list": { "de": "Beispiele", "en": "Examples" },
+  "examples.delete": { "de": "Beispiel „{name}“ löschen", "en": "Delete example “{name}”" },
+  "examples.delete_title": { "de": "Beispiel „{name}“ löschen?", "en": "Delete example “{name}”?" },
+  "examples.delete_message": {
+    "de": "Das Beispiel wird aus der Datei neben dem Request entfernt.",
+    "en": "The example is removed from the file next to the request."
+  },
   "defaults.docs": { "de": "Docs", "en": "Docs" },
   "docs.mode": { "de": "Ansicht der Dokumentation", "en": "Documentation view" },
   "docs.preview": { "de": "Ansicht", "en": "Preview" },

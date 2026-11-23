@@ -290,6 +290,7 @@ impl RequestDraft {
             path_params: ParamDraft::to_path(&self.path_params),
             disabled_query: ParamDraft::to_query(&self.disabled_query),
             docs: self.docs.clone(),
+            examples: Vec::new(),
         })
     }
 }

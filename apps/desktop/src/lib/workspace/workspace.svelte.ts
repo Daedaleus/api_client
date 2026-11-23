@@ -22,6 +22,7 @@ import { CollectionsState } from './collections.svelte';
 import { Dialogs } from './dialogs.svelte';
 import { CookiesState } from './cookies.svelte';
 import { EnvironmentChoice } from './environments.svelte';
+import { ExamplesState } from './examples.svelte';
 import { exportOptions, responseOptions } from './export-target';
 import {
   type ImportFormat,
@@ -62,6 +63,7 @@ export class Workspace {
   readonly defaults: DefaultsState;
   /** cURL export and import. */
   readonly curl: CurlState;
+  readonly examples: ExamplesState;
   /** Checker and completion of the script editor. */
   readonly scriptAssist: ScriptAssist;
   /** Dragging items in the sidebar tree. */
@@ -92,6 +94,7 @@ export class Workspace {
     this.cookies = new CookiesState(api, this.dialogs);
     this.defaults = new DefaultsState(api, this.collections);
     this.curl = new CurlState(api, this.tabs);
+    this.examples = new ExamplesState(api, this.dialogs);
     this.history = new HistoryState(api, this.tabs, this.dialogs);
     this.settings = new SettingsState(api);
   }

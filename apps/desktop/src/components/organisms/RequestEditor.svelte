@@ -5,6 +5,7 @@
   import CertificateCheckField from '../molecules/CertificateCheckField.svelte';
   import BodyEditor from '../molecules/BodyEditor.svelte';
   import DocsEditor from '../molecules/DocsEditor.svelte';
+  import ExamplesPanel from '../molecules/ExamplesPanel.svelte';
   import RowsEditor, { type RowLabels } from '../molecules/RowsEditor.svelte';
   import ParamsEditor from '../molecules/ParamsEditor.svelte';
   import MenuButton from '../molecules/MenuButton.svelte';
@@ -33,6 +34,10 @@
     checksCertificates?: boolean;
     /** The request as a cURL command (`null` if it cannot be built). */
     oncopycurl?: (() => Promise<string | null>) | undefined;
+    /** Loads the examples (when their tab opens). */
+    onexamples?: (() => void) | undefined;
+    /** Removes example `index`. */
+    ondeleteexample?: ((index: number) => void) | undefined;
     /** Code that sends the request in another language (for the clipboard). */
     oncopysnippet?: ((language: SnippetLanguage) => Promise<string | null>) | undefined;
     /** Lets the user pick a file for the body. */
@@ -51,6 +56,8 @@
     onpickfile,
     checksCertificates = true,
     oncopycurl,
+    onexamples,
+    ondeleteexample,
     oncopysnippet,
     assist,
   }: Props = $props();
@@ -116,7 +123,15 @@
   };
 
   type Section =
-    'params' | 'headers' | 'body' | 'auth' | 'variables' | 'settings' | 'scripts' | 'docs';
+    | 'params'
+    | 'headers'
+    | 'body'
+    | 'auth'
+    | 'variables'
+    | 'settings'
+    | 'scripts'
+    | 'docs'
+    | 'examples';
   const SECTIONS: Section[] = [
     'params',
     'headers',
@@ -127,6 +142,8 @@
     'scripts',
     'docs',
   ];
+  /** Examples belong to saved requests only. */
+  let sections = $derived<Section[]>(tab.saved ? [...SECTIONS, 'examples'] : SECTIONS);
   let section = $state<Section>('params');
   let activeParams = $derived(
     queryParams(tab.draft.url).length + pathParamNames(tab.draft.url).length,
@@ -190,14 +207,17 @@
     {/if}
   {/if}
   <div class="request-editor__sections" role="tablist" aria-label={i18n.t('editor.sections')}>
-    {#each SECTIONS as name (name)}
+    {#each sections as name (name)}
       <button
         type="button"
         role="tab"
         class="request-editor__section"
         class:request-editor__section--active={section === name}
         aria-selected={section === name}
-        onclick={() => (section = name)}
+        onclick={() => {
+          section = name;
+          if (name === 'examples') onexamples?.();
+        }}
       >
         {i18n.t(`editor.${name}`)}
         {#if name === 'params' && activeParams > 0}
@@ -259,6 +279,8 @@
       <ScriptsEditor bind:scripts={tab.draft.scripts} {assist} />
     {:else if section === 'docs'}
       <DocsEditor bind:docs={tab.draft.docs} />
+    {:else if section === 'examples'}
+      <ExamplesPanel examples={tab.examples} ondelete={(index) => ondeleteexample?.(index)} />
     {:else}
       <p class="request-editor__note">{i18n.t('editor.variables_hint')}</p>
       <RowsEditor bind:rows={tab.draft.variables} labels={VARIABLE_LABELS} />

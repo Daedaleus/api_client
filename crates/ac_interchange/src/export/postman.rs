@@ -134,6 +134,25 @@ fn request_of(request: &Request, left_out: &mut Vec<Skipped>) -> Value {
         left_out,
     );
     object.insert("request".into(), Value::Object(fields));
+    if !request.examples.is_empty() {
+        let responses = request
+            .examples
+            .iter()
+            .map(|example| {
+                json!({
+                    "name": example.name,
+                    "code": example.status.as_u16(),
+                    "header": example
+                        .headers
+                        .iter()
+                        .map(|header| json!({ "key": header.name, "value": header.value }))
+                        .collect::<Vec<_>>(),
+                    "body": example.body,
+                })
+            })
+            .collect();
+        object.insert("response".into(), Value::Array(responses));
+    }
     Value::Object(object)
 }
 

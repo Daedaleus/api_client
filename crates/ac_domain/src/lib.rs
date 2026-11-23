@@ -19,6 +19,7 @@
 //!   places (collection, environment, folders, request).
 //! - [`tls`]: whether server certificates are checked (inherited).
 //! - [`transport`]: redirects and time limit of requests (inherited).
+//! - [`example`]: responses kept with a request as examples.
 //! - [`exchange`]: one HTTP exchange – the request as sent and the response
 //!   as received.
 
@@ -26,6 +27,7 @@ pub mod auth;
 pub mod collection;
 pub mod cookie;
 pub mod environment;
+pub mod example;
 pub mod exchange;
 pub mod params;
 pub mod protocol;

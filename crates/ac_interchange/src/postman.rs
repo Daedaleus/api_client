@@ -18,7 +18,10 @@ use ac_domain::collection::{
     Body, Collection, Folder, FormField, HeaderEntry, Item, ItemId, MultipartField, Request,
 };
 use ac_domain::environment::Variable;
+use ac_domain::example::ResponseExample;
+use ac_domain::exchange::Header;
 use ac_domain::params::{PathParam, QueryParam};
+use ac_domain::protocol::StatusCode;
 use ac_domain::protocol::grant_type::{AUTHORIZATION_CODE, CLIENT_CREDENTIALS};
 use ac_domain::script::Scripts;
 use ac_domain::tls::CertificateCheck;
@@ -91,6 +94,7 @@ fn item_of(item: &Value, skipped: &mut Vec<Skipped>) -> Item {
         item.pointer("/request/description")
             .or_else(|| item.get("description")),
     );
+    request.examples = examples(item.get("response"));
     request.variables = variables(item.get("variable"));
     (request.transport, request.certificate_check) = behavior(item);
     Item::Request(request)
@@ -332,6 +336,37 @@ fn variables(variables: Option<&Value>) -> Vec<Variable> {
             enabled,
             secret,
             ..Variable::plain(name, if secret { String::new() } else { value })
+        })
+        .collect()
+}
+
+/// Saved responses (`response`) as examples; ones without a valid status
+/// code are left out.
+fn examples(responses: Option<&Value>) -> Vec<ResponseExample> {
+    responses
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|response| {
+            let code = response.get("code").and_then(Value::as_u64)?;
+            let status = StatusCode::new(u16::try_from(code).ok()?).ok()?;
+            Some(ResponseExample {
+                name: text_of(response.get("name")).unwrap_or_default(),
+                status,
+                headers: response
+                    .get("header")
+                    .and_then(Value::as_array)
+                    .into_iter()
+                    .flatten()
+                    .map(|header| {
+                        Header::new(
+                            text_of(header.get("key")).unwrap_or_default(),
+                            text_of(header.get("value")).unwrap_or_default(),
+                        )
+                    })
+                    .collect(),
+                body: text_of(response.get("body")).unwrap_or_default(),
+            })
         })
         .collect()
 }

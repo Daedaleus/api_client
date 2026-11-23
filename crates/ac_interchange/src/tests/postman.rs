@@ -350,3 +350,22 @@ fn descriptions_become_docs() {
     assert_eq!(request(&folder.items, "R").docs, "Request docs");
     assert_eq!(request(&collection.items, "Old").docs, "On the item");
 }
+
+#[test]
+fn saved_responses_become_examples() {
+    let imported = from_postman(
+        r#"{"info": {"name": "E"}, "item": [{"name": "R", "request": "http://x",
+            "response": [
+              {"name": "OK", "code": 200, "header": [{"key": "Content-Type", "value": "text/plain"}], "body": "hi"},
+              {"name": "Broken", "code": 42},
+              {"name": "No code"}
+            ]}]}"#,
+    )
+    .unwrap();
+    let examples = &request(&imported.collection.items, "R").examples;
+    assert_eq!(examples.len(), 1);
+    assert_eq!(examples[0].name, "OK");
+    assert_eq!(examples[0].status.as_u16(), 200);
+    assert_eq!(examples[0].headers[0].value, "text/plain");
+    assert_eq!(examples[0].body, "hi");
+}

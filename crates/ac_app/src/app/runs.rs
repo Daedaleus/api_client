@@ -57,7 +57,7 @@ impl<
         self.inner.runtime.spawn(async move {
             let execution = app.run_with_steps(&outgoing, &steps, prepared).await;
             if let Ok(response) = &execution.response {
-                app.keep_response_body(run_id, response.body.clone());
+                app.keep_response(run_id, response.clone());
             }
             let outcome = execution.into_view();
             // Nobody listening is fine: then nobody wants the result.
