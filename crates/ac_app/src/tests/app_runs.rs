@@ -310,3 +310,93 @@ async fn requests_of_a_collection_share_their_cookies() {
         0
     );
 }
+
+#[tokio::test]
+async fn digest_answers_the_challenge_and_aws_signs() {
+    use ac_domain::exchange::Header;
+
+    use crate::view::AuthDraft;
+
+    let mut challenge = response(401, "text/plain", "");
+    challenge.headers.push(Header::new(
+        "WWW-Authenticate",
+        r#"Digest realm="api", nonce="n0nce", qop="auth", algorithm=SHA-256"#,
+    ));
+    let mut plain_401 = response(401, "text/plain", "");
+    plain_401
+        .headers
+        .push(Header::new("WWW-Authenticate", r#"Basic realm="api""#));
+    let (app, fake) = app(FakeHttpSender::new()
+        .reply(Ok(challenge))
+        .reply(Ok(response(200, "text/plain", "")))
+        .reply(Ok(response(200, "text/plain", "")))
+        .reply(Ok(plain_401))
+        .reply(Ok(response(200, "text/plain", ""))));
+    let send = |auth: AuthDraft| {
+        let mut events = app.subscribe();
+        let Command::SendRequest { mut request } = send("GET", "https://x.example/a?b=1") else {
+            unreachable!()
+        };
+        request.auth = auth;
+        app.execute(Command::SendRequest { request }).unwrap();
+        async move { next_event(&mut events).await }
+    };
+    let digest = AuthDraft::Digest {
+        username: "bob".into(),
+        password: "pw".into(),
+    };
+    // Challenge, then the answer.
+    send(digest.clone()).await;
+    // No challenge: one request; a 401 without Digest challenge stays.
+    send(digest.clone()).await;
+    send(digest).await;
+    let requests = fake.sent();
+    let authorization = |index: usize| {
+        requests[index]
+            .headers
+            .iter()
+            .find(|h| h.name.eq_ignore_ascii_case("authorization"))
+            .map(|h| h.value.clone())
+    };
+    assert_eq!(requests.len(), 4);
+    assert_eq!(authorization(0), None);
+    let answer = authorization(1).unwrap();
+    assert!(
+        answer
+            .starts_with(r#"Digest username="bob", realm="api", uri="/a?b=1", algorithm=SHA-256"#),
+        "{answer}"
+    );
+    assert!(
+        answer.contains("qop=auth") && answer.contains("nc=00000001"),
+        "{answer}"
+    );
+    assert_eq!(authorization(2), None);
+    assert_eq!(authorization(3), None);
+
+    send(AuthDraft::AwsSigV4 {
+        access_key_id: " AKID ".into(),
+        secret_access_key: "secret".into(),
+        session_token: String::new(),
+        region: "eu-central-1".into(),
+        service: "execute-api".into(),
+    })
+    .await;
+    let aws = fake.sent().pop().unwrap();
+    let signature = aws
+        .headers
+        .iter()
+        .find(|h| h.name.eq_ignore_ascii_case("authorization"))
+        .unwrap();
+    assert!(
+        signature
+            .value
+            .starts_with("AWS4-HMAC-SHA256 Credential=AKID/"),
+        "{signature:?}"
+    );
+    assert!(
+        signature
+            .value
+            .contains("/eu-central-1/execute-api/aws4_request")
+    );
+    assert!(aws.headers.iter().any(|h| h.name == "x-amz-date"));
+}

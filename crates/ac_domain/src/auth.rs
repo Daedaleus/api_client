@@ -37,6 +37,17 @@ pub enum Auth {
         /// Where it goes.
         placement: KeyPlacement,
     },
+    /// HTTP Digest (RFC 7616: MD5 or SHA-256, `qop=auth`): the server's
+    /// challenge (a 401 response) is answered when sending.
+    Digest {
+        /// User name.
+        username: String,
+        /// Password.
+        password: String,
+    },
+    /// AWS Signature Version 4: the request is signed just before it is
+    /// sent.
+    AwsSigV4(AwsSigV4),
 }
 
 /// OAuth 2 (RFC 6749).
@@ -101,6 +112,31 @@ pub fn is_loopback_redirect(url: &url::Url) -> bool {
     url.scheme() == "http" && loopback
 }
 
+/// Credentials of AWS Signature Version 4.
+#[derive(Clone, PartialEq, Eq, Default)]
+pub struct AwsSigV4 {
+    /// Access key id, e.g. `AKIA…`.
+    pub access_key_id: String,
+    /// Secret access key (best a `{{variable}}` of an environment secret).
+    pub secret_access_key: String,
+    /// Session token of temporary credentials; empty if none.
+    pub session_token: String,
+    /// Region, e.g. `eu-central-1`.
+    pub region: String,
+    /// Service, e.g. `execute-api` or `s3`.
+    pub service: String,
+}
+
+impl std::fmt::Debug for AwsSigV4 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AwsSigV4")
+            .field("access_key_id", &self.access_key_id)
+            .field("region", &self.region)
+            .field("service", &self.service)
+            .finish_non_exhaustive()
+    }
+}
+
 /// Where an API key is sent.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum KeyPlacement {
@@ -123,6 +159,11 @@ impl std::fmt::Debug for Auth {
                 .finish_non_exhaustive(),
             Self::Bearer { .. } => f.debug_struct("Bearer").finish_non_exhaustive(),
             Self::OAuth2(oauth) => oauth.fmt(f),
+            Self::Digest { username, .. } => f
+                .debug_struct("Digest")
+                .field("username", username)
+                .finish_non_exhaustive(),
+            Self::AwsSigV4(aws) => aws.fmt(f),
             Self::ApiKey {
                 name, placement, ..
             } => f

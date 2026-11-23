@@ -142,7 +142,25 @@ name: string;
 /**  The key. */
 value: string; 
 /**  Where it goes. */
-placement: KeyPlacementView };
+placement: KeyPlacementView } | 
+/**  HTTP Digest. */
+{ kind: "digest"; 
+/**  User name. */
+username: string; 
+/**  Password. */
+password: string } | 
+/**  AWS Signature Version 4. */
+{ kind: "awsSigV4"; 
+/**  Access key id. */
+accessKeyId: string; 
+/**  Secret access key. */
+secretAccessKey: string; 
+/**  Session token; empty if none. */
+sessionToken: string; 
+/**  Region. */
+region: string; 
+/**  Service. */
+service: string };
 
 /**  The body of a [`super::RequestDraft`]. */
 export type BodyDraft = BodyDraft_Serialize | BodyDraft_Deserialize;

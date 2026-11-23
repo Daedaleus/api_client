@@ -13,6 +13,19 @@
         return previous.kind === 'basic' ? previous : { kind, username: '', password: '' };
       case 'bearer':
         return previous.kind === 'bearer' ? previous : { kind, token: '' };
+      case 'digest':
+        return previous.kind === 'digest' ? previous : { kind, username: '', password: '' };
+      case 'awsSigV4':
+        return previous.kind === 'awsSigV4'
+          ? previous
+          : {
+              kind,
+              accessKeyId: '',
+              secretAccessKey: '',
+              sessionToken: '',
+              region: '',
+              service: '',
+            };
       case 'apiKey':
         return previous.kind === 'apiKey'
           ? previous
@@ -44,7 +57,11 @@
             ? [auth.value]
             : auth.kind === 'oauth2'
               ? [auth.clientSecret]
-              : [];
+              : auth.kind === 'digest'
+                ? [auth.password]
+                : auth.kind === 'awsSigV4'
+                  ? [auth.secretAccessKey, auth.sessionToken]
+                  : [];
     return credentials.some((value) => value.trim() !== '' && !/\{\{[^}]*\}\}/.test(value));
   }
 </script>
@@ -63,7 +80,16 @@
 
   let { auth = $bindable(), root = false }: Props = $props();
 
-  const KINDS: AuthKind[] = ['inherit', 'none', 'basic', 'bearer', 'apiKey', 'oauth2'];
+  const KINDS: AuthKind[] = [
+    'inherit',
+    'none',
+    'basic',
+    'bearer',
+    'apiKey',
+    'digest',
+    'oauth2',
+    'awsSigV4',
+  ];
   let kinds = $derived(root ? KINDS.filter((kind) => kind !== 'none') : KINDS);
 
   function label(kind: AuthKind): string {
@@ -96,6 +122,66 @@
       <span class="auth-editor__label">{i18n.t('auth.password')}</span>
       <input class="auth-editor__input" type="text" spellcheck="false" bind:value={auth.password} />
     </label>
+  {:else if auth.kind === 'digest'}
+    <label class="auth-editor__field">
+      <span class="auth-editor__label">{i18n.t('auth.username')}</span>
+      <input class="auth-editor__input" type="text" spellcheck="false" bind:value={auth.username} />
+    </label>
+    <label class="auth-editor__field">
+      <span class="auth-editor__label">{i18n.t('auth.password')}</span>
+      <input class="auth-editor__input" type="text" spellcheck="false" bind:value={auth.password} />
+    </label>
+    <p class="auth-editor__note">{i18n.t('auth.digest_note')}</p>
+  {:else if auth.kind === 'awsSigV4'}
+    <label class="auth-editor__field">
+      <span class="auth-editor__label">{i18n.t('auth.aws_access_key')}</span>
+      <input
+        class="auth-editor__input"
+        type="text"
+        spellcheck="false"
+        bind:value={auth.accessKeyId}
+      />
+    </label>
+    <label class="auth-editor__field">
+      <span class="auth-editor__label">{i18n.t('auth.aws_secret_key')}</span>
+      <input
+        class="auth-editor__input"
+        type="text"
+        spellcheck="false"
+        bind:value={auth.secretAccessKey}
+      />
+    </label>
+    <label class="auth-editor__field">
+      <span class="auth-editor__label">{i18n.t('auth.aws_session_token')}</span>
+      <input
+        class="auth-editor__input"
+        type="text"
+        spellcheck="false"
+        placeholder={i18n.t('auth.optional')}
+        bind:value={auth.sessionToken}
+      />
+    </label>
+    <label class="auth-editor__field">
+      <span class="auth-editor__label">{i18n.t('auth.aws_region')}</span>
+      <input
+        class="auth-editor__input"
+        type="text"
+        spellcheck="false"
+        placeholder="eu-central-1"
+        bind:value={auth.region}
+      />
+    </label>
+    <label class="auth-editor__field">
+      <span class="auth-editor__label">{i18n.t('auth.aws_service')}</span>
+      <input
+        class="auth-editor__input"
+        type="text"
+        spellcheck="false"
+        placeholder={i18n.t('auth.aws_service_placeholder')}
+        bind:value={auth.service}
+      />
+    </label>
+    <p class="auth-editor__note">{i18n.t('auth.aws_note')}</p>
   {:else if auth.kind === 'bearer'}
     <label class="auth-editor__field">
       <span class="auth-editor__label">{i18n.t('auth.token')}</span>

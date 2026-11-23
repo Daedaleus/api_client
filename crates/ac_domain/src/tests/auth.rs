@@ -40,13 +40,35 @@ fn credentials_stay_out_of_debug_output() {
             scope: String::new(),
             ..Default::default()
         }),
+        Auth::Digest {
+            username: "bob".into(),
+            password: "d1gest".into(),
+        },
+        Auth::AwsSigV4(AwsSigV4 {
+            access_key_id: "AKIDEXAMPLE".into(),
+            secret_access_key: "aw5secret".into(),
+            session_token: "t0ken".into(),
+            region: "eu-central-1".into(),
+            service: "s3".into(),
+        }),
     ];
     let debug = format!("{all:?}");
     assert!(debug.contains("auth.example.com"), "{debug}");
-    for secret in ["hunter2", "s3cr3t", "k3y", "cl1ent"] {
+    for secret in [
+        "hunter2",
+        "s3cr3t",
+        "k3y",
+        "cl1ent",
+        "d1gest",
+        "aw5secret",
+        "t0ken",
+    ] {
         assert!(!debug.contains(secret), "{debug}");
     }
     assert!(debug.contains("alice") && debug.contains("X-API-Key") && debug.contains("Query"));
+    assert!(
+        debug.contains("bob") && debug.contains("AKIDEXAMPLE") && debug.contains("eu-central-1")
+    );
 }
 
 #[test]

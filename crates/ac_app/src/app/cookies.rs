@@ -3,9 +3,8 @@
 //! manager lists, edits, deletes and clears their cookies.
 
 use std::sync::PoisonError;
-use std::time::{SystemTime, UNIX_EPOCH};
 
-use ac_domain::cookie::{CookieJar, UnixSeconds};
+use ac_domain::cookie::CookieJar;
 
 use super::App;
 use crate::command::{CommandAck, QueryResult};
@@ -14,6 +13,7 @@ use crate::ports::{
     BrowserLogin, CollectionStore, HistoryStore, HttpSender, ScriptAssist, ScriptRunner,
     SecretVault, SettingsStore, SharedCookieJar,
 };
+use crate::signing::unix_now;
 use crate::view::{CookieKeyView, CookieView};
 
 impl<
@@ -113,15 +113,6 @@ impl<
             .map(CookieView::from_cookie)
             .collect())
     }
-}
-
-/// The current time in the jar's terms.
-fn unix_now() -> UnixSeconds {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |elapsed| {
-            UnixSeconds::try_from(elapsed.as_secs()).unwrap_or(UnixSeconds::MAX)
-        })
 }
 
 #[cfg(test)]

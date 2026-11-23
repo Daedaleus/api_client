@@ -5,7 +5,8 @@
 use ac_domain::auth::Auth;
 use ac_domain::auth::effective;
 use ac_domain::environment::Variable;
-use ac_domain::exchange::Response;
+use ac_domain::exchange::{Header, ResolvedRequest, Response};
+use ac_domain::protocol::{StatusCode, header};
 use ac_domain::scope::Scope;
 use ac_domain::script::ScriptPhase;
 use ac_domain::tls::checks_certificates;
@@ -19,9 +20,11 @@ use crate::error::AppError;
 use crate::event::AppEvent;
 use crate::history::Masking;
 use crate::oauth::authorize;
+use crate::ports::SharedCookieJar;
 use crate::ports::{BrowserLogin, CollectionStore, HttpSender, ScriptRunner, SecretVault};
 use crate::ports::{HistoryStore, ScriptAssist, SettingsStore};
 use crate::resolve::{Entered, Prepared, resolve_request};
+use crate::signing::{Signer, aws, digest};
 use crate::text::UserText;
 use crate::view::{HeaderDraft, OutgoingRequest, ParamDraft, VariableDraft};
 
@@ -156,10 +159,73 @@ impl<H: HttpSender, S, V, B: BrowserLogin, R, A, Y, Z> Inner<H, S, V, B, R, A, Y
                 .map_err(|error| error.user_text())?;
             authorize(&mut request, &token);
         }
+        let cookies = prepared.cookies;
+        match prepared.signer {
+            Some(Signer::Aws(credentials)) => {
+                aws::sign(&mut request, &credentials, crate::signing::unix_now());
+                self.send_once(request, cookies).await
+            }
+            Some(Signer::Digest { username, password }) => {
+                self.send_digest(request, cookies, &username, &password)
+                    .await
+            }
+            None => self.send_once(request, cookies).await,
+        }
+    }
+
+    async fn send_once(
+        &self,
+        request: ResolvedRequest,
+        cookies: Option<SharedCookieJar>,
+    ) -> Result<Response, UserText> {
         self.http
-            .send(request, prepared.cookies)
+            .send(request, cookies)
             .await
             .map_err(|error| error.user_text())
+    }
+
+    /// HTTP Digest: sends without credentials; if the server answers 401
+    /// with a Digest challenge, sends again with the answer. Without a
+    /// challenge it can answer, the first response is the result.
+    async fn send_digest(
+        &self,
+        mut request: ResolvedRequest,
+        cookies: Option<SharedCookieJar>,
+        username: &str,
+        password: &str,
+    ) -> Result<Response, UserText> {
+        let first = self.send_once(request.clone(), cookies.clone()).await?;
+        if first.status != StatusCode::UNAUTHORIZED {
+            return Ok(first);
+        }
+        let challenges = first
+            .headers
+            .iter()
+            .filter(|h| h.name.eq_ignore_ascii_case(header::WWW_AUTHENTICATE))
+            .map(|h| h.value.as_str());
+        let Some(challenge) = digest::best_challenge(challenges) else {
+            return Ok(first);
+        };
+        let uri = match request.url.query() {
+            Some(query) => format!("{}?{query}", request.url.path()),
+            None => request.url.path().to_owned(),
+        };
+        let answer = digest::authorization(
+            &challenge,
+            &digest::Answer {
+                username,
+                password,
+                method: request.method.as_str(),
+                uri: &uri,
+                cnonce: &digest::new_cnonce(),
+                nonce_count: 1,
+            },
+        );
+        request
+            .headers
+            .retain(|h| !h.name.eq_ignore_ascii_case(header::AUTHORIZATION));
+        request.headers.push(Header::new("Authorization", answer));
+        self.send_once(request, cookies).await
     }
 }
 

@@ -47,6 +47,8 @@ request works for everyone on the team who has the files in the same place.
 | Basic | User name and password as `Authorization: Basic …`. |
 | Bearer token | `Authorization: Bearer <token>`. |
 | API key | A header or query parameter with the key. |
+| Digest | User name and password (HTTP Digest, MD5 or SHA-256): the request goes out without credentials first; if the server answers 401 with a Digest challenge, it is sent again with the answer. |
+| AWS Signature v4 | Access key ID, secret access key, optional session token, region and service (e.g. `execute-api`, `s3`): the request is signed right before it is sent. File and multipart bodies are not part of the signature (`UNSIGNED-PAYLOAD`, which S3 accepts). |
 | OAuth 2 | A token is fetched and sent as bearer token: *client credentials*, or *authorization code* where you sign in in your browser (with PKCE). Tokens are kept in memory until they expire. |
 
 Put credentials into [secret variables](environments.md#secrets) and use

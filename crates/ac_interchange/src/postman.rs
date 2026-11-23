@@ -13,7 +13,7 @@
 //! Read leniently from JSON values: exports differ between Postman versions,
 //! and a missing optional field should never make an import fail.
 
-use ac_domain::auth::{Auth, KeyPlacement, OAuth2, OAuth2Grant};
+use ac_domain::auth::{Auth, AwsSigV4, KeyPlacement, OAuth2, OAuth2Grant};
 use ac_domain::collection::{
     Body, Collection, Folder, FormField, HeaderEntry, Item, ItemId, MultipartField, Request,
 };
@@ -277,6 +277,17 @@ fn auth(auth: Option<&Value>, item: &str, skipped: &mut Vec<Skipped>) -> Auth {
                 scope: field("scope"),
             })
         }
+        "digest" => Auth::Digest {
+            username: field("username"),
+            password: field("password"),
+        },
+        "awsv4" => Auth::AwsSigV4(AwsSigV4 {
+            access_key_id: field("accessKey"),
+            secret_access_key: field("secretKey"),
+            session_token: field("sessionToken"),
+            region: field("region"),
+            service: field("service"),
+        }),
         "apikey" => Auth::ApiKey {
             name: field("key"),
             value: field("value"),

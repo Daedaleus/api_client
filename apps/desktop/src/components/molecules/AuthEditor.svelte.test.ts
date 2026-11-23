@@ -24,6 +24,19 @@ describe('AuthEditor', () => {
     const bearer: AuthDraft = { kind: 'bearer', token: 't' };
     expect(authOf('bearer', bearer)).toBe(bearer);
     expect(authOf('basic', bearer)).toEqual({ kind: 'basic', username: '', password: '' });
+    expect(authOf('digest', basic)).toEqual({ kind: 'digest', username: '', password: '' });
+    const digest: AuthDraft = { kind: 'digest', username: 'u', password: 'p' };
+    expect(authOf('digest', digest)).toBe(digest);
+    const aws = authOf('awsSigV4', basic);
+    expect(aws).toEqual({
+      kind: 'awsSigV4',
+      accessKeyId: '',
+      secretAccessKey: '',
+      sessionToken: '',
+      region: '',
+      service: '',
+    });
+    expect(authOf('awsSigV4', aws)).toBe(aws);
     expect(authOf('none', basic)).toEqual({ kind: 'none' });
     expect(authOf('inherit', basic)).toEqual({ kind: 'inherit' });
   });
@@ -36,6 +49,50 @@ describe('AuthEditor', () => {
       true,
     );
     expect(hasPlainCredential({ kind: 'none' })).toBe(false);
+    expect(hasPlainCredential({ kind: 'digest', username: 'u', password: 'pw' })).toBe(true);
+    const aws = {
+      kind: 'awsSigV4',
+      accessKeyId: 'AKID',
+      secretAccessKey: '{{awsSecret}}',
+      sessionToken: '',
+      region: 'us-east-1',
+      service: 's3',
+    } as const;
+    expect(hasPlainCredential(aws)).toBe(false);
+    expect(hasPlainCredential({ ...aws, sessionToken: 'tok' })).toBe(true);
+  });
+
+  it('edits Digest and AWS credentials', async () => {
+    const auth = $state<{ value: AuthDraft }>({ value: { kind: 'none' } });
+    render(AuthEditor, {
+      get auth() {
+        return auth.value;
+      },
+      set auth(next) {
+        auth.value = next;
+      },
+    });
+    await userEvent.selectOptions(screen.getByLabelText('Type'), 'Digest');
+    await userEvent.type(screen.getByLabelText('Username'), 'bob');
+    await userEvent.type(screen.getByLabelText('Password'), 'pw');
+    expect(auth.value).toEqual({ kind: 'digest', username: 'bob', password: 'pw' });
+    expect(screen.getByText(/repeated with the matching answer/)).toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByLabelText('Type'), 'AWS Signature v4');
+    await userEvent.type(screen.getByLabelText('Access key ID'), 'AKID');
+    await userEvent.type(screen.getByLabelText('Secret access key'), '{{{{awsSecret}}');
+    await userEvent.type(screen.getByLabelText('Session token'), 'tok');
+    await userEvent.type(screen.getByLabelText('Region'), 'eu-central-1');
+    await userEvent.type(screen.getByLabelText('Service'), 'execute-api');
+    expect(auth.value).toEqual({
+      kind: 'awsSigV4',
+      accessKeyId: 'AKID',
+      secretAccessKey: '{{awsSecret}}',
+      sessionToken: 'tok',
+      region: 'eu-central-1',
+      service: 'execute-api',
+    });
+    expect(screen.getByRole('status')).toHaveTextContent('plain text');
   });
 
   it('edits an API key and where it goes', async () => {

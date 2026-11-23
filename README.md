@@ -23,7 +23,8 @@ collections, environments and secrets, scripts, import, shortcuts.
   ([format](docs/format/v1.md)).
 - **Requests** – any method, query parameters and path variables (`/users/:id`)
   as tables, headers, bodies (JSON, text, form, multipart, file) and auth
-  (Basic, Bearer, API key, OAuth 2 with client credentials or browser sign-in).
+  (Basic, Bearer, API key, Digest, AWS Signature v4, OAuth 2 with client
+  credentials or browser sign-in).
 - **Variables and environments** – `{{variable}}` in every field, defined on
   the collection, environments, folders, the request or by scripts; a
   preview shows the URL as it will be sent.

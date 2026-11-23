@@ -42,6 +42,14 @@ function withoutSecretAuth(auth: AuthDraft): AuthDraft {
       return { ...auth, value: keepTemplate(auth.value) };
     case 'oauth2':
       return { ...auth, clientSecret: keepTemplate(auth.clientSecret) };
+    case 'digest':
+      return { ...auth, password: keepTemplate(auth.password) };
+    case 'awsSigV4':
+      return {
+        ...auth,
+        secretAccessKey: keepTemplate(auth.secretAccessKey),
+        sessionToken: keepTemplate(auth.sessionToken),
+      };
     default:
       return auth;
   }

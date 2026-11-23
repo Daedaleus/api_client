@@ -2,7 +2,7 @@
 //!
 //! ```toml
 //! [request.auth]            # [auth] in folder.toml and collection.toml
-//! type = "bearer"           # none | basic | bearer | api-key | oauth2
+//! type = "bearer"           # none | basic | bearer | api-key | oauth2 | digest | aws-sigv4
 //! token = "{{token}}"
 //! ```
 //!
@@ -12,10 +12,13 @@
 //! (`client-credentials`, the default, or `authorization-code`),
 //! `token_url`, `client_id`, `client_secret`, optionally `scope` and, for
 //! the authorization code, `auth_url` and optionally `redirect_url`.
+//! `digest` has `username` and `password`; `aws-sigv4` has
+//! `access_key_id`, `secret_access_key`, `region`, `service` and optionally
+//! `session_token`.
 
 use std::path::Path;
 
-use ac_domain::auth::{Auth, KeyPlacement, OAuth2, OAuth2Grant};
+use ac_domain::auth::{Auth, AwsSigV4, KeyPlacement, OAuth2, OAuth2Grant};
 use toml_edit::{Item, Table, TableLike};
 
 use crate::document;
@@ -30,6 +33,8 @@ const BASIC: &str = "basic";
 const BEARER: &str = "bearer";
 const API_KEY: &str = "api-key";
 const OAUTH2: &str = "oauth2";
+const DIGEST: &str = "digest";
+const AWS_SIGV4: &str = "aws-sigv4";
 const GRANT: &str = "grant";
 const CLIENT_CREDENTIALS: &str = "client-credentials";
 const AUTHORIZATION_CODE: &str = "authorization-code";
@@ -62,6 +67,17 @@ pub(crate) fn read(
         Some(BEARER) => Ok(Auth::Bearer {
             token: text("token")?,
         }),
+        Some(DIGEST) => Ok(Auth::Digest {
+            username: text("username")?,
+            password: text("password")?,
+        }),
+        Some(AWS_SIGV4) => Ok(Auth::AwsSigV4(AwsSigV4 {
+            access_key_id: text("access_key_id")?,
+            secret_access_key: text("secret_access_key")?,
+            session_token: text("session_token")?,
+            region: text("region")?,
+            service: text("service")?,
+        })),
         Some(OAUTH2) => Ok(Auth::OAuth2(OAuth2 {
             grant: match document::opt_str(table, GRANT, path)?.as_deref() {
                 None | Some(CLIENT_CREDENTIALS) => OAuth2Grant::ClientCredentials,
@@ -101,7 +117,9 @@ pub(crate) fn read(
         other => Err(StorageError::invalid(
             path,
             field,
-            format!("type must be none, basic, bearer, api-key or oauth2, found {other:?}"),
+            format!(
+                "type must be none, basic, bearer, api-key, oauth2, digest or aws-sigv4, found {other:?}"
+            ),
         )),
     }
 }
@@ -133,6 +151,21 @@ fn to_table(auth: &Auth) -> Option<Table> {
         Auth::Bearer { token } => {
             set(TYPE, BEARER);
             set("token", token);
+        }
+        Auth::Digest { username, password } => {
+            set(TYPE, DIGEST);
+            set("username", username);
+            set("password", password);
+        }
+        Auth::AwsSigV4(aws) => {
+            set(TYPE, AWS_SIGV4);
+            set("access_key_id", &aws.access_key_id);
+            set("secret_access_key", &aws.secret_access_key);
+            if !aws.session_token.is_empty() {
+                set("session_token", &aws.session_token);
+            }
+            set("region", &aws.region);
+            set("service", &aws.service);
         }
         Auth::OAuth2(oauth) => {
             set(TYPE, OAUTH2);
