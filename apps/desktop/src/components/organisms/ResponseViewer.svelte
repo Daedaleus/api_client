@@ -1,16 +1,18 @@
 <script lang="ts">
-  import { fitsCodeView, formatBytes, formatDuration } from '../../lib/format';
+  import { formatBytes, formatDuration } from '../../lib/format';
   import { i18n } from '../../lib/i18n/i18n.svelte';
   import type { RunOutcome } from '../../lib/types';
-  import CodeViewer from '../molecules/CodeViewer.svelte';
+  import ResponseBody from '../molecules/ResponseBody.svelte';
   import TestResults from '../molecules/TestResults.svelte';
 
   interface Props {
     outcome: RunOutcome | null;
     sending: boolean;
+    /** Saves the shown body to a file; missing when it cannot be (history). */
+    onsavebody?: (() => void) | undefined;
   }
 
-  let { outcome, sending }: Props = $props();
+  let { outcome, sending, onsavebody }: Props = $props();
 
   type Tab = 'body' | 'headers' | 'tests' | 'logs';
   let tab = $state<Tab>('body');
@@ -91,30 +93,7 @@
       {:else if shown === 'tests'}
         <TestResults {tests} />
       {:else if shown === 'body'}
-        {#if outcome.body.binary}
-          <p class="response__note">
-            {i18n.t('response.body.binary', { size: formatBytes(outcome.sizeBytes) })}
-          </p>
-        {:else if outcome.body.text === ''}
-          <p class="response__note">{i18n.t('response.body.none')}</p>
-        {:else}
-          {#if outcome.body.truncated}
-            <p class="response__note">
-              {i18n.t('response.body.truncated', { size: formatBytes(outcome.body.text.length) })}
-            </p>
-          {/if}
-          {#if fitsCodeView(outcome.body.text)}
-            <div class="response__body response__body--code">
-              <CodeViewer
-                text={outcome.body.text}
-                isJson={outcome.body.pretty}
-                label={i18n.t('response.body')}
-              />
-            </div>
-          {:else}
-            <pre class="response__body">{outcome.body.text}</pre>
-          {/if}
-        {/if}
+        <ResponseBody body={outcome.body} sizeBytes={outcome.sizeBytes} onsave={onsavebody} />
       {:else}
         <table class="response__headers">
           <tbody>
@@ -253,34 +232,13 @@
     color: var(--color-error);
   }
 
+  /* A column: the body (ResponseBody) scrolls itself and fills the panel. */
   .response__panel {
     flex: 1;
     min-height: 0;
-    overflow: auto;
-  }
-
-  /* The code viewer scrolls itself and fills the panel. */
-  .response__panel:has(.response__body--code) {
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-  }
-
-  .response__body--code {
-    flex: 1;
-    min-height: 0;
-    padding: 0;
-  }
-
-  .response__body {
-    margin: 0;
-    padding: var(--space-l);
-    background: var(--color-code-bg);
-    font-family: var(--font-mono);
-    font-size: var(--font-size-m);
-    line-height: 1.6;
-    white-space: pre-wrap;
-    word-break: break-word;
+    overflow: auto;
   }
 
   .response__headers {

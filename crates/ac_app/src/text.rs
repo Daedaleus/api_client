@@ -161,6 +161,8 @@ pub mod keys {
     pub const MOVE_INTO_ITSELF: &str = "error.move_into_itself";
     /// Names must not be empty.
     pub const NAME_EMPTY: &str = "error.name_empty";
+    /// A response to save is no longer kept.
+    pub const RESPONSE_GONE: &str = "error.response_gone";
     /// A cookie name is empty or has spaces, `;` or `=`.
     pub const COOKIE_NAME: &str = "error.cookie_name";
     /// A cookie value has `;` or control characters.
@@ -172,7 +174,7 @@ pub mod keys {
 
     /// All keys with the names of their placeholders, checked against the
     /// translation file by a test.
-    pub const ALL: [(&str, &[&str]); 61] = [
+    pub const ALL: [(&str, &[&str]); 62] = [
         (URL_EMPTY, &[]),
         (URL_INVALID, &["reason"]),
         (URL_SCHEME, &["scheme"]),
@@ -230,6 +232,7 @@ pub mod keys {
         (NOT_A_FOLDER, &[]),
         (MOVE_INTO_ITSELF, &[]),
         (NAME_EMPTY, &[]),
+        (RESPONSE_GONE, &[]),
         (COOKIE_NAME, &[]),
         (COOKIE_VALUE, &[]),
         (COOKIE_DOMAIN, &[]),

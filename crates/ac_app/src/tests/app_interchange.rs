@@ -555,7 +555,7 @@ async fn snippets_are_what_would_be_sent_in_every_language() {
 #[tokio::test]
 async fn collections_export_as_postman_collections() {
     use crate::command::{Command, CommandAck};
-    use crate::ports::{CollectionStore, StoreError, StoreErrorKind};
+    use crate::ports::{StoreError, StoreErrorKind};
     use crate::view::ExportFormatView;
 
     let fixture = Fixture::new();
@@ -570,10 +570,7 @@ async fn collections_export_as_postman_collections() {
         panic!("expected an export");
     };
     assert_eq!(left_out, []);
-    let text = fixture
-        .store
-        .read_text(std::path::Path::new("shop.postman.json"))
-        .unwrap();
+    let text = String::from_utf8(fixture.store.written("shop.postman.json").unwrap()).unwrap();
     let imported = ac_interchange::import_collection(&text).unwrap();
     assert_eq!(imported.collection.name, fixture.tree().name);
 

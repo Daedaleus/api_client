@@ -128,12 +128,12 @@ pub trait CollectionStore: Send + Sync + 'static {
     /// If it cannot be read or is no UTF-8 text.
     fn read_text(&self, file: &Path) -> Result<String, StoreError>;
 
-    /// Writes an export to the file the user picked (replacing it, as the
-    /// save dialog confirmed).
+    /// Writes an export or a response body to the file the user picked
+    /// (replacing it, as the save dialog confirmed).
     ///
     /// # Errors
     /// If it cannot be written.
-    fn write_text(&self, file: &Path, text: &str) -> Result<(), StoreError>;
+    fn write_file(&self, file: &Path, bytes: &[u8]) -> Result<(), StoreError>;
 
     /// The encrypted secrets of the environment in `environment_file`;
     /// `None` if it has none.
@@ -247,8 +247,8 @@ impl<T: CollectionStore> CollectionStore for Arc<T> {
     fn read_text(&self, file: &Path) -> Result<String, StoreError> {
         T::read_text(self, file)
     }
-    fn write_text(&self, file: &Path, text: &str) -> Result<(), StoreError> {
-        T::write_text(self, file, text)
+    fn write_file(&self, file: &Path, bytes: &[u8]) -> Result<(), StoreError> {
+        T::write_file(self, file, bytes)
     }
     fn read_secrets(&self, environment_file: &Path) -> Result<Option<Vec<u8>>, StoreError> {
         T::read_secrets(self, environment_file)

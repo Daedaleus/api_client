@@ -25,6 +25,7 @@ mod environments;
 mod history;
 mod interchange;
 mod recipients;
+mod responses;
 mod runner;
 mod runs;
 mod script_runs;
@@ -107,6 +108,8 @@ struct Inner<H, S, V, B, R, A, Y, Z> {
     next_run: AtomicU64,
     /// OAuth 2 access tokens, in memory only.
     tokens: TokenCache,
+    /// The bodies of the last responses (see `responses`).
+    responses: Mutex<responses::ResponseBodies>,
     /// Cookie jars per collection (`None`: requests outside a collection),
     /// in memory only – never written into the collection.
     cookie_jars: Mutex<HashMap<Option<String>, SharedCookieJar>>,
@@ -160,6 +163,7 @@ impl<
                 next_run: AtomicU64::new(1),
                 tokens: TokenCache::default(),
                 cookie_jars: Mutex::default(),
+                responses: Mutex::default(),
                 open: Mutex::new(Vec::new()),
                 temporary: Mutex::default(),
                 settings_problem: Mutex::default(),
@@ -273,6 +277,7 @@ impl<
                 cookie,
             } => self.delete_cookie(collection_id.as_deref(), &cookie),
             Command::ClearCookies { collection_id } => self.clear_cookies(collection_id.as_deref()),
+            Command::SaveResponseBody { run_id, file } => self.save_response_body(run_id, &file),
             Command::ClearHistory => self.clear_history(),
             Command::SaveSettings { settings } => self.save_settings(&settings),
         }

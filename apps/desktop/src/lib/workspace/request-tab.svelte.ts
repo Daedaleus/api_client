@@ -23,6 +23,11 @@ export class RequestTab {
   /** Run whose result is awaited; `null` when idle. */
   pendingRun = $state<number | null>(null);
   outcome = $state<RunOutcome | null>(null);
+  /**
+   * Run the shown outcome belongs to (its body can be saved while the app
+   * keeps it); `null` for one opened from the history.
+   */
+  outcomeRun = $state<number | null>(null);
   /** Why the last send or save failed. */
   error = $state<UserText | null>(null);
   /** Something to point out about the request (e.g. what an import left out). */
