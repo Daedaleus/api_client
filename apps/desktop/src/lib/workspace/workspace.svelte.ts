@@ -22,7 +22,7 @@ import { CollectionsState } from './collections.svelte';
 import { Dialogs } from './dialogs.svelte';
 import { CookiesState } from './cookies.svelte';
 import { EnvironmentChoice } from './environments.svelte';
-import { exportOptions } from './export-target';
+import { exportOptions, responseOptions } from './export-target';
 import {
   type ImportFormat,
   isFolder,
@@ -366,6 +366,28 @@ export class Workspace {
   /** A tab's request as code in `language`, exactly as it would be sent. */
   snippetFor(tab: RequestTab, language: SnippetLanguage): Promise<string | null> {
     return this.curl.snippet(tab, this.tabs.outgoing(tab, this.#context(tab)), language);
+  }
+
+  /**
+   * Saves the body of the response shown in a tab, byte for byte, where the
+   * user chooses (the file name suggested from its content type).
+   */
+  async saveResponse(tab: RequestTab): Promise<void> {
+    const outcome = tab.outcome;
+    if (tab.outcomeRun === null || outcome?.kind !== 'completed') return;
+    const file = await this.#api.pickSaveFile(responseOptions(outcome.headers));
+    if (!file) return;
+    tab.error = null;
+    try {
+      const ack = await this.#api.execute({
+        type: 'saveResponseBody',
+        runId: tab.outcomeRun,
+        file,
+      });
+      if (ack.type !== 'responseSaved') throw new Error(`unexpected answer ${ack.type}`);
+    } catch (error) {
+      tab.error = toUserText(error);
+    }
   }
 
   /** A tab's request as a cURL command, exactly as it would be sent. */

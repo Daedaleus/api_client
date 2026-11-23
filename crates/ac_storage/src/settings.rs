@@ -63,7 +63,7 @@ pub fn save_collection_defaults(
     }
     let mut doc = parsed.doc;
     write_defaults(&mut doc, &settings, defaults)?;
-    document::write_atomically(&settings, &doc.to_string())
+    document::write_atomically(&settings, doc.to_string())
 }
 
 /// Updates variables, authentication, certificate check, scripts and docs
@@ -119,7 +119,7 @@ fn edit_folder(
     document::set(root, "id", id.to_string());
     document::set(root, "name", name);
     change(&mut doc)?;
-    document::write_atomically(&settings, &doc.to_string())
+    document::write_atomically(&settings, doc.to_string())
 }
 
 #[cfg(test)]

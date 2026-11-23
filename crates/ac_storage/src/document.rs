@@ -58,7 +58,7 @@ pub(crate) fn parse(
 
 /// Writes via a temporary file in the same folder and a rename, so a crash
 /// leaves either the old or the new file, never half of it.
-pub(crate) fn write_atomically(path: &Path, text: &str) -> Result<(), StorageError> {
+pub(crate) fn write_atomically(path: &Path, text: impl AsRef<[u8]>) -> Result<(), StorageError> {
     let mut temporary = path.as_os_str().to_owned();
     temporary.push(".tmp");
     let temporary = std::path::PathBuf::from(temporary);

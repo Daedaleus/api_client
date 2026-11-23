@@ -122,7 +122,11 @@
               {/if}
             {/snippet}
           </RequestEditor>
-          <ResponseViewer outcome={tab.outcome} sending={tab.sending} />
+          <ResponseViewer
+            outcome={tab.outcome}
+            sending={tab.sending}
+            onsavebody={tab.outcomeRun === null ? undefined : () => workspace.saveResponse(tab)}
+          />
         </div>
       {/if}
     </main>

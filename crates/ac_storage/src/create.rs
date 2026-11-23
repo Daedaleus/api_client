@@ -42,7 +42,7 @@ pub fn create_collection(root: &Path, name: &str) -> Result<LoadedCollection, St
     doc.insert("version", toml_edit::value(CURRENT_VERSION));
     doc.insert("id", toml_edit::value(ItemId::new().to_string()));
     doc.insert("name", toml_edit::value(name));
-    document::write_atomically(&settings, &doc.to_string())?;
+    document::write_atomically(&settings, doc.to_string())?;
     load_collection(root)
 }
 

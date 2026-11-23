@@ -154,7 +154,7 @@ pub fn save_request(path: &Path, request: &Request) -> Result<(), StorageError> 
         Err(error) => return Err(StorageError::io(path, error)),
     };
     apply(&mut doc, request, path)?;
-    document::write_atomically(path, &doc.to_string())
+    document::write_atomically(path, doc.to_string())
 }
 
 fn new_document() -> DocumentMut {

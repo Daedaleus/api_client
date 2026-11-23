@@ -45,7 +45,7 @@ fn edit(dir: &Path, change: impl FnOnce(&mut Array) -> bool) -> Result<(), Stora
         return Ok(());
     };
     if change(order) {
-        document::write_atomically(&settings, &parsed.doc.to_string())?;
+        document::write_atomically(&settings, parsed.doc.to_string())?;
     }
     Ok(())
 }

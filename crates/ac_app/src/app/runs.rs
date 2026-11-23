@@ -55,10 +55,11 @@ impl<
         let app = self.clone();
         let outgoing = outgoing.clone();
         self.inner.runtime.spawn(async move {
-            let outcome = app
-                .run_with_steps(&outgoing, &steps, prepared)
-                .await
-                .into_view();
+            let execution = app.run_with_steps(&outgoing, &steps, prepared).await;
+            if let Ok(response) = &execution.response {
+                app.keep_response_body(run_id, response.body.clone());
+            }
+            let outcome = execution.into_view();
             // Nobody listening is fine: then nobody wants the result.
             let _ = app
                 .inner

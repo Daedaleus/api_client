@@ -96,7 +96,7 @@ fn write_order(dir: &Path, change: impl FnOnce(&mut Vec<String>)) -> Result<(), 
     change(&mut order);
     let array: Array = order.iter().map(String::as_str).collect();
     parsed.doc.insert("order", Item::Value(Value::Array(array)));
-    document::write_atomically(&settings, &parsed.doc.to_string())
+    document::write_atomically(&settings, parsed.doc.to_string())
 }
 
 /// The entries in the order they are shown: listed ones first (if they

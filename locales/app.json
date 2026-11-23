@@ -54,6 +54,39 @@
     "de": "Alle Cookies dieser Collection werden entfernt; eine Anmeldung muss danach evtl. wiederholt werden.",
     "en": "All cookies of this collection are removed; you may have to sign in again afterwards."
   },
+  "response.filter": { "de": "JSON filtern", "en": "Filter JSON" },
+  "response.filter_placeholder": {
+    "de": "JSONPath, z. B. $.items[*].id oder $..name",
+    "en": "JSONPath, e.g. $.items[*].id or $..name"
+  },
+  "response.filter_result": { "de": "Ergebnis des Filters", "en": "Filter result" },
+  "response.filter_none": { "de": "Nichts gefunden.", "en": "Nothing found." },
+  "response.filter_unparsable": {
+    "de": "Der angezeigte Body ist kein vollständiges JSON (evtl. gekürzt) – Filtern nicht möglich.",
+    "en": "The shown body is no complete JSON (maybe shortened) – it cannot be filtered."
+  },
+  "response.copy_body": { "de": "Body kopieren", "en": "Copy body" },
+  "response.copy_result": { "de": "Ergebnis kopieren", "en": "Copy result" },
+  "response.copied": { "de": "Kopiert", "en": "Copied" },
+  "response.save_body": { "de": "Speichern …", "en": "Save …" },
+  "response.save_title": { "de": "Antwort speichern", "en": "Save response" },
+  "jsonpath.start": { "de": "Ein JSONPath beginnt mit $.", "en": "A JSONPath starts with $." },
+  "jsonpath.unexpected": {
+    "de": "Unerwartetes Zeichen an Stelle {at}.",
+    "en": "Unexpected character at position {at}."
+  },
+  "jsonpath.unclosed": {
+    "de": "Die Klammer an Stelle {at} wird nicht geschlossen.",
+    "en": "The bracket at position {at} is not closed."
+  },
+  "jsonpath.selector": {
+    "de": "„[{selector}]“ an Stelle {at} wird nicht unterstützt (Filter-Ausdrücke gibt es noch nicht).",
+    "en": "“[{selector}]” at position {at} is not supported (no filter expressions yet)."
+  },
+  "error.response_gone": {
+    "de": "Diese Antwort ist nicht mehr im Speicher – bitte den Request erneut senden.",
+    "en": "This response is no longer kept – please send the request again."
+  },
   "error.cookie_name": {
     "de": "Der Name darf nicht leer sein und keine Leerzeichen, „;“ oder „=“ enthalten.",
     "en": "The name must not be empty or contain spaces, “;” or “=”."

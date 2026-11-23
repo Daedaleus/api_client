@@ -61,6 +61,7 @@ export class HistoryState {
       if (result.type !== 'historyEntry') throw new Error(`unexpected answer ${result.type}`);
       const tab = new RequestTab(result.request, null);
       tab.outcome = result.outcome;
+      tab.outcomeRun = null;
       this.#tabs.add(tab);
     } catch (error) {
       this.error = toUserText(error);
