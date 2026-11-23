@@ -331,3 +331,22 @@ fn oauth2_authorization_code_is_imported_with_a_loopback_redirect_only() {
     };
     assert_eq!(oauth.redirect_url, "");
 }
+
+#[test]
+fn descriptions_become_docs() {
+    let imported = from_postman(
+        r#"{"info": {"name": "D", "description": "Collection docs"},
+            "item": [
+              {"name": "F", "description": {"content": " Folder docs ", "type": "text/markdown"},
+               "item": [{"name": "R", "request": {"method": "GET", "url": "x", "description": "Request docs"}}]},
+              {"name": "Old", "description": "On the item", "request": "http://x"}
+            ]}"#,
+    )
+    .unwrap();
+    let collection = &imported.collection;
+    assert_eq!(collection.docs, "Collection docs");
+    let folder = folder(&collection.items, "F");
+    assert_eq!(folder.docs, "Folder docs");
+    assert_eq!(request(&folder.items, "R").docs, "Request docs");
+    assert_eq!(request(&collection.items, "Old").docs, "On the item");
+}

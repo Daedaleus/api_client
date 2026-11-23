@@ -112,6 +112,7 @@ where
                 auth: folder.auth.clone(),
                 certificate_check: folder.certificate_check,
                 scripts: folder.scripts.clone(),
+                docs: folder.docs.clone(),
             },
         )?;
         for (position, item) in folder.items.iter().enumerate() {

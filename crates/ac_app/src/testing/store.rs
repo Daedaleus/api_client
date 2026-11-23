@@ -200,6 +200,7 @@ impl CollectionStore for MemoryStore {
                     id: ItemId::new(),
                     name: name.to_owned(),
                     items: Vec::new(),
+                    docs: String::new(),
                 },
             );
         }
@@ -246,6 +247,7 @@ impl CollectionStore for MemoryStore {
                 id,
                 name: name.to_owned(),
                 items: Vec::new(),
+                docs: String::new(),
             }));
         })?;
         Ok((parent.join(id.to_string()), id))
@@ -276,6 +278,7 @@ impl CollectionStore for MemoryStore {
         collection.certificate_check = defaults.certificate_check;
         collection.transport = defaults.transport;
         collection.scripts.clone_from(&defaults.scripts);
+        collection.docs.clone_from(&defaults.docs);
         Ok(())
     }
 
@@ -296,6 +299,7 @@ impl CollectionStore for MemoryStore {
                     folder.auth = defaults.auth.clone();
                     folder.certificate_check = defaults.certificate_check;
                     folder.transport = defaults.transport;
+                    folder.docs.clone_from(&defaults.docs);
                     folder.scripts.clone_from(&defaults.scripts);
                 }
             }

@@ -52,6 +52,7 @@ export class RequestTab {
       certificateCheck: 'inherit',
       transport: { redirects: 'inherit', timeoutSeconds: null, cookies: 'inherit' },
       scripts: { preRequest: '', postResponse: '' },
+      docs: '',
       readOnly: false,
     };
   }

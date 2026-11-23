@@ -233,6 +233,7 @@ impl<
                 auth,
                 certificate_check,
                 scripts,
+                docs,
                 transport,
             } => self.save_defaults(
                 &collection_id,
@@ -242,6 +243,7 @@ impl<
                     auth: &auth,
                     certificate_check,
                     scripts: &scripts,
+                    docs: &docs,
                     transport,
                 },
             ),

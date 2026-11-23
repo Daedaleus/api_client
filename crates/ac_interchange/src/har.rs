@@ -73,6 +73,7 @@ pub(crate) fn from_value(root: &Value) -> Option<Imported> {
             certificate_check: CertificateCheck::Inherit,
             transport: ac_domain::transport::TransportSettings::default(),
             scripts: ac_domain::script::Scripts::default(),
+            docs: String::new(),
         },
         environments: Vec::new(),
         skipped,

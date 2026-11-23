@@ -12,7 +12,7 @@ use crate::error::StorageError;
 use crate::format::{
     COLLECTION_FILE, COLLECTION_FORMAT, CURRENT_VERSION, FOLDER_FILE, FOLDER_FORMAT,
 };
-use crate::{auth, scripts, tls, transport, variables};
+use crate::{auth, docs, scripts, tls, transport, variables};
 
 /// Writes name and id of the folder `dir` into its `folder.toml`, creating
 /// the file if needed.
@@ -66,8 +66,8 @@ pub fn save_collection_defaults(
     document::write_atomically(&settings, &doc.to_string())
 }
 
-/// Updates variables, authentication, certificate check and scripts in a
-/// settings document.
+/// Updates variables, authentication, certificate check, scripts and docs
+/// in a settings document.
 fn write_defaults(
     doc: &mut DocumentMut,
     settings: &Path,
@@ -78,12 +78,14 @@ fn write_defaults(
     let before_check = tls::read(doc.as_table(), settings)?;
     let before_transport = transport::read(doc.as_table(), settings)?;
     let before_scripts = scripts::read(doc.get(scripts::KEY), settings, scripts::KEY)?;
+    let before_docs = docs::read(doc.as_table(), settings)?;
     let root = doc.as_table_mut();
     variables::write(root, &before_variables, &defaults.variables);
     auth::write(root, &before_auth, &defaults.auth);
     tls::write(root, before_check, defaults.certificate_check);
     transport::write(root, &before_transport, &defaults.transport);
     scripts::write(root, &before_scripts, &defaults.scripts);
+    docs::write(root, &before_docs, &defaults.docs);
     Ok(())
 }
 

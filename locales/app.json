@@ -208,6 +208,21 @@
   "defaults.variables": { "de": "Variablen", "en": "Variables" },
   "defaults.auth": { "de": "Auth", "en": "Auth" },
   "defaults.scripts": { "de": "Skripte", "en": "Scripts" },
+  "editor.docs": { "de": "Docs", "en": "Docs" },
+  "defaults.docs": { "de": "Docs", "en": "Docs" },
+  "docs.mode": { "de": "Ansicht der Dokumentation", "en": "Documentation view" },
+  "docs.preview": { "de": "Ansicht", "en": "Preview" },
+  "docs.edit": { "de": "Bearbeiten", "en": "Edit" },
+  "docs.label": { "de": "Dokumentation (Markdown)", "en": "Documentation (Markdown)" },
+  "docs.placeholder": {
+    "de": "Wofür ist das da? Welche Parameter, welche Reihenfolge?",
+    "en": "What is it for? Which parameters, which order?"
+  },
+  "docs.hint": {
+    "de": "Markdown: # Überschrift, **fett**, `Code`, - Liste, [Link](https://…). Links öffnen sich hier nicht, Bilder werden nicht geladen.",
+    "en": "Markdown: # heading, **bold**, `code`, - list, [link](https://…). Links do not open here, images are not loaded."
+  },
+  "docs.empty": { "de": "Noch keine Dokumentation.", "en": "No documentation yet." },
   "rows.as_text": { "de": "Als Text bearbeiten", "en": "Edit as text" },
   "rows.as_table": { "de": "Als Tabelle bearbeiten", "en": "Edit as table" },
   "rows.text_label": { "de": "Einträge als Text", "en": "Entries as text" },

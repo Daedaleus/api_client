@@ -12,7 +12,7 @@ use crate::document;
 use crate::error::StorageError;
 use crate::format::{CURRENT_VERSION, REQUEST_FORMAT};
 use crate::rows::{self, Row};
-use crate::{auth, body, scripts, tls, transport, variables};
+use crate::{auth, body, docs, scripts, tls, transport, variables};
 
 const REQUEST_TABLE: &str = "request";
 const HEADERS: &str = "headers";
@@ -80,6 +80,7 @@ pub(crate) fn request_from(doc: &DocumentMut, path: &Path) -> Result<Request, St
                 value: row.value,
             })
             .collect(),
+        docs: docs::read(table, path)?,
     })
 }
 
@@ -203,6 +204,7 @@ fn apply(doc: &mut DocumentMut, request: &Request, path: &Path) -> Result<(), St
     tls::write(table, before.certificate_check, request.certificate_check);
     transport::write(table, &before.transport, &request.transport);
     scripts::write(table, &before.scripts, &request.scripts);
+    docs::write(table, &before.docs, &request.docs);
     if before.body != request.body {
         table.remove(BODY);
         if let Some(item) = body::item(&request.body) {

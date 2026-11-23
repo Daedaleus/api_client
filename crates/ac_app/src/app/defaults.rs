@@ -18,6 +18,7 @@ pub(super) struct DefaultsDraft<'a> {
     pub auth: &'a AuthDraft,
     pub certificate_check: CertificateCheckView,
     pub scripts: &'a ScriptsDraft,
+    pub docs: &'a str,
     pub transport: TransportDraft,
 }
 
@@ -46,6 +47,7 @@ impl<
             variables: VariableDraft::to_plain_variables(draft.variables),
             auth: draft.auth.to_auth(),
             certificate_check: draft.certificate_check.to_check(),
+            docs: draft.docs.to_owned(),
         };
         if id == opened.collection.id {
             writable(&opened, id)?;

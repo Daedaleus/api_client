@@ -76,6 +76,7 @@ pub(crate) fn from_value(root: &Value) -> Option<Imported> {
         transport: TransportSettings::default(),
         scripts: Scripts::default(),
         name,
+        docs: workspace.map_or_default(request::docs),
     };
     Some(Imported {
         collection,
@@ -146,6 +147,7 @@ impl<'a> Resources<'a> {
                     transport: TransportSettings::default(),
                     scripts: request::scripts(resource),
                     name,
+                    docs: request::docs(resource),
                 }))
             }
             kind::REQUEST => Some(Item::Request(request::request_of(resource, skipped))),

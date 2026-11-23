@@ -129,6 +129,7 @@ fn unchanged_auth_keeps_the_file_and_folders_and_collections_store_it() {
         certificate_check: ac_domain::tls::CertificateCheck::Inherit,
         variables: Vec::new(),
         auth: Auth::None,
+        docs: String::new(),
     };
     crate::settings::save_collection_defaults(&root, &defaults).unwrap();
     let loaded = crate::load_collection(&root).unwrap();

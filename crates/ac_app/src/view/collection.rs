@@ -37,6 +37,8 @@ pub struct CollectionView {
     pub transport: TransportDraft,
     /// Scripts around its requests.
     pub scripts: ScriptsDraft,
+    /// Documentation in Markdown.
+    pub docs: String,
     /// Files that could not be loaded.
     pub problems: Vec<UserText>,
     /// Not saved yet (an import): lives in a temporary folder until saved
@@ -77,6 +79,8 @@ pub enum TreeItemView {
         transport: TransportDraft,
         /// Scripts around the requests in the folder.
         scripts: ScriptsDraft,
+        /// Documentation in Markdown.
+        docs: String,
     },
     /// A request.
     Request {
@@ -119,6 +123,7 @@ impl CollectionView {
             certificate_check: CertificateCheckView::from_check(collection.certificate_check),
             transport: TransportDraft::from_settings(&collection.transport),
             scripts: ScriptsDraft::from_scripts(&collection.scripts),
+            docs: collection.docs.clone(),
             problems: opened.problems.iter().map(StoreError::user_text).collect(),
             temporary: false,
         }
@@ -145,6 +150,7 @@ fn tree(items: &[Item], opened: &OpenedCollection) -> Vec<TreeItemView> {
                 certificate_check: CertificateCheckView::from_check(folder.certificate_check),
                 transport: TransportDraft::from_settings(&folder.transport),
                 scripts: ScriptsDraft::from_scripts(&folder.scripts),
+                docs: folder.docs.clone(),
             },
             Item::Request(request) => TreeItemView::Request {
                 id: request.id.to_string(),
@@ -189,6 +195,9 @@ pub struct RequestDraft {
     /// Scripts before sending and after the response.
     #[serde(default)]
     pub scripts: ScriptsDraft,
+    /// Documentation in Markdown.
+    #[serde(default)]
+    pub docs: String,
     /// Values of the path variables (`:name`) in the URL.
     #[serde(default)]
     pub path_params: Vec<ParamDraft>,
@@ -254,6 +263,7 @@ impl RequestDraft {
             certificate_check: CertificateCheckView::from_check(request.certificate_check),
             transport: TransportDraft::from_settings(&request.transport),
             scripts: ScriptsDraft::from_scripts(&request.scripts),
+            docs: request.docs.clone(),
             path_params: ParamDraft::from_path(&request.path_params),
             disabled_query: ParamDraft::from_query(&request.disabled_query),
             read_only,
@@ -279,6 +289,7 @@ impl RequestDraft {
             body: self.body.to_body(),
             path_params: ParamDraft::to_path(&self.path_params),
             disabled_query: ParamDraft::to_query(&self.disabled_query),
+            docs: self.docs.clone(),
         })
     }
 }

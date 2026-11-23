@@ -31,6 +31,15 @@ pub(super) struct Defaults {
     pub variables: Vec<Variable>,
     pub auth: Auth,
     pub scripts: Scripts,
+    pub docs: String,
+}
+
+/// The `docs` block: Markdown.
+const DOCS: &str = "docs";
+
+/// The text of the `docs` block (empty without one).
+fn docs(blocks: &[Block]) -> String {
+    find(blocks, DOCS).map_or_default(|block| block.lines.join("\n").trim().to_owned())
 }
 
 /// Variables and auth of `collection.bru` or `folder.bru`.
@@ -46,6 +55,7 @@ pub(super) fn defaults(blocks: &[Block], item: &str, report: &mut Vec<Skipped>) 
         variables: variables(blocks),
         auth: auth(blocks, mode.as_deref(), item, report),
         scripts,
+        docs: docs(blocks),
     }
 }
 
@@ -67,6 +77,7 @@ pub(super) fn request(
         .unwrap_or_else(|| stem.to_owned());
     let mut request = Request::new(name);
     request.scripts = scripts(blocks, &request.name, report);
+    request.docs = docs(blocks);
     if meta.and_then(|meta| meta.get("type")).as_deref() == Some("graphql") {
         report.push(skipped(&request.name, SkippedKind::Body("graphql".into())));
     }

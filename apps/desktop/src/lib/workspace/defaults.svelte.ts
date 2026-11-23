@@ -36,6 +36,8 @@ export interface DefaultsEdit {
   transport: TransportDraft;
   /** A copy of the scripts around its requests. */
   scripts: ScriptsDraft;
+  /** Documentation in Markdown. */
+  docs: string;
 }
 
 export class DefaultsState {
@@ -68,6 +70,7 @@ export class DefaultsState {
       certificateCheck: target.certificateCheck,
       transport: $state.snapshot(target.transport),
       scripts: $state.snapshot(target.scripts),
+      docs: target.docs,
     };
   }
 
@@ -92,6 +95,7 @@ export class DefaultsState {
         certificateCheck: editing.certificateCheck,
         transport: $state.snapshot(editing.transport),
         scripts: $state.snapshot(editing.scripts),
+        docs: editing.docs,
       });
       if (ack.type !== 'collectionChanged') throw new Error(`unexpected answer ${ack.type}`);
       this.#collections.apply(ack.collection);

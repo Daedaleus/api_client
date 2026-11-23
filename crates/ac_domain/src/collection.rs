@@ -86,6 +86,8 @@ pub struct Collection {
     pub transport: TransportSettings,
     /// Scripts around every request of the collection.
     pub scripts: Scripts,
+    /// Documentation in Markdown (empty if none).
+    pub docs: String,
 }
 
 impl Collection {
@@ -193,6 +195,8 @@ pub struct RequestDefaults {
     pub transport: TransportSettings,
     /// Scripts around the requests (see [`Collection::scripts_around`]).
     pub scripts: Scripts,
+    /// Documentation in Markdown (empty if none).
+    pub docs: String,
 }
 
 /// A folder of a collection.
@@ -214,6 +218,8 @@ pub struct Folder {
     pub transport: TransportSettings,
     /// Scripts around the requests in it and its subfolders.
     pub scripts: Scripts,
+    /// Documentation in Markdown (empty if none).
+    pub docs: String,
 }
 
 /// An entry of the request tree.
@@ -270,6 +276,8 @@ pub struct Request {
     pub transport: TransportSettings,
     /// Scripts before sending and after the response.
     pub scripts: Scripts,
+    /// Documentation in Markdown (empty if none).
+    pub docs: String,
     /// Values of the path variables (`:name`) in the URL.
     pub path_params: Vec<PathParam>,
     /// Query parameters switched off (the others are in the URL).
@@ -292,6 +300,7 @@ impl Request {
             certificate_check: CertificateCheck::Inherit,
             transport: TransportSettings::default(),
             scripts: Scripts::default(),
+            docs: String::new(),
             path_params: Vec::new(),
             disabled_query: Vec::new(),
         }

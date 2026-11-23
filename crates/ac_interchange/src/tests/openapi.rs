@@ -355,3 +355,18 @@ fn relative_servers_resolve_against_where_the_description_came_from() {
         [Variable::plain("baseUrl", "https://example.com/docs/v2")]
     );
 }
+
+#[test]
+fn descriptions_become_docs() {
+    let imported = import_collection(
+        r#"{"openapi": "3.0.3", "info": {"title": "T", "version": "1", "description": "API docs"},
+            "paths": {"/a": {"get": {"summary": "Get A", "description": "Returns **A**."}}}}"#,
+    )
+    .unwrap();
+    assert_eq!(imported.collection.docs, "API docs");
+    let Item::Request(request) = &imported.collection.items[0] else {
+        panic!("expected a request");
+    };
+    assert_eq!(request.name, "Get A");
+    assert_eq!(request.docs, "Returns **A**.");
+}

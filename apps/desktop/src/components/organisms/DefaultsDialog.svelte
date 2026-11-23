@@ -2,6 +2,7 @@
   import Button from '../atoms/Button.svelte';
   import AuthEditor from '../molecules/AuthEditor.svelte';
   import CertificateCheckField from '../molecules/CertificateCheckField.svelte';
+  import DocsEditor from '../molecules/DocsEditor.svelte';
   import RowsEditor, { type RowLabels } from '../molecules/RowsEditor.svelte';
   import ScriptsEditor from '../molecules/ScriptsEditor.svelte';
   import TransportFields from '../molecules/TransportFields.svelte';
@@ -26,8 +27,8 @@
     empty: 'env.no_variables',
   };
 
-  type Section = 'variables' | 'auth' | 'scripts' | 'settings';
-  const SECTIONS: Section[] = ['variables', 'auth', 'scripts', 'settings'];
+  type Section = 'variables' | 'auth' | 'scripts' | 'settings' | 'docs';
+  const SECTIONS: Section[] = ['variables', 'auth', 'scripts', 'settings', 'docs'];
   let section = $state<Section>('variables');
 
   function submit(event: SubmitEvent) {
@@ -83,6 +84,8 @@
           {:else if section === 'scripts'}
             <p class="defaults-dialog__note">{i18n.t('scripts.hint_around')}</p>
             <ScriptsEditor bind:scripts={editing.scripts} {assist} />
+          {:else if section === 'docs'}
+            <DocsEditor bind:docs={editing.docs} />
           {:else}
             <CertificateCheckField
               bind:check={editing.certificateCheck}
