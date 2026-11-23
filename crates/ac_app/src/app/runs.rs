@@ -20,6 +20,7 @@ use crate::error::AppError;
 use crate::event::AppEvent;
 use crate::history::Masking;
 use crate::oauth::authorize;
+use crate::ports::SharedCookieJar;
 use crate::ports::{BrowserLogin, CollectionStore, HttpSender, ScriptRunner, SecretVault};
 use crate::ports::{HistoryStore, ScriptAssist, SettingsStore};
 use crate::resolve::{Entered, Prepared, resolve_request};
