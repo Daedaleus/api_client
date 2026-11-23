@@ -77,7 +77,7 @@ describe('TabsState', () => {
         variables: [],
         auth: { kind: 'inherit' },
         certificateCheck: 'inherit',
-        transport: { redirects: 'inherit', timeoutSeconds: null },
+        transport: { redirects: 'inherit', timeoutSeconds: null, cookies: 'inherit' },
         scripts: { preRequest: '', postResponse: '' },
         context: null,
       },

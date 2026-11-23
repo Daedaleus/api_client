@@ -156,7 +156,8 @@ async fn request(
     verify_tls: bool,
 ) -> Result<TokenResponse, TokenError> {
     let response = http
-        .send(token_request(client, grant, verify_tls))
+        // Token requests carry no cookies of a collection.
+        .send(token_request(client, grant, verify_tls), None)
         .await
         .map_err(TokenError::Transport)?;
     parse(&response)

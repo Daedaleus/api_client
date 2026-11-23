@@ -3,11 +3,11 @@
 //! Folders and requests in order, methods, URLs with path variables and
 //! switched-off query parameters, headers, bodies, auth, variables,
 //! scripts (as written – Postman runs them with its `pm` object) and the
-//! redirect and certificate settings of folders and requests
+//! redirect, certificate and cookie settings of folders and requests
 //! (`protocolProfileBehavior`). Secret values are never written: secret
 //! variables are exported without a value. What Postman has no place for –
-//! time limits, the collection's own redirect and certificate settings – is
-//! reported.
+//! time limits, the collection's own redirect, certificate and cookie
+//! settings – is reported.
 
 use ac_domain::auth::{Auth, KeyPlacement, OAuth2Grant};
 use ac_domain::collection::{Body, Collection, Folder, Item, Request};
@@ -15,7 +15,7 @@ use ac_domain::environment::Variable;
 use ac_domain::protocol::grant_type::{AUTHORIZATION_CODE, CLIENT_CREDENTIALS};
 use ac_domain::script::Scripts;
 use ac_domain::tls::CertificateCheck;
-use ac_domain::transport::{Redirects, TransportSettings};
+use ac_domain::transport::{Cookies, Redirects, TransportSettings};
 use serde_json::{Map, Value, json};
 
 use crate::import::{ItemSetting, Skipped, SkippedKind};
@@ -334,7 +334,7 @@ fn insert_variables(
     object.insert("variable".into(), Value::Array(rows));
 }
 
-/// Redirect and certificate settings of a folder or request.
+/// Redirect, certificate and cookie settings of a folder or request.
 fn insert_behavior(
     object: &mut Map<String, Value>,
     transport: &TransportSettings,
@@ -359,13 +359,22 @@ fn insert_behavior(
             behavior.insert("strictSSL".into(), json!(false));
         }
     }
+    match transport.cookies {
+        Cookies::Inherit => {}
+        Cookies::On => {
+            behavior.insert("disableCookies".into(), json!(false));
+        }
+        Cookies::Off => {
+            behavior.insert("disableCookies".into(), json!(true));
+        }
+    }
     if !behavior.is_empty() {
         object.insert("protocolProfileBehavior".into(), Value::Object(behavior));
     }
 }
 
 /// Reports a time limit (Postman has none per item) and, for the
-/// collection, redirect and certificate settings.
+/// collection, redirect, certificate and cookie settings.
 fn report_settings(
     item: &str,
     transport: &TransportSettings,
@@ -387,6 +396,9 @@ fn report_settings(
     }
     if collection && certificate_check != CertificateCheck::Inherit {
         report(ItemSetting::CertificateCheck);
+    }
+    if collection && transport.cookies != Cookies::Inherit {
+        report(ItemSetting::Cookies);
     }
 }
 

@@ -20,7 +20,7 @@ pub mod store;
 
 pub use assist::FakeScriptAssist;
 pub use history::MemoryHistory;
-pub use http::{FakeHttpSender, response};
+pub use http::{FAKE_NOW, FakeHttpSender, response};
 pub use login::{FAKE_PORT, FakeBrowserLogin, LoginAnswer};
 pub use script::FakeScriptRunner;
 pub use secrets::FakeVault;

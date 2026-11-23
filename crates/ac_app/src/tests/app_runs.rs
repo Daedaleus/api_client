@@ -247,3 +247,66 @@ fn commands_and_events_match_the_ui_contract() {
         serde_json::json!("runFinished")
     );
 }
+
+#[tokio::test]
+async fn requests_of_a_collection_share_their_cookies() {
+    use ac_domain::exchange::Header;
+
+    use crate::test_support::Fixture;
+    use crate::view::{CookiesView, SendContext, TransportDraft};
+
+    let mut login = response(200, "text/plain", "");
+    login
+        .headers
+        .push(Header::new("Set-Cookie", "session=s3cret; Path=/"));
+    let mut fake = FakeHttpSender::new().reply(Ok(login));
+    for _ in 0..4 {
+        fake = fake.reply(Ok(response(200, "text/plain", "")));
+    }
+    let fixture = Fixture::with_http(fake);
+    let send = |in_collection: bool, cookies: CookiesView| {
+        let mut events = fixture.app.subscribe();
+        let Command::SendRequest { mut request } = send("GET", "https://x.example/login") else {
+            unreachable!()
+        };
+        request.transport = TransportDraft {
+            cookies,
+            ..TransportDraft::default()
+        };
+        request.context = in_collection.then(|| SendContext {
+            collection_id: fixture.collection.clone(),
+            request_id: None,
+            environment_id: None,
+        });
+        fixture
+            .app
+            .execute(Command::SendRequest { request })
+            .unwrap();
+        async move { next_event(&mut events).await }
+    };
+    send(true, CookiesView::Inherit).await;
+    send(true, CookiesView::On).await;
+    // Switched off, outside the collection: none.
+    send(true, CookiesView::Off).await;
+    send(false, CookiesView::Inherit).await;
+    assert_eq!(
+        fixture.http.cookies_sent(),
+        [None, Some("session=s3cret".into()), None, None]
+    );
+
+    // Closing the collection discards its cookies.
+    fixture
+        .app
+        .execute(Command::CloseCollection {
+            collection_id: fixture.collection.clone(),
+        })
+        .unwrap();
+    let jar = fixture.app.cookie_jar(Some(fixture.collection.clone()));
+    assert_eq!(
+        jar.lock()
+            .unwrap()
+            .cookies(crate::testing::FAKE_NOW)
+            .count(),
+        0
+    );
+}

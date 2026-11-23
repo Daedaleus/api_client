@@ -6,7 +6,7 @@ use ac_domain::environment::Variable;
 use ac_domain::params::{PathParam, QueryParam};
 use ac_domain::script::Scripts;
 use ac_domain::tls::CertificateCheck;
-use ac_domain::transport::{Redirects, TransportSettings};
+use ac_domain::transport::{Cookies, Redirects, TransportSettings};
 use serde_json::{Value, json};
 
 use super::*;
@@ -47,6 +47,7 @@ fn login() -> Request {
     login.transport = TransportSettings {
         redirects: Redirects::Stop,
         timeout_seconds: Some(5),
+        cookies: Cookies::Off,
     };
     login.certificate_check = CertificateCheck::Off;
     login
@@ -107,6 +108,7 @@ fn sample() -> Collection {
         transport: TransportSettings {
             redirects: Redirects::Follow,
             timeout_seconds: None,
+            cookies: Cookies::Inherit,
         },
         scripts: Scripts::default(),
     };
@@ -135,6 +137,7 @@ fn sample() -> Collection {
         transport: TransportSettings {
             redirects: Redirects::Stop,
             timeout_seconds: None,
+            cookies: Cookies::Inherit,
         },
         scripts: Scripts {
             pre_request: String::new(),
@@ -193,7 +196,7 @@ fn requests_carry_url_parts_headers_body_auth_and_settings() {
     let login = &folder["item"][0];
     assert_eq!(
         login["protocolProfileBehavior"],
-        json!({ "followRedirects": false, "strictSSL": false })
+        json!({ "followRedirects": false, "strictSSL": false, "disableCookies": true })
     );
     assert_eq!(
         login["event"][0]["script"]["exec"],

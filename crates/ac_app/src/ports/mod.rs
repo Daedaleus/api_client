@@ -24,7 +24,7 @@ pub use assist::{
     ScriptDiagnostic, Severity,
 };
 pub use history::{HistoryError, HistoryStore, NoHistory};
-pub use http::{HttpSender, TransportError};
+pub use http::{HttpSender, SharedCookieJar, TransportError};
 pub use login::{BrowserLogin, LoginError, PendingLogin};
 pub use script::{
     ScriptError, ScriptJob, ScriptOutcome, ScriptRequest, ScriptResponse, ScriptRunner, TestResult,

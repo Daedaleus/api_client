@@ -96,6 +96,8 @@ pub mod keys {
     pub const EXPORT_REDIRECTS: &str = "export.redirects";
     /// An export has no place for the certificate check. Argument: `item`.
     pub const EXPORT_CERTIFICATE_CHECK: &str = "export.certificate_check";
+    /// An export has no place for the cookie setting. Argument: `item`.
+    pub const EXPORT_COOKIES: &str = "export.cookies";
     /// Recorded entries that are no API calls (HAR). Arguments: `item`,
     /// `kind`, `count`.
     pub const IMPORT_SKIPPED_RESOURCES: &str = "import.skipped_resources";
@@ -162,7 +164,7 @@ pub mod keys {
 
     /// All keys with the names of their placeholders, checked against the
     /// translation file by a test.
-    pub const ALL: [(&str, &[&str]); 56] = [
+    pub const ALL: [(&str, &[&str]); 57] = [
         (URL_EMPTY, &[]),
         (URL_INVALID, &["reason"]),
         (URL_SCHEME, &["scheme"]),
@@ -190,6 +192,7 @@ pub mod keys {
         (EXPORT_TIMEOUT, &["item"]),
         (EXPORT_REDIRECTS, &["item"]),
         (EXPORT_CERTIFICATE_CHECK, &["item"]),
+        (EXPORT_COOKIES, &["item"]),
         (IMPORT_SKIPPED_RESOURCES, &["item", "kind", "count"]),
         (IMPORT_SKIPPED_REQUEST_KIND, &["item", "kind"]),
         (IMPORT_TEMPLATE_TAG, &["item", "tag"]),

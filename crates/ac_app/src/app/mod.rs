@@ -33,10 +33,12 @@ mod settings;
 use defaults::DefaultsDraft;
 pub use runner::RunPlan;
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::atomic::AtomicU64;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
+
+use crate::ports::SharedCookieJar;
 
 use ac_domain::collection::ItemId;
 use tokio::runtime::Handle;
@@ -104,6 +106,9 @@ struct Inner<H, S, V, B, R, A, Y, Z> {
     next_run: AtomicU64,
     /// OAuth 2 access tokens, in memory only.
     tokens: TokenCache,
+    /// Cookie jars per collection (`None`: requests outside a collection),
+    /// in memory only – never written into the collection.
+    cookie_jars: Mutex<HashMap<Option<String>, SharedCookieJar>>,
     /// Open collections (id and folder) in the order they were opened. Their
     /// contents are read anew for every command, so changes made outside the
     /// app are picked up.
@@ -153,6 +158,7 @@ impl<
                 events,
                 next_run: AtomicU64::new(1),
                 tokens: TokenCache::default(),
+                cookie_jars: Mutex::default(),
                 open: Mutex::new(Vec::new()),
                 temporary: Mutex::default(),
                 settings_problem: Mutex::default(),

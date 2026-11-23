@@ -3,11 +3,12 @@
 //! ```toml
 //! follow_redirects = false   # true / false; missing = inherit
 //! timeout_seconds = 10       # whole seconds ≥ 1; missing = inherit
+//! cookies = false            # true / false; missing = inherit
 //! ```
 
 use std::path::Path;
 
-use ac_domain::transport::{Redirects, TransportSettings};
+use ac_domain::transport::{Cookies, Redirects, TransportSettings};
 use toml_edit::TableLike;
 
 use crate::document;
@@ -15,6 +16,7 @@ use crate::error::StorageError;
 
 const FOLLOW_REDIRECTS: &str = "follow_redirects";
 const TIMEOUT_SECONDS: &str = "timeout_seconds";
+const COOKIES: &str = "cookies";
 
 /// Reads the settings in `table` (missing keys inherit).
 pub(crate) fn read(table: &dyn TableLike, path: &Path) -> Result<TransportSettings, StorageError> {
@@ -34,9 +36,15 @@ pub(crate) fn read(table: &dyn TableLike, path: &Path) -> Result<TransportSettin
                 })?,
         ),
     };
+    let cookies = match document::opt_bool(table, COOKIES, path)? {
+        None => Cookies::Inherit,
+        Some(true) => Cookies::On,
+        Some(false) => Cookies::Off,
+    };
     Ok(TransportSettings {
         redirects,
         timeout_seconds,
+        cookies,
     })
 }
 
@@ -61,6 +69,15 @@ pub(crate) fn write(
                 table.remove(TIMEOUT_SECONDS);
             }
             Some(seconds) => document::set(table, TIMEOUT_SECONDS, i64::from(seconds)),
+        }
+    }
+    if before.cookies != after.cookies {
+        match after.cookies {
+            Cookies::Inherit => {
+                table.remove(COOKIES);
+            }
+            Cookies::On => document::set(table, COOKIES, true),
+            Cookies::Off => document::set(table, COOKIES, false),
         }
     }
 }

@@ -2,7 +2,7 @@ use ac_domain::auth::{Auth, KeyPlacement, OAuth2};
 use ac_domain::collection::{Body, Folder, FormField, HeaderEntry, Item, MultipartField, Request};
 use ac_domain::params::QueryParam;
 use ac_domain::protocol::HttpMethod;
-use ac_domain::transport::Redirects;
+use ac_domain::transport::{Cookies, Redirects};
 
 use super::*;
 use crate::import::{ImportError, import_collection};
@@ -129,6 +129,7 @@ fn requests_keep_url_parameters_headers_body_and_settings() {
     assert_eq!(create.body, Body::Json(r#"{"tea": "{{tea}}"}"#.into()));
     assert_eq!(create.auth, Auth::Inherit);
     assert_eq!(create.transport.redirects, Redirects::Stop);
+    assert_eq!(create.transport.cookies, Cookies::Off);
     assert!(
         create
             .scripts
@@ -141,6 +142,7 @@ fn requests_keep_url_parameters_headers_body_and_settings() {
     assert_eq!(list.auth, Auth::None);
     assert!(list.url.contains("{% response 'body'"));
     assert_eq!(list.transport.redirects, Redirects::Inherit);
+    assert_eq!(list.transport.cookies, Cookies::Inherit);
 }
 
 #[test]

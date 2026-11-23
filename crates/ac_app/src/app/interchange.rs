@@ -78,7 +78,8 @@ impl<
         let response = self
             .inner
             .http
-            .send(request)
+            // An import is no request of a collection: no cookies.
+            .send(request, None)
             .await
             .map_err(|error| AppError::Download(error.to_string()))?;
         if response.status.class() != StatusClass::Success {
@@ -220,6 +221,7 @@ fn skipped_text(skipped: &Skipped) -> UserText {
             ItemSetting::Timeout => keys::EXPORT_TIMEOUT,
             ItemSetting::Redirects => keys::EXPORT_REDIRECTS,
             ItemSetting::CertificateCheck => keys::EXPORT_CERTIFICATE_CHECK,
+            ItemSetting::Cookies => keys::EXPORT_COOKIES,
         }),
         SkippedKind::Resources { kind, count } => UserText::new(keys::IMPORT_SKIPPED_RESOURCES)
             .with("kind", kind.clone())

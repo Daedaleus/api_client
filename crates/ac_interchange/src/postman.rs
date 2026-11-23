@@ -22,7 +22,7 @@ use ac_domain::params::{PathParam, QueryParam};
 use ac_domain::protocol::grant_type::{AUTHORIZATION_CODE, CLIENT_CREDENTIALS};
 use ac_domain::script::Scripts;
 use ac_domain::tls::CertificateCheck;
-use ac_domain::transport::{Redirects, TransportSettings};
+use ac_domain::transport::{Cookies, Redirects, TransportSettings};
 use serde_json::Value;
 
 use crate::import::{Imported, Skipped, SkippedKind, loopback_redirect, text_of};
@@ -89,7 +89,7 @@ fn item_of(item: &Value, skipped: &mut Vec<Skipped>) -> Item {
     Item::Request(request)
 }
 
-/// Redirect and certificate settings (`protocolProfileBehavior`).
+/// Redirect, certificate and cookie settings (`protocolProfileBehavior`).
 fn behavior(item: &Value) -> (TransportSettings, CertificateCheck) {
     let flag = |name: &str| {
         item.pointer(&format!("/protocolProfileBehavior/{name}"))
@@ -100,6 +100,11 @@ fn behavior(item: &Value) -> (TransportSettings, CertificateCheck) {
             Some(true) => Redirects::Follow,
             Some(false) => Redirects::Stop,
             None => Redirects::Inherit,
+        },
+        cookies: match flag("disableCookies") {
+            Some(true) => Cookies::Off,
+            Some(false) => Cookies::On,
+            None => Cookies::Inherit,
         },
         ..TransportSettings::default()
     };

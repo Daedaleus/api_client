@@ -10,6 +10,8 @@
 //!   collection.
 //! - [`collection`]: collections, folders and saved requests as the user
 //!   edits them.
+//! - [`cookie`]: cookies a server sets, kept and sent back like a browser
+//!   does.
 //! - [`environment`]: environments, variables and `{{name}}` placeholders.
 //! - [`params`]: path variables (`/users/:id`) and switched-off query
 //!   parameters.
@@ -22,6 +24,7 @@
 
 pub mod auth;
 pub mod collection;
+pub mod cookie;
 pub mod environment;
 pub mod exchange;
 pub mod params;

@@ -72,6 +72,8 @@ pub enum ItemSetting {
     Redirects,
     /// The certificate check.
     CertificateCheck,
+    /// Using the cookie jar.
+    Cookies,
 }
 
 /// Why a file cannot be imported.

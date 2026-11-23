@@ -1,7 +1,8 @@
-//! How a request travels: whether redirects are followed and how long it
-//! may take. Like the certificate check, each setting is inherited from the
-//! folders around a request and the collection; nothing set means the
-//! defaults (follow redirects, [`DEFAULT_TIMEOUT_SECONDS`]).
+//! How a request travels: whether redirects are followed, how long it may
+//! take and whether the collection's cookies are used. Like the certificate
+//! check, each setting is inherited from the folders around a request and
+//! the collection; nothing set means the defaults (follow redirects,
+//! [`DEFAULT_TIMEOUT_SECONDS`], cookies on).
 
 use std::time::Duration;
 
@@ -21,6 +22,18 @@ pub enum Redirects {
     Stop,
 }
 
+/// Whether the cookie jar is used: its cookies sent, received ones kept.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Cookies {
+    /// As the folder or collection around it (on, if nothing says else).
+    #[default]
+    Inherit,
+    /// Use the jar.
+    On,
+    /// Neither send nor keep cookies.
+    Off,
+}
+
 /// The transport settings of a request, folder or collection.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct TransportSettings {
@@ -28,6 +41,8 @@ pub struct TransportSettings {
     pub redirects: Redirects,
     /// Time limit in seconds; `None` inherits.
     pub timeout_seconds: Option<u32>,
+    /// The cookie jar.
+    pub cookies: Cookies,
 }
 
 /// What applies to one request once inheritance is resolved.
@@ -37,6 +52,8 @@ pub struct EffectiveTransport {
     pub follow_redirects: bool,
     /// Time allowed for the whole request.
     pub timeout: Duration,
+    /// Send the jar's cookies and keep the ones received.
+    pub cookies: bool,
 }
 
 impl Default for EffectiveTransport {
@@ -44,6 +61,7 @@ impl Default for EffectiveTransport {
         Self {
             follow_redirects: true,
             timeout: Duration::from_secs(u64::from(DEFAULT_TIMEOUT_SECONDS)),
+            cookies: true,
         }
     }
 }
@@ -55,7 +73,11 @@ impl Default for EffectiveTransport {
 pub fn effective<'a>(chain: impl IntoIterator<Item = &'a TransportSettings>) -> EffectiveTransport {
     let mut redirects = None;
     let mut timeout = None;
+    let mut cookies = None;
     for settings in chain {
+        if cookies.is_none() && settings.cookies != Cookies::Inherit {
+            cookies = Some(settings.cookies == Cookies::On);
+        }
         if redirects.is_none() && settings.redirects != Redirects::Inherit {
             redirects = Some(settings.redirects);
         }
@@ -69,6 +91,7 @@ pub fn effective<'a>(chain: impl IntoIterator<Item = &'a TransportSettings>) -> 
         timeout: timeout.map_or(defaults.timeout, |seconds| {
             Duration::from_secs(u64::from(seconds))
         }),
+        cookies: cookies.unwrap_or(defaults.cookies),
     }
 }
 

@@ -5,7 +5,7 @@ use ac_domain::collection::{Body, FormField, HeaderEntry, MultipartField, Reques
 use ac_domain::params::QueryParam;
 use ac_domain::protocol::grant_type::{AUTHORIZATION_CODE, CLIENT_CREDENTIALS};
 use ac_domain::script::Scripts;
-use ac_domain::transport::Redirects;
+use ac_domain::transport::{Cookies, Redirects};
 use serde_json::Value;
 
 use super::convert_template;
@@ -22,6 +22,9 @@ mod mime {
 /// `settingFollowRedirects` values.
 const REDIRECTS_ON: &str = "on";
 const REDIRECTS_OFF: &str = "off";
+/// Settings that switch cookies off when `false`.
+const SEND_COOKIES: &str = "settingSendCookies";
+const STORE_COOKIES: &str = "settingStoreCookies";
 
 /// Collects the template tags met while converting one item's texts.
 struct Templates<'a> {
@@ -88,6 +91,13 @@ pub(super) fn request_of(resource: &Value, skipped: &mut Vec<Skipped>) -> Reques
         Some(REDIRECTS_OFF) => Redirects::Stop,
         _ => Redirects::Inherit,
     };
+    // Insomnia sends and keeps cookies unless switched off.
+    if [SEND_COOKIES, STORE_COOKIES]
+        .iter()
+        .any(|setting| resource.get(*setting).and_then(Value::as_bool) == Some(false))
+    {
+        request.transport.cookies = Cookies::Off;
+    }
     request.auth = auth_with(resource.get("authentication"), &mut templates, skipped);
     request.scripts = scripts(resource);
     templates.report(skipped);

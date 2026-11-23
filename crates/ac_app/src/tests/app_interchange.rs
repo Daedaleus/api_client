@@ -612,6 +612,7 @@ async fn collections_export_as_postman_collections() {
             ac_interchange::ItemSetting::CertificateCheck,
             keys::EXPORT_CERTIFICATE_CHECK,
         ),
+        (ac_interchange::ItemSetting::Cookies, keys::EXPORT_COOKIES),
     ] {
         let text = skipped_text(&Skipped {
             item: "Login".into(),
