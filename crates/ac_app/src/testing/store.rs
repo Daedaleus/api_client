@@ -26,6 +26,8 @@ pub struct MemoryStore {
     recipients: Mutex<HashMap<PathBuf, Vec<String>>>,
     /// Text files to import, by path.
     files: Mutex<HashMap<PathBuf, String>>,
+    /// What `write_file` wrote, byte for byte.
+    written: Mutex<HashMap<PathBuf, Vec<u8>>>,
     read_only: Mutex<HashSet<ItemId>>,
     problems: Mutex<Vec<StoreError>>,
     fail_next: Mutex<Option<StoreError>>,
@@ -94,6 +96,12 @@ impl MemoryStore {
     /// Offers a text file to import at `path`.
     pub fn add_file(&self, path: impl Into<PathBuf>, text: impl Into<String>) {
         lock(&self.files).insert(path.into(), text.into());
+    }
+
+    /// The bytes `write_file` wrote to `path`, if any.
+    #[must_use]
+    pub fn written(&self, path: impl AsRef<Path>) -> Option<Vec<u8>> {
+        lock(&self.written).get(path.as_ref()).cloned()
     }
 
     /// Marks an item as read-only (e.g. from a newer format version).
@@ -389,9 +397,10 @@ impl CollectionStore for MemoryStore {
             .ok_or_else(|| not_found(file))
     }
 
-    fn write_text(&self, file: &Path, text: &str) -> Result<(), StoreError> {
+    fn write_file(&self, file: &Path, bytes: &[u8]) -> Result<(), StoreError> {
         self.check_failure()?;
-        lock(&self.files).insert(file.to_owned(), text.to_owned());
+        lock(&self.files).insert(file.to_owned(), String::from_utf8_lossy(bytes).into_owned());
+        lock(&self.written).insert(file.to_owned(), bytes.to_vec());
         Ok(())
     }
 

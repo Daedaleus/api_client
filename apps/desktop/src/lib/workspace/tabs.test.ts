@@ -86,6 +86,7 @@ describe('TabsState', () => {
     api.emit(1, OK);
     expect(tab.sending).toBe(false);
     expect(tab.outcome).toEqual(OK);
+    expect(tab.outcomeRun).toBe(1);
   });
 
   it('routes results to the tab that sent', async () => {
@@ -104,6 +105,7 @@ describe('TabsState', () => {
     api.emitBeforeAck = OK;
     await tabs.send(tabs.active!);
     expect(tabs.active?.outcome).toEqual(OK);
+    expect(tabs.active?.outcomeRun).not.toBeNull();
     expect(tabs.active?.sending).toBe(false);
   });
 

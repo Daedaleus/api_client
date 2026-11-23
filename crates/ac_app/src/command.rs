@@ -211,6 +211,14 @@ pub enum Command {
         #[serde(default)]
         collection_id: Option<String>,
     },
+    /// Write the body of a run's response, byte for byte, to `file`
+    /// (replacing it). Kept for the last runs only.
+    SaveResponseBody {
+        /// The run.
+        run_id: RunId,
+        /// The file to write.
+        file: String,
+    },
     /// Remove every entry of the request history.
     ClearHistory,
     /// Apply and save the app's settings (checked first: nothing is saved
@@ -222,7 +230,7 @@ pub enum Command {
 }
 
 /// Identifies one sending of a request, so the UI can match the result.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(transparent)]
 pub struct RunId(pub u64);
@@ -260,6 +268,8 @@ pub enum CommandAck {
         /// Its cookies now.
         cookies: Vec<CookieView>,
     },
+    /// A response body was written to a file.
+    ResponseSaved,
     /// A collection was exported.
     CollectionExported {
         /// What the format has no place for, to show the user.

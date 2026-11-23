@@ -100,7 +100,7 @@ impl SettingsStore for FileSettings {
         if let Some(folder) = self.path.parent() {
             std::fs::create_dir_all(folder).map_err(|error| self.failed(error))?;
         }
-        document::write_atomically(&self.path, &document_of(settings).to_string())
+        document::write_atomically(&self.path, document_of(settings).to_string())
             .map_err(|error| SettingsError(error.to_string()))
     }
 }

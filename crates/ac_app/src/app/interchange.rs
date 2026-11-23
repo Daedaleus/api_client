@@ -135,7 +135,7 @@ impl<
         };
         self.inner
             .store
-            .write_text(Path::new(file), &exported.text)?;
+            .write_file(Path::new(file), exported.text.as_bytes())?;
         Ok(CommandAck::CollectionExported {
             left_out: exported.left_out.iter().map(skipped_text).collect(),
         })

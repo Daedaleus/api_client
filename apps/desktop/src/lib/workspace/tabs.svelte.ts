@@ -153,6 +153,7 @@ export class TabsState {
       this.#early.clear();
       if (early) {
         tab.outcome = early;
+        tab.outcomeRun = ack.runId;
         tab.pendingRun = null;
       } else {
         tab.pendingRun = ack.runId;
@@ -193,6 +194,7 @@ export class TabsState {
     const tab = this.tabs.find((tab) => tab.pendingRun === event.runId);
     if (tab) {
       tab.outcome = event.outcome;
+      tab.outcomeRun = event.runId;
       tab.pendingRun = null;
     } else {
       this.#early.set(event.runId, event.outcome);

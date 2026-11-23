@@ -53,6 +53,15 @@ tab are not kept that way (`{{variables}}` are); put them into
 - **Body:** JSON is shown formatted with syntax colours; parts can be folded
   and **Ctrl+F** searches in it. Very large bodies are shown truncated, binary
   bodies are not shown.
+- **Filter JSON:** a JSONPath such as `$.items[*].id`, `$..name` or
+  `$.items[-1]` narrows a JSON body down to what it selects (members,
+  `[0]`, `[*]`, `..`, slices like `[1:3]`, lists like `[0,2]`; filter
+  expressions like `[?(@.x > 1)]` are not supported yet). *Copy body* or
+  *Copy result* puts the body or the selection on the clipboard.
+- **Save …** writes the body exactly as received – also binary data and
+  bodies too large to show – to a file you choose. The app keeps the bodies
+  of the last 20 requests in memory for this; responses opened from the
+  history cannot be saved.
 - **Headers** as received.
 - **Log** and **Tests** appear when [scripts](../scripting.md) wrote to the log
   or ran tests; the tab shows how many tests passed.

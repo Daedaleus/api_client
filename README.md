@@ -37,7 +37,8 @@ collections, environments and secrets, scripts, import, shortcuts.
   folders and the collection, sandboxed, with type checking and completion in
   the editor ([scripting](docs/scripting.md)).
 - **Response viewer** – status, time, size, headers, formatted and foldable
-  JSON with search, script log and test results.
+  JSON with search and a JSONPath filter, copy and save the body (also
+  binary), script log and test results.
 - **Import** from Postman, Insomnia, Bruno (including their scripts),
   OpenAPI and browser recordings (HAR), also straight from a URL; **export**
   to Postman; **cURL** import and export; copy a request as code

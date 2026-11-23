@@ -65,7 +65,7 @@ pub fn save_environment(path: &Path, environment: &Environment) -> Result<(), St
     document::set(root, "id", environment.id.to_string());
     document::set(root, "name", environment.name.as_str());
     variables::write(root, &before.variables, &environment.variables);
-    document::write_atomically(path, &doc.to_string())
+    document::write_atomically(path, doc.to_string())
 }
 
 /// Creates a file for `environment` in the collection's `environments`
