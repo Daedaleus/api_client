@@ -380,6 +380,7 @@ async fn redirects_and_time_limit_are_inherited() {
             transport: crate::view::TransportDraft {
                 redirects: crate::view::RedirectsView::Stop,
                 timeout_seconds: Some(5),
+                cookies: crate::view::CookiesView::Inherit,
             },
             scripts: crate::view::ScriptsDraft::default(),
             certificate_check: crate::view::CertificateCheckView::Inherit,

@@ -10,12 +10,14 @@ publish.workspace = true
 [dependencies]
 ac_app.workspace = true
 ac_domain.workspace = true
-# multipart: form data with files; tokio fs: reading files to send; net,
-# io-util and time: the loopback listener of the OAuth 2 sign-in.
-reqwest = { workspace = true, features = ["multipart"] }
+# multipart: form data with files; cookies: the collection's cookie jar
+# (also on redirects); tokio fs: reading files to send; net, io-util and
+# time: the loopback listener of the OAuth 2 sign-in; rt: the task-local
+# that hands a request its cookie jar.
+reqwest = { workspace = true, features = ["multipart", "cookies"] }
 # shell-words: splitting the BROWSER command.
 shell-words.workspace = true
-tokio = { workspace = true, features = ["fs", "io-util", "net", "time"] }
+tokio = { workspace = true, features = ["fs", "io-util", "net", "rt", "time"] }
 url.workspace = true
 
 [dev-dependencies]

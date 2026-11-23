@@ -17,6 +17,7 @@ use url::Url;
 use crate::error::AppError;
 use crate::history::Masking;
 use crate::oauth::OAuthClient;
+use crate::ports::SharedCookieJar;
 use crate::resolve_body::resolve_body;
 
 /// Scheme assumed when the user enters a URL without one, as other API
@@ -50,6 +51,9 @@ pub(crate) struct Prepared {
     /// What the history must not keep (set by the caller, which knows the
     /// secrets).
     pub masking: Masking,
+    /// The jar to send and keep cookies with (set by the caller, which knows
+    /// the collection); `None` when cookies are off.
+    pub cookies: Option<SharedCookieJar>,
 }
 
 /// Validates method, URL and headers as entered and prepares the body.
@@ -106,6 +110,7 @@ pub(crate) fn resolve_request(
         },
         oauth,
         masking: Masking::default(),
+        cookies: None,
     })
 }
 

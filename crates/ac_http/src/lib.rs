@@ -6,8 +6,10 @@
 //! own time limit.
 //!
 //! [`login`]: receiving the redirect of an OAuth 2 sign-in in the browser
-//! ([`LoopbackLogin`]).
+//! ([`LoopbackLogin`]). `cookies`: the collection's cookie jar inside
+//! reqwest.
 
+mod cookies;
 pub mod login;
 
 pub use login::{LoopbackLogin, SystemBrowser};
@@ -17,6 +19,7 @@ use std::sync::{Arc, PoisonError, RwLock};
 use std::time::{Duration, Instant};
 
 use ac_app::ports::SettingsError;
+use ac_app::ports::SharedCookieJar;
 use ac_app::settings::{NetworkSettings, ProxySetting};
 use ac_app::{HttpSender, TransportError};
 use ac_domain::exchange::{Header, Part, PartContent, RequestBody, ResolvedRequest, Response};
@@ -128,6 +131,7 @@ fn build_clients(
             .user_agent(USER_AGENT)
             .timeout(timeout)
             .danger_accept_invalid_certs(!verify_tls)
+            .cookie_provider(Arc::new(cookies::JarProvider))
             .redirect(if follow_redirects {
                 reqwest::redirect::Policy::default()
             } else {
@@ -152,7 +156,26 @@ fn build_clients(
 }
 
 impl HttpSender for ReqwestSender {
-    async fn send(&self, request: ResolvedRequest) -> Result<Response, TransportError> {
+    async fn send(
+        &self,
+        request: ResolvedRequest,
+        cookies: Option<SharedCookieJar>,
+    ) -> Result<Response, TransportError> {
+        cookies::with_jar(cookies, self.send_now(request)).await
+    }
+
+    fn configure(&self, network: &NetworkSettings) -> Result<(), SettingsError> {
+        let checked = Network::from_settings(network)?;
+        let clients = build_clients(self.timeout, &checked)
+            .map_err(|error| SettingsError(root_cause(&error)))?;
+        *self.clients.write().unwrap_or_else(PoisonError::into_inner) = Arc::new(clients);
+        Ok(())
+    }
+}
+
+impl ReqwestSender {
+    /// Sends with the cookie jar of the surrounding [`cookies::with_jar`].
+    async fn send_now(&self, request: ResolvedRequest) -> Result<Response, TransportError> {
         let method = reqwest::Method::from_bytes(request.method.as_str().as_bytes())
             .map_err(|error| TransportError::Other(error.to_string()))?;
         let client = self.client(request.verify_tls, request.transport.follow_redirects);
@@ -195,14 +218,6 @@ impl HttpSender for ReqwestSender {
             body,
             elapsed: started.elapsed(),
         })
-    }
-
-    fn configure(&self, network: &NetworkSettings) -> Result<(), SettingsError> {
-        let checked = Network::from_settings(network)?;
-        let clients = build_clients(self.timeout, &checked)
-            .map_err(|error| SettingsError(root_cause(&error)))?;
-        *self.clients.write().unwrap_or_else(PoisonError::into_inner) = Arc::new(clients);
-        Ok(())
     }
 }
 

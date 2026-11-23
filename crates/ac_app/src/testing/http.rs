@@ -4,11 +4,18 @@ use std::collections::VecDeque;
 use std::sync::Mutex;
 use std::time::Duration;
 
+use ac_domain::cookie::UnixSeconds;
 use ac_domain::exchange::{Header, ResolvedRequest, Response};
 use ac_domain::protocol::StatusCode;
 
 use super::lock;
-use crate::ports::{HttpSender, SettingsError, TransportError};
+use crate::ports::{HttpSender, SettingsError, SharedCookieJar, TransportError};
+
+/// The time the fake handles cookies at: 2026-01-01 00:00:00 UTC.
+pub const FAKE_NOW: UnixSeconds = 1_767_225_600;
+
+/// `Set-Cookie`, compared without case.
+const SET_COOKIE: &str = "set-cookie";
 use crate::settings::{NetworkSettings, ProxySetting};
 
 /// An [`HttpSender`] that answers with queued replies and records what was
@@ -17,6 +24,7 @@ use crate::settings::{NetworkSettings, ProxySetting};
 pub struct FakeHttpSender {
     replies: Mutex<VecDeque<Result<Response, TransportError>>>,
     sent: Mutex<Vec<ResolvedRequest>>,
+    cookies_sent: Mutex<Vec<Option<String>>>,
     network: Mutex<Option<NetworkSettings>>,
 }
 
@@ -40,6 +48,13 @@ impl FakeHttpSender {
         lock(&self.sent).clone()
     }
 
+    /// Per request sent: the `Cookie` header its jar gave (`None` without
+    /// a jar or matching cookies).
+    #[must_use]
+    pub fn cookies_sent(&self) -> Vec<Option<String>> {
+        lock(&self.cookies_sent).clone()
+    }
+
     /// The network settings applied last, if any.
     #[must_use]
     pub fn network(&self) -> Option<NetworkSettings> {
@@ -48,14 +63,30 @@ impl FakeHttpSender {
 }
 
 impl HttpSender for FakeHttpSender {
+    /// Like the real sender, sends the jar's cookies and keeps the ones the
+    /// reply sets (at [`FAKE_NOW`]; no redirects).
     fn send(
         &self,
         request: ResolvedRequest,
+        cookies: Option<SharedCookieJar>,
     ) -> impl Future<Output = Result<Response, TransportError>> + Send {
+        let header = cookies
+            .as_ref()
+            .and_then(|jar| lock(jar).header_for(&request.url, FAKE_NOW));
+        lock(&self.cookies_sent).push(header);
+        let url = request.url.clone();
         lock(&self.sent).push(request);
         let reply = lock(&self.replies)
             .pop_front()
             .unwrap_or_else(|| Err(TransportError::Other("no reply queued".into())));
+        if let (Some(jar), Ok(response)) = (&cookies, &reply) {
+            let mut jar = lock(jar);
+            for header in &response.headers {
+                if header.name.eq_ignore_ascii_case(SET_COOKIE) {
+                    jar.store(&url, &header.value, FAKE_NOW);
+                }
+            }
+        }
         std::future::ready(reply)
     }
 

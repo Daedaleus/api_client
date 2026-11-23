@@ -44,7 +44,7 @@ export function shop(): CollectionView {
     variables: [],
     auth: { kind: 'inherit' },
     certificateCheck: 'inherit',
-    transport: { redirects: 'inherit', timeoutSeconds: null },
+    transport: { redirects: 'inherit', timeoutSeconds: null, cookies: 'inherit' },
     scripts: { preRequest: '', postResponse: '' },
     environments: [
       {
@@ -66,7 +66,7 @@ export function shop(): CollectionView {
         variables: [],
         auth: { kind: 'inherit' },
         certificateCheck: 'inherit',
-        transport: { redirects: 'inherit', timeoutSeconds: null },
+        transport: { redirects: 'inherit', timeoutSeconds: null, cookies: 'inherit' },
         scripts: { preRequest: '', postResponse: '' },
         items: [
           {
@@ -106,7 +106,7 @@ export function draft(
     variables: [],
     auth: { kind: 'inherit' },
     certificateCheck: 'inherit',
-    transport: { redirects: 'inherit', timeoutSeconds: null },
+    transport: { redirects: 'inherit', timeoutSeconds: null, cookies: 'inherit' },
     scripts: { preRequest: '', postResponse: '' },
     pathParams: [],
     disabledQuery: [],

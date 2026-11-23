@@ -7,7 +7,11 @@ import type { TransportDraft } from '../../lib/types';
 import TransportFields from './TransportFields.svelte';
 
 function setup(root = false) {
-  const transport: TransportDraft = { redirects: 'inherit', timeoutSeconds: null };
+  const transport: TransportDraft = {
+    redirects: 'inherit',
+    timeoutSeconds: null,
+    cookies: 'inherit',
+  };
   render(TransportFields, { transport, root });
   return transport;
 }
@@ -27,9 +31,21 @@ describe('TransportFields', () => {
     const timeout = screen.getByLabelText('Time limit');
     expect(timeout).toHaveAttribute('placeholder', 'Inherit');
     await userEvent.type(timeout, '15');
-    expect(transport).toEqual({ redirects: 'stop', timeoutSeconds: 15 });
+    expect(transport).toEqual({ redirects: 'stop', timeoutSeconds: 15, cookies: 'inherit' });
     await userEvent.clear(timeout);
     expect(transport.timeoutSeconds).toBeNull();
+  });
+
+  it('switches cookies off', async () => {
+    const transport = setup();
+    const cookies = screen.getByLabelText('Cookies') as HTMLSelectElement;
+    expect([...cookies.options].map((option) => option.text)).toEqual([
+      'Inherit',
+      'Send and keep',
+      'Off',
+    ]);
+    await userEvent.selectOptions(cookies, 'off');
+    expect(transport.cookies).toBe('off');
   });
 
   it('shows the defaults on the collection', () => {
@@ -40,5 +56,7 @@ describe('TransportFields', () => {
       'Do not follow (show the 3xx)',
     ]);
     expect(screen.getByLabelText('Time limit')).toHaveAttribute('placeholder', 'Default (30)');
+    const cookies = screen.getByLabelText('Cookies') as HTMLSelectElement;
+    expect([...cookies.options].map((option) => option.text)).toEqual(['Send and keep', 'Off']);
   });
 });

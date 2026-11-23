@@ -9,7 +9,10 @@ use ac_domain::exchange::Response;
 use ac_domain::scope::Scope;
 use ac_domain::script::ScriptPhase;
 use ac_domain::tls::checks_certificates;
+use std::sync::PoisonError;
 use std::sync::atomic::Ordering;
+
+use crate::ports::SharedCookieJar;
 
 use super::environments::Context;
 use super::secrets::explain;
@@ -121,7 +124,32 @@ impl<
             _ => None,
         };
         prepared.masking = Masking::new(secrets, api_key);
+        if prepared.request.transport.cookies {
+            let collection = outgoing.context.as_ref().map(|c| c.collection_id.clone());
+            prepared.cookies = Some(self.cookie_jar(collection));
+        }
         Ok(prepared)
+    }
+
+    /// The cookie jar of a collection (`None`: outside a collection),
+    /// created empty when first needed.
+    pub(super) fn cookie_jar(&self, collection: Option<String>) -> SharedCookieJar {
+        self.inner
+            .cookie_jars
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .entry(collection)
+            .or_default()
+            .clone()
+    }
+
+    /// Discards the cookies of a closed collection.
+    pub(super) fn forget_cookies(&self, collection_id: &str) {
+        self.inner
+            .cookie_jars
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .remove(&Some(collection_id.to_owned()));
     }
 }
 
@@ -153,7 +181,7 @@ impl<H: HttpSender, S, V, B: BrowserLogin, R, A, Y, Z> Inner<H, S, V, B, R, A, Y
             authorize(&mut request, &token);
         }
         self.http
-            .send(request)
+            .send(request, prepared.cookies)
             .await
             .map_err(|error| error.user_text())
     }

@@ -76,7 +76,8 @@ impl<
         let response = self
             .inner
             .http
-            .send(request)
+            // An import is no request of a collection: no cookies.
+            .send(request, None)
             .await
             .map_err(|error| AppError::Download(error.to_string()))?;
         if response.status.class() != StatusClass::Success {

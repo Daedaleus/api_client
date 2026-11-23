@@ -58,6 +58,7 @@ impl<
             self.inner.store.discard_temporary(&root)?;
         }
         self.forget_runtime_variables(&id.to_string());
+        self.forget_cookies(&id.to_string());
         Ok(CommandAck::CollectionClosed {
             collection_id: id.to_string(),
         })

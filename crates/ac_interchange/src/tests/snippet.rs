@@ -147,6 +147,7 @@ fn redirects_certificate_check_and_time_limit_carry_over() {
     strict.transport = EffectiveTransport {
         follow_redirects: false,
         timeout: Duration::from_secs(5),
+        cookies: true,
     };
     let fetch = snippet(&strict, SnippetLanguage::JavaScriptFetch);
     assert!(

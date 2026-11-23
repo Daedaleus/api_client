@@ -678,6 +678,15 @@ export type CompletionView = {
 	kind: CompletionKindView,
 };
 
+/**  Whether the cookie jar is used (serialized in camelCase). */
+export type CookiesView = 
+/**  As the folder or collection around it. */
+"inherit" | 
+/**  Send and keep cookies. */
+"on" | 
+/**  Neither send nor keep them. */
+"off";
+
 /**  A problem as the editor marks it. */
 export type DiagnosticView = {
 	/**  Start offset. */
@@ -1429,23 +1438,27 @@ export type TestResultView_Serialize = {
 	message: string | null,
 };
 
-/**  Redirects and time limit of a request, folder or collection. */
+/**  Redirects, time limit and cookies of a request, folder or collection. */
 export type TransportDraft = TransportDraft_Serialize | TransportDraft_Deserialize;
 
-/**  Redirects and time limit of a request, folder or collection. */
+/**  Redirects, time limit and cookies of a request, folder or collection. */
 export type TransportDraft_Deserialize = {
 	/**  Redirects. */
 	redirects?: RedirectsView,
 	/**  Time limit in seconds; `null` inherits. */
 	timeoutSeconds?: number | null,
+	/**  The cookie jar. */
+	cookies?: CookiesView,
 };
 
-/**  Redirects and time limit of a request, folder or collection. */
+/**  Redirects, time limit and cookies of a request, folder or collection. */
 export type TransportDraft_Serialize = {
 	/**  Redirects. */
 	redirects: RedirectsView,
 	/**  Time limit in seconds; `null` inherits. */
 	timeoutSeconds: number | null,
+	/**  The cookie jar. */
+	cookies: CookiesView,
 };
 
 /**  An entry of the request tree. */

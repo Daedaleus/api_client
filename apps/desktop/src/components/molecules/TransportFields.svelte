@@ -1,6 +1,6 @@
 <script lang="ts">
   import { i18n } from '../../lib/i18n/i18n.svelte';
-  import type { RedirectsView, TransportDraft } from '../../lib/types';
+  import type { CookiesView, RedirectsView, TransportDraft } from '../../lib/types';
 
   interface Props {
     transport: TransportDraft;
@@ -19,6 +19,14 @@
     return i18n.t(root && option === 'inherit' ? 'transport.follow' : `transport.${option}`);
   }
 
+  const COOKIES: CookiesView[] = ['inherit', 'on', 'off'];
+  let cookieOptions = $derived(root ? COOKIES.filter((option) => option !== 'on') : COOKIES);
+
+  function cookieLabel(option: CookiesView): string {
+    if (root && option === 'inherit') return i18n.t('transport.cookies_on');
+    return i18n.t(option === 'inherit' ? 'transport.inherit' : `transport.cookies_${option}`);
+  }
+
   /** The field shows seconds; empty inherits. */
   function setTimeout(text: string) {
     const seconds = Number.parseInt(text, 10);
@@ -31,6 +39,14 @@
   <select class="transport-fields__control" bind:value={transport.redirects}>
     {#each redirectOptions as option (option)}
       <option value={option}>{redirectLabel(option)}</option>
+    {/each}
+  </select>
+</label>
+<label class="transport-fields__field">
+  <span class="transport-fields__label">{i18n.t('transport.cookies')}</span>
+  <select class="transport-fields__control" bind:value={transport.cookies}>
+    {#each cookieOptions as option (option)}
+      <option value={option}>{cookieLabel(option)}</option>
     {/each}
   </select>
 </label>

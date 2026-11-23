@@ -1,23 +1,32 @@
 //! Sending HTTP requests.
 
 use std::future::Future;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
+use ac_domain::cookie::CookieJar;
 use ac_domain::exchange::{ResolvedRequest, Response};
 
 use crate::ports::SettingsError;
 use crate::settings::NetworkSettings;
 use crate::text::{UserText, keys};
 
+/// The cookies of one collection, shared between the requests sent for it.
+pub type SharedCookieJar = Arc<Mutex<CookieJar>>;
+
 /// Sends HTTP requests.
 pub trait HttpSender: Send + Sync + 'static {
     /// Sends the request and reads the whole response.
+    ///
+    /// With a `cookies` jar, its matching cookies are sent and the cookies
+    /// the server sets are kept in it – also on every redirect followed. A
+    /// `Cookie` header of the request itself replaces the jar's cookies.
     ///
     /// A response with an error status (4xx, 5xx) is a normal `Ok`; only
     /// failures to get a response at all are errors.
     fn send(
         &self,
         request: ResolvedRequest,
+        cookies: Option<SharedCookieJar>,
     ) -> impl Future<Output = Result<Response, TransportError>> + Send;
 
     /// Applies the app's network settings (proxy, extra CA certificates) to
@@ -33,8 +42,9 @@ impl<T: HttpSender> HttpSender for Arc<T> {
     fn send(
         &self,
         request: ResolvedRequest,
+        cookies: Option<SharedCookieJar>,
     ) -> impl Future<Output = Result<Response, TransportError>> + Send {
-        T::send(self, request)
+        T::send(self, request, cookies)
     }
 
     fn configure(&self, network: &NetworkSettings) -> Result<(), SettingsError> {

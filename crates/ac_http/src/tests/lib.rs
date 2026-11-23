@@ -1,6 +1,6 @@
 use ac_domain::protocol::HttpMethod;
 use url::Url;
-use wiremock::matchers::{body_string, body_string_contains, header, method, path};
+use wiremock::matchers::{body_string, body_string_contains, header, header_regex, method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use super::*;
@@ -33,7 +33,7 @@ async fn sends_the_body() {
         vec![Header::new("Content-Type", "application/json")],
     );
     post.body = Some(RequestBody::Bytes(b"{\"name\":\"Teapot\"}".to_vec()));
-    let response = sender().send(post).await.unwrap();
+    let response = sender().send(post, None).await.unwrap();
     assert_eq!(response.status.as_u16(), 201);
 }
 
@@ -59,11 +59,10 @@ async fn sends_method_headers_and_reads_the_response() {
 
     let url = format!("{}/items/1", server.uri());
     let response = sender()
-        .send(request(
-            HttpMethod::Put,
-            &url,
-            vec![Header::new("X-Test", "yes")],
-        ))
+        .send(
+            request(HttpMethod::Put, &url, vec![Header::new("X-Test", "yes")]),
+            None,
+        )
         .await
         .unwrap();
 
@@ -81,7 +80,7 @@ async fn error_statuses_are_responses() {
         .await;
 
     let response = sender()
-        .send(request(HttpMethod::Get, &server.uri(), vec![]))
+        .send(request(HttpMethod::Get, &server.uri(), vec![]), None)
         .await
         .unwrap();
     assert_eq!(response.status.as_u16(), 503);
@@ -98,7 +97,7 @@ async fn custom_methods_are_sent() {
 
     let method = HttpMethod::Custom("PROPFIND".into());
     let response = sender()
-        .send(request(method, &server.uri(), vec![]))
+        .send(request(method, &server.uri(), vec![]), None)
         .await
         .unwrap();
     assert_eq!(response.status.as_u16(), 207);
@@ -115,7 +114,7 @@ async fn slow_servers_time_out() {
     // The request's own time limit counts.
     let mut slow = request(HttpMethod::Get, &server.uri(), vec![]);
     slow.transport.timeout = Duration::from_millis(100);
-    let error = sender().send(slow).await.unwrap_err();
+    let error = sender().send(slow, None).await.unwrap_err();
     assert_eq!(error, TransportError::Timeout);
 }
 
@@ -133,7 +132,7 @@ async fn redirects_are_followed_unless_the_request_says_stop() {
 
     let url = format!("{}/old", server.uri());
     let followed = sender()
-        .send(request(HttpMethod::Get, &url, vec![]))
+        .send(request(HttpMethod::Get, &url, vec![]), None)
         .await
         .unwrap();
     assert_eq!(followed.status.as_u16(), 200);
@@ -141,7 +140,7 @@ async fn redirects_are_followed_unless_the_request_says_stop() {
 
     let mut stop = request(HttpMethod::Get, &url, vec![]);
     stop.transport.follow_redirects = false;
-    let redirect = sender().send(stop).await.unwrap();
+    let redirect = sender().send(stop, None).await.unwrap();
     assert_eq!(redirect.status.as_u16(), 302);
     assert!(redirect.headers.iter().any(|header| header.value == "/new"));
 }
@@ -154,11 +153,10 @@ async fn refused_connections_are_connect_errors() {
     drop(listener);
 
     let error = sender()
-        .send(request(
-            HttpMethod::Get,
-            &format!("http://{address}/"),
-            vec![],
-        ))
+        .send(
+            request(HttpMethod::Get, &format!("http://{address}/"), vec![]),
+            None,
+        )
         .await
         .unwrap_err();
     assert!(
@@ -170,11 +168,14 @@ async fn refused_connections_are_connect_errors() {
 #[tokio::test]
 async fn invalid_header_values_are_reported() {
     let error = sender()
-        .send(request(
-            HttpMethod::Get,
-            "http://127.0.0.1:1/",
-            vec![Header::new("X-Bad", "line\nbreak")],
-        ))
+        .send(
+            request(
+                HttpMethod::Get,
+                "http://127.0.0.1:1/",
+                vec![Header::new("X-Bad", "line\nbreak")],
+            ),
+            None,
+        )
         .await
         .unwrap_err();
     assert!(matches!(error, TransportError::Other(_)), "{error:?}");
@@ -207,7 +208,7 @@ async fn sends_files_and_multipart_forms() {
 
     let mut put = request(HttpMethod::Put, &format!("{}/binary", server.uri()), vec![]);
     put.body = Some(RequestBody::File(file.clone()));
-    assert_eq!(sender().send(put).await.unwrap().status.as_u16(), 204);
+    assert_eq!(sender().send(put, None).await.unwrap().status.as_u16(), 204);
 
     let mut post = request(HttpMethod::Post, &format!("{}/form", server.uri()), vec![]);
     post.body = Some(RequestBody::Multipart(vec![
@@ -220,7 +221,10 @@ async fn sends_files_and_multipart_forms() {
             content: PartContent::File(file),
         },
     ]));
-    assert_eq!(sender().send(post).await.unwrap().status.as_u16(), 201);
+    assert_eq!(
+        sender().send(post, None).await.unwrap().status.as_u16(),
+        201
+    );
 }
 
 #[tokio::test]
@@ -236,7 +240,7 @@ async fn unreadable_files_fail_the_request() {
     ] {
         let mut post = request(HttpMethod::Post, "http://127.0.0.1:9/", vec![]);
         post.body = Some(body);
-        let error = sender().send(post).await.unwrap_err();
+        let error = sender().send(post, None).await.unwrap_err();
         assert!(
             matches!(&error, TransportError::File { path, .. } if path.ends_with("missing.bin")),
             "{error:?}"
@@ -257,7 +261,7 @@ async fn requests_without_certificate_check_use_the_unchecking_client() {
         .await;
     let mut get = request(HttpMethod::Get, &server.uri(), vec![]);
     get.verify_tls = false;
-    assert_eq!(sender().send(get).await.unwrap().status.as_u16(), 200);
+    assert_eq!(sender().send(get, None).await.unwrap().status.as_u16(), 200);
 }
 
 #[tokio::test]
@@ -280,11 +284,14 @@ async fn a_manual_proxy_carries_the_requests() {
         })
         .unwrap();
     let response = sender
-        .send(request(
-            HttpMethod::Get,
-            "http://api.example.invalid/via-proxy",
-            vec![],
-        ))
+        .send(
+            request(
+                HttpMethod::Get,
+                "http://api.example.invalid/via-proxy",
+                vec![],
+            ),
+            None,
+        )
         .await
         .unwrap();
     assert_eq!(response.body, b"proxied");
@@ -298,11 +305,14 @@ async fn a_manual_proxy_carries_the_requests() {
         .unwrap();
     assert!(
         sender
-            .send(request(
-                HttpMethod::Get,
-                "http://api.example.invalid/via-proxy",
-                vec![]
-            ))
+            .send(
+                request(
+                    HttpMethod::Get,
+                    "http://api.example.invalid/via-proxy",
+                    vec![]
+                ),
+                None
+            )
             .await
             .is_err()
     );
@@ -344,4 +354,72 @@ fn settings_that_cannot_work_are_refused_and_change_nothing() {
         assert!(sender.configure(&settings).is_err(), "{settings:?}");
     }
     assert!(sender.configure(&NetworkSettings::default()).is_ok());
+}
+
+#[tokio::test]
+async fn cookies_are_kept_across_redirects_and_requests() {
+    use std::sync::{Arc, Mutex};
+
+    use ac_domain::cookie::CookieJar;
+
+    let server = MockServer::start().await;
+    // The login sets the session on its redirect response.
+    Mock::given(method("POST"))
+        .and(path("/login"))
+        .respond_with(
+            ResponseTemplate::new(302)
+                .insert_header("Location", "/home")
+                .insert_header("Set-Cookie", "session=s3cret; Path=/; HttpOnly"),
+        )
+        .mount(&server)
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/home"))
+        .and(header_regex("cookie", "^session=s3cret(; seen=1)?$"))
+        .respond_with(ResponseTemplate::new(200).insert_header("Set-Cookie", "seen=1"))
+        .mount(&server)
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/home"))
+        .respond_with(ResponseTemplate::new(401))
+        .mount(&server)
+        .await;
+    let jar = Arc::new(Mutex::new(CookieJar::new()));
+    let sender = sender();
+    let login = request(HttpMethod::Post, &format!("{}/login", server.uri()), vec![]);
+    let response = sender.send(login, Some(jar.clone())).await.unwrap();
+    assert_eq!(response.status.as_u16(), 200);
+    let home = format!("{}/home", server.uri());
+    assert_eq!(
+        jar.lock()
+            .unwrap()
+            .header_for(&Url::parse(&home).unwrap(), 0),
+        Some("session=s3cret; seen=1".into())
+    );
+
+    // The next request of the collection sends them on its own …
+    let again = sender
+        .send(request(HttpMethod::Get, &home, vec![]), Some(jar.clone()))
+        .await
+        .unwrap();
+    assert_eq!(again.status.as_u16(), 200);
+    // … without a jar (cookies off) nothing is sent …
+    let without = sender
+        .send(request(HttpMethod::Get, &home, vec![]), None)
+        .await
+        .unwrap();
+    assert_eq!(without.status.as_u16(), 401);
+    // … and a Cookie header of the request itself replaces the jar's.
+    let own = sender
+        .send(
+            request(
+                HttpMethod::Get,
+                &home,
+                vec![Header::new("Cookie", "session=other")],
+            ),
+            Some(jar),
+        )
+        .await
+        .unwrap();
+    assert_eq!(own.status.as_u16(), 401);
 }

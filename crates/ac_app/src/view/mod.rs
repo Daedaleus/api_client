@@ -46,5 +46,5 @@ pub use run_report::{RunReport, RunResult, RunResultOutcome};
 pub use scripts::ScriptsDraft;
 pub use settings::{ProxyView, SettingsView};
 pub use snippet::SnippetLanguageView;
-pub use transport::{RedirectsView, TransportDraft};
+pub use transport::{CookiesView, RedirectsView, TransportDraft};
 pub use variable::{SendContext, VariableDraft};

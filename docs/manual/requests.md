@@ -71,10 +71,27 @@ shown. *Do not follow* shows the redirect response itself (3xx with its
 reading the response; 30 by default. A request that takes longer fails with
 a time-out.
 
-All three settings are inherited: a request set to *Inherit* (or with an
+**Cookies:** on by default – see [Cookies](#cookies). *Off* neither sends
+the collection's cookies nor keeps the ones the server sets.
+
+All these settings are inherited: a request set to *Inherit* (or with an
 empty time limit) uses the innermost folder that sets it, else the
 collection, else the default. Folders and the collection set them in their
 *Settings* section.
+
+## Cookies
+
+Cookies a server sets are kept – one cookie jar per collection, and one for
+requests outside a collection – and sent with the following requests like a
+browser would: to the matching domain and path, not after they expire,
+`Secure` ones only over HTTPS (or to your own machine). So a login that
+sets a session cookie works for the requests after it, also when the
+cookie comes with a redirect. The CLI runner keeps cookies during a run.
+
+Cookies stay in memory only: they are never written into the collection
+and are gone when the collection is closed or the app ends. A `Cookie`
+header you set on a request yourself replaces the jar's cookies for that
+request.
 
 ## Scripts
 

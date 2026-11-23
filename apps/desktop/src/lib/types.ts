@@ -41,6 +41,7 @@ export type {
   OutgoingRequest,
   ProxyView,
   RedirectsView,
+  CookiesView,
   Query,
   RecipientsView,
   StatusClassView as StatusClass,
