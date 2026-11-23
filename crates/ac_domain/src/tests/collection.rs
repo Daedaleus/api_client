@@ -53,6 +53,7 @@ fn items_are_found_anywhere_in_the_tree() {
         id: ItemId::new(),
         name: "Folder".into(),
         items: vec![Item::Request(nested.clone())],
+        docs: String::new(),
     };
     let collection = Collection {
         transport: crate::transport::TransportSettings::default(),
@@ -63,6 +64,7 @@ fn items_are_found_anywhere_in_the_tree() {
         id: ItemId::new(),
         name: "C".into(),
         items: vec![Item::Folder(folder.clone()), Item::Request(top.clone())],
+        docs: String::new(),
     };
     assert_eq!(collection.find(nested.id).map(Item::name), Some("Nested"));
     assert_eq!(collection.find(top.id).map(Item::name), Some("Top"));
@@ -82,6 +84,7 @@ fn items_expose_id_and_name() {
         id: ItemId::new(),
         name: "Auth".into(),
         items: vec![Item::Request(request.clone())],
+        docs: String::new(),
     };
     let items = [Item::Folder(folder.clone()), Item::Request(request.clone())];
     assert_eq!(items[0].id(), folder.id);
@@ -102,6 +105,7 @@ fn folders_around_an_item_lead_from_outside_in() {
         name: "v2".into(),
         items: vec![Item::Request(login.clone())],
         variables: Vec::new(),
+        docs: String::new(),
     };
     let outer = Folder {
         transport: crate::transport::TransportSettings::default(),
@@ -112,6 +116,7 @@ fn folders_around_an_item_lead_from_outside_in() {
         name: "Auth".into(),
         items: vec![Item::Folder(inner.clone())],
         variables: Vec::new(),
+        docs: String::new(),
     };
     let health = Request::new("Health");
     let collection = Collection {
@@ -123,6 +128,7 @@ fn folders_around_an_item_lead_from_outside_in() {
         name: "Shop".into(),
         items: vec![Item::Folder(outer.clone()), Item::Request(health.clone())],
         variables: Vec::new(),
+        docs: String::new(),
     };
     let names: Vec<_> = collection
         .folders_around(login.id)
@@ -149,6 +155,7 @@ fn requests_inherit_auth_from_the_innermost_folder_that_sets_one() {
         name: "v2".into(),
         items: vec![Item::Request(login.clone())],
         variables: Vec::new(),
+        docs: String::new(),
     };
     let outer = |inner: &Folder| Folder {
         transport: crate::transport::TransportSettings::default(),
@@ -159,6 +166,7 @@ fn requests_inherit_auth_from_the_innermost_folder_that_sets_one() {
         name: "Auth".into(),
         items: vec![Item::Folder(inner.clone())],
         variables: Vec::new(),
+        docs: String::new(),
     };
     let collection = |inner: &Folder| Collection {
         transport: crate::transport::TransportSettings::default(),
@@ -169,6 +177,7 @@ fn requests_inherit_auth_from_the_innermost_folder_that_sets_one() {
         name: "Shop".into(),
         items: vec![Item::Folder(outer(inner))],
         variables: Vec::new(),
+        docs: String::new(),
     };
     let inherit = crate::auth::Auth::Inherit;
     assert_eq!(
@@ -206,6 +215,7 @@ fn scripts_around_a_request_lead_from_outside_in_without_empty_ones() {
         name: "v2".into(),
         items: vec![Item::Request(login.clone())],
         variables: Vec::new(),
+        docs: String::new(),
     };
     let outer = Folder {
         transport: crate::transport::TransportSettings::default(),
@@ -216,6 +226,7 @@ fn scripts_around_a_request_lead_from_outside_in_without_empty_ones() {
         name: "Auth".into(),
         items: vec![Item::Folder(inner)],
         variables: Vec::new(),
+        docs: String::new(),
     };
     let collection = Collection {
         transport: crate::transport::TransportSettings::default(),
@@ -226,6 +237,7 @@ fn scripts_around_a_request_lead_from_outside_in_without_empty_ones() {
         name: "Shop".into(),
         items: vec![Item::Folder(outer)],
         variables: Vec::new(),
+        docs: String::new(),
     };
     let around: Vec<(&str, &str)> = collection
         .scripts_around(login.id)

@@ -99,6 +99,7 @@ pub fn write_collection(
             variables: collection.variables.clone(),
             auth: collection.auth.clone(),
             certificate_check: collection.certificate_check,
+            docs: String::new(),
         },
     )?;
     write_items(root, &collection.items)?;
@@ -122,6 +123,7 @@ fn write_items(dir: &Path, items: &[Item]) -> Result<(), StorageError> {
                     variables: folder.variables.clone(),
                     auth: folder.auth.clone(),
                     certificate_check: folder.certificate_check,
+                    docs: String::new(),
                 };
                 save_folder_defaults(&path, id, &folder.name, &defaults)?;
                 write_items(&path, &folder.items)?;

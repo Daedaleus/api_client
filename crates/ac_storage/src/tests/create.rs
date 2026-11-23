@@ -151,6 +151,7 @@ fn whole_collections_are_written_with_folders_requests_and_settings() {
                 variables: vec![Variable::plain("area", "auth")],
                 auth: Auth::None,
                 certificate_check: CertificateCheck::Off,
+                docs: String::new(),
             }),
             Item::Request(Request::new("Health")),
         ],
@@ -159,6 +160,7 @@ fn whole_collections_are_written_with_folders_requests_and_settings() {
             token: "{{token}}".into(),
         },
         certificate_check: CertificateCheck::Inherit,
+        docs: String::new(),
     };
     let mut dev = ac_domain::environment::Environment::new("Dev");
     dev.variables

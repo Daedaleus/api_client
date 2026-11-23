@@ -90,6 +90,7 @@ pub fn from_files(root: &Path, files: &[BrunoFile]) -> Imported {
             variables: defaults.variables,
             auth: defaults.auth,
             certificate_check: CertificateCheck::Inherit,
+            docs: defaults.docs,
         },
         environments,
         skipped,
@@ -176,6 +177,7 @@ impl Tree {
                     auth: defaults.auth,
                     certificate_check: CertificateCheck::Inherit,
                     name,
+                    docs: defaults.docs,
                 }),
             ));
         }

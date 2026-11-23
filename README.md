@@ -30,6 +30,9 @@ collections, environments and secrets, scripts, import, shortcuts.
   preview shows the URL as it will be sent.
 - **Secrets encrypted with [age](https://age-encryption.org/)** for several
   recipients, so a team (and CI) can share them safely through git.
+- **Docs** in Markdown for requests, folders and the collection, stored in
+  the files and shown formatted (imported from Postman, Insomnia, Bruno and
+  OpenAPI).
 - **TypeScript scripts and tests** before and after a request, also on
   folders and the collection, sandboxed, with type checking and completion in
   the editor ([scripting](docs/scripting.md)).

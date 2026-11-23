@@ -39,6 +39,11 @@ pub(super) fn operation(
             str::to_owned,
         );
     let mut request = Request::new(name);
+    // The summary names the request; the description documents it.
+    request.docs = op
+        .get("description")
+        .and_then(Value::as_str)
+        .map_or_default(|text| text.trim().to_owned());
     request.method = operation
         .method
         .to_uppercase()

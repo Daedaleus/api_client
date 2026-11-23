@@ -18,7 +18,7 @@ use crate::format::{
 };
 use crate::names::file_stem;
 use crate::request_file::read_request;
-use crate::{auth, scripts, tls, transport, variables};
+use crate::{auth, docs, scripts, tls, transport, variables};
 
 /// A loaded collection with the file behind every item.
 #[derive(Debug)]
@@ -82,6 +82,7 @@ pub fn load_collection(root: &Path) -> Result<LoadedCollection, StorageError> {
     let certificate_check = tls::read(table, &settings)?;
     let transport = transport::read(table, &settings)?;
     let scripts = scripts::read(table.get(scripts::KEY), &settings, scripts::KEY)?;
+    let docs = docs::read(table, &settings)?;
 
     let mut loader = Loader::default();
     loader.entries.insert(
@@ -105,6 +106,7 @@ pub fn load_collection(root: &Path) -> Result<LoadedCollection, StorageError> {
             variables,
             auth,
             certificate_check,
+            docs,
         },
         environments,
         entries: loader.entries,
@@ -122,6 +124,7 @@ struct FolderSettings {
     certificate_check: ac_domain::tls::CertificateCheck,
     transport: ac_domain::transport::TransportSettings,
     scripts: ac_domain::script::Scripts,
+    docs: String,
     read_only: bool,
 }
 
@@ -187,6 +190,7 @@ impl Loader {
             certificate_check: ac_domain::tls::CertificateCheck::Inherit,
             transport: ac_domain::transport::TransportSettings::default(),
             scripts: ac_domain::script::Scripts::default(),
+            docs: String::new(),
             read_only: false,
         };
         let FolderSettings {
@@ -198,6 +202,7 @@ impl Loader {
             certificate_check,
             transport,
             scripts,
+            docs,
             read_only,
         } = if settings.is_file() {
             match Self::folder_settings(&settings) {
@@ -234,6 +239,7 @@ impl Loader {
             variables,
             auth,
             certificate_check,
+            docs,
         })
     }
 
@@ -250,6 +256,7 @@ impl Loader {
             certificate_check: tls::read(table, settings)?,
             transport: transport::read(table, settings)?,
             scripts: scripts::read(table.get(scripts::KEY), settings, scripts::KEY)?,
+            docs: docs::read(table, settings)?,
             read_only: parsed.read_only(),
         })
     }

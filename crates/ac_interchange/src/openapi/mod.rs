@@ -106,6 +106,10 @@ pub(crate) fn from_value(root: &Value, origin: Option<&Url>) -> Option<Imported>
             auth,
             certificate_check: CertificateCheck::Inherit,
             name,
+            docs: root
+                .pointer("/info/description")
+                .and_then(Value::as_str)
+                .map_or_default(|text| text.trim().to_owned()),
         },
         environments: Vec::new(),
         skipped,
@@ -202,6 +206,7 @@ impl Folders {
                     variables: Vec::new(),
                     auth: Auth::Inherit,
                     certificate_check: CertificateCheck::Inherit,
+                    docs: String::new(),
                 })
             })
             .chain(self.untagged)

@@ -29,6 +29,7 @@ fn save(
         item_id: item_id.into(),
         variables,
         auth: AuthDraft::Inherit,
+        docs: String::new(),
     })
 }
 
@@ -221,6 +222,7 @@ async fn requests_inherit_auth_from_folders_and_the_collection() {
                 item_id: item.into(),
                 variables: Vec::new(),
                 auth,
+                docs: String::new(),
             })
             .unwrap();
     };
@@ -350,6 +352,7 @@ async fn the_certificate_check_is_inherited_and_on_by_default() {
             variables: Vec::new(),
             auth: AuthDraft::Inherit,
             certificate_check: Off,
+            docs: String::new(),
         })
         .unwrap();
     let TreeItemView::Folder {
@@ -388,6 +391,7 @@ async fn redirects_and_time_limit_are_inherited() {
             item_id: fixture.auth.clone(),
             variables: Vec::new(),
             auth: AuthDraft::Inherit,
+            docs: String::new(),
         })
         .unwrap();
     let tree = fixture.tree();
@@ -418,4 +422,44 @@ async fn redirects_and_time_limit_are_inherited() {
     assert_eq!(sent[0].transport.timeout, Duration::from_secs(5));
     assert!(sent[1].transport.follow_redirects);
     assert_eq!(sent[1].transport.timeout, Duration::from_secs(30));
+}
+
+#[tokio::test]
+async fn docs_of_requests_folders_and_the_collection_are_kept() {
+    let fixture = Fixture::new();
+    let mut login = fixture.draft(&fixture.login);
+    login.docs = "Signs in; sets `token`.".into();
+    fixture.save(login).unwrap();
+    assert_eq!(
+        fixture.draft(&fixture.login).docs,
+        "Signs in; sets `token`."
+    );
+
+    for (item, text) in [
+        (fixture.collection.clone(), "The shop API."),
+        (fixture.auth.clone(), "Everything about signing in."),
+    ] {
+        fixture
+            .app
+            .execute(Command::SaveDefaults {
+                transport: crate::view::TransportDraft::default(),
+                scripts: crate::view::ScriptsDraft::default(),
+                certificate_check: crate::view::CertificateCheckView::Inherit,
+                collection_id: fixture.collection.clone(),
+                item_id: item,
+                variables: Vec::new(),
+                auth: AuthDraft::Inherit,
+                docs: text.into(),
+            })
+            .unwrap();
+    }
+    let tree = fixture.tree();
+    assert_eq!(tree.docs, "The shop API.");
+    let folder_docs = tree.items.iter().find_map(|item| match item {
+        crate::view::TreeItemView::Folder { id, docs, .. } if *id == fixture.auth => {
+            Some(docs.clone())
+        }
+        _ => None,
+    });
+    assert_eq!(folder_docs.as_deref(), Some("Everything about signing in."));
 }

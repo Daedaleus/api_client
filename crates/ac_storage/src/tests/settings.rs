@@ -62,6 +62,7 @@ fn with_variables(variables: &[Variable]) -> RequestDefaults {
         certificate_check: ac_domain::tls::CertificateCheck::Inherit,
         variables: variables.to_vec(),
         auth: ac_domain::auth::Auth::Inherit,
+        docs: String::new(),
     }
 }
 

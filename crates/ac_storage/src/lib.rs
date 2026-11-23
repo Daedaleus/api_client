@@ -41,6 +41,7 @@ pub mod arrange;
 mod auth;
 mod body;
 pub mod create;
+mod docs;
 mod document;
 pub mod environment_file;
 pub mod error;

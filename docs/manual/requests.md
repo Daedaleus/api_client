@@ -105,6 +105,21 @@ request.
 domain, path and when they expire – and lets you add, edit and delete them
 or delete all (for example to sign in again).
 
+## Docs
+
+What a request is for, which parameters it expects, how it fits into a
+flow – in Markdown (headings, lists, `code`, tables, links). *Preview* shows
+it formatted, *Edit* the text. Folders and the collection have their own
+*Docs* in their settings. The text is stored in the request, folder or
+collection file, so it is versioned and reviewed with the API.
+
+Imported collections keep their documentation: Postman and Insomnia
+descriptions, Bruno `docs` blocks, OpenAPI descriptions; the Postman export
+writes it back as descriptions. Docs from other people are shown safely:
+HTML and scripts in them are removed, images are not loaded (that would
+contact a server), and links do not open inside the app – their address
+appears when you point at them.
+
 ## Scripts
 
 TypeScript or JavaScript before the request and after the response, with

@@ -310,3 +310,17 @@ fn format_5_gets_its_own_error() {
         Err(ImportError::InsomniaV5)
     );
 }
+
+#[test]
+fn descriptions_become_docs() {
+    let export = r#"{"_type": "export", "resources": [
+        {"_id": "w", "_type": "workspace", "name": "W", "description": "Workspace docs"},
+        {"_id": "g", "parentId": "w", "_type": "request_group", "name": "G", "description": "Group docs"},
+        {"_id": "r", "parentId": "g", "_type": "request", "name": "R", "description": " Request docs "}
+    ]}"#;
+    let imported = import_collection(export).unwrap();
+    assert_eq!(imported.collection.docs, "Workspace docs");
+    let group = folder(&imported.collection.items, "G");
+    assert_eq!(group.docs, "Group docs");
+    assert_eq!(request(&group.items, "R").docs, "Request docs");
+}

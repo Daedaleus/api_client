@@ -84,6 +84,8 @@ describe('variables and auth in the workspace', () => {
     state.editing!.auth = { kind: 'bearer', token: '{{token}}' };
     state.editing!.scripts.preRequest = "req.setHeader('X-Team', 'a');";
     state.editing!.transport = { redirects: 'stop', timeoutSeconds: 10, cookies: 'inherit' };
+    expect(state.editing!.docs).toBe('');
+    state.editing!.docs = 'All about signing in.';
     expect(workspace.collections.find('c1')?.items[0]).toMatchObject({
       variables: [row('host', 'folder')],
     });
@@ -104,6 +106,7 @@ describe('variables and auth in the workspace', () => {
       certificateCheck: 'inherit',
       scripts: { preRequest: "req.setHeader('X-Team', 'a');", postResponse: '' },
       transport: { redirects: 'stop', timeoutSeconds: 10, cookies: 'inherit' },
+      docs: 'All about signing in.',
     });
     expect(state.editing).toBeNull();
     expect(workspace.collections.find('c1')?.name).toBe('Shop 2');

@@ -53,6 +53,7 @@ pub(crate) fn from_value(root: &Value) -> Option<Imported> {
         auth,
         certificate_check: CertificateCheck::Inherit,
         name,
+        docs: description(info.get("description")),
     };
     Some(Imported {
         collection,
@@ -80,10 +81,16 @@ fn item_of(item: &Value, skipped: &mut Vec<Skipped>) -> Item {
             auth: auth(item.get("auth"), &name, skipped),
             certificate_check,
             name,
+            docs: description(item.get("description")),
         });
     }
     let mut request = request_of(item.get("request"), name, skipped);
     request.scripts = scripts(item);
+    // Postman keeps it on the request; older exports on the item.
+    request.docs = description(
+        item.pointer("/request/description")
+            .or_else(|| item.get("description")),
+    );
     request.variables = variables(item.get("variable"));
     (request.transport, request.certificate_check) = behavior(item);
     Item::Request(request)
@@ -327,6 +334,17 @@ fn variables(variables: Option<&Value>) -> Vec<Variable> {
             ..Variable::plain(name, if secret { String::new() } else { value })
         })
         .collect()
+}
+
+/// A description: text, or `{content, type}` (Markdown or plain text).
+fn description(value: Option<&Value>) -> String {
+    match value {
+        Some(Value::String(text)) => text.trim().to_owned(),
+        Some(object) => {
+            text_of(object.get("content")).map_or_default(|text| text.trim().to_owned())
+        }
+        None => String::new(),
+    }
 }
 
 /// `type` of a secret variable.

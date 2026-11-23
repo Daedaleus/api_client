@@ -106,6 +106,7 @@ impl Fixture {
             id: ItemId::new(),
             name: "Auth".into(),
             items: vec![Item::Request(login.clone())],
+            docs: String::new(),
         };
         let collection = Collection {
             transport: ac_domain::transport::TransportSettings::default(),
@@ -116,6 +117,7 @@ impl Fixture {
             id: ItemId::new(),
             name: "Shop".into(),
             items: vec![Item::Folder(auth.clone()), Item::Request(health.clone())],
+            docs: String::new(),
         };
         let mut dev = Environment::new("Dev");
         dev.variables.push(Variable {

@@ -4,6 +4,7 @@
   import AuthEditor from '../molecules/AuthEditor.svelte';
   import CertificateCheckField from '../molecules/CertificateCheckField.svelte';
   import BodyEditor from '../molecules/BodyEditor.svelte';
+  import DocsEditor from '../molecules/DocsEditor.svelte';
   import RowsEditor, { type RowLabels } from '../molecules/RowsEditor.svelte';
   import ParamsEditor from '../molecules/ParamsEditor.svelte';
   import MenuButton from '../molecules/MenuButton.svelte';
@@ -114,7 +115,8 @@
     empty: 'editor.no_variables',
   };
 
-  type Section = 'params' | 'headers' | 'body' | 'auth' | 'variables' | 'settings' | 'scripts';
+  type Section =
+    'params' | 'headers' | 'body' | 'auth' | 'variables' | 'settings' | 'scripts' | 'docs';
   const SECTIONS: Section[] = [
     'params',
     'headers',
@@ -123,6 +125,7 @@
     'variables',
     'settings',
     'scripts',
+    'docs',
   ];
   let section = $state<Section>('params');
   let activeParams = $derived(
@@ -254,6 +257,8 @@
       <TransportFields bind:transport={tab.draft.transport} />
     {:else if section === 'scripts'}
       <ScriptsEditor bind:scripts={tab.draft.scripts} {assist} />
+    {:else if section === 'docs'}
+      <DocsEditor bind:docs={tab.draft.docs} />
     {:else}
       <p class="request-editor__note">{i18n.t('editor.variables_hint')}</p>
       <RowsEditor bind:rows={tab.draft.variables} labels={VARIABLE_LABELS} />

@@ -40,6 +40,7 @@ fn login() -> Request {
         username: "ada".into(),
         password: "{{password}}".into(),
     };
+    login.docs = "Signs in.".into();
     login.scripts = Scripts {
         pre_request: "pm.variables.set('a', 1);\nconsole.log('x');".into(),
         post_response: String::new(),
@@ -111,6 +112,7 @@ fn sample() -> Collection {
             cookies: Cookies::Inherit,
         },
         scripts: Scripts::default(),
+        docs: "Folder docs.".into(),
     };
     Collection {
         id: ItemId::new(),
@@ -143,6 +145,7 @@ fn sample() -> Collection {
             pre_request: String::new(),
             post_response: "pm.test('ok', () => {});".into(),
         },
+        docs: "# Tea shop\n\nThe API.".into(),
     }
 }
 
@@ -278,4 +281,16 @@ fn what_postman_has_no_place_for_is_reported() {
             ),
         ]
     );
+}
+
+#[test]
+fn docs_become_descriptions() {
+    let root = exported(&sample());
+    assert_eq!(root["info"]["description"], "# Tea shop\n\nThe API.");
+    assert_eq!(root["item"][0]["description"], "Folder docs.");
+    assert_eq!(
+        root["item"][0]["item"][0]["request"]["description"],
+        "Signs in."
+    );
+    assert!(root["item"][1].get("description").is_none());
 }

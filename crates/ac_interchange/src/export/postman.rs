@@ -40,10 +40,11 @@ pub struct Exported {
 pub fn to_postman(collection: &Collection) -> Exported {
     let mut left_out = Vec::new();
     let mut root = Map::new();
-    root.insert(
-        "info".into(),
-        json!({ "name": collection.name, "schema": SCHEMA }),
-    );
+    let mut info = json!({ "name": collection.name, "schema": SCHEMA });
+    if !collection.docs.trim().is_empty() {
+        info["description"] = json!(collection.docs);
+    }
+    root.insert("info".into(), info);
     let items = items(&collection.items, &mut left_out);
     root.insert("item".into(), Value::Array(items));
     insert_auth(&mut root, &collection.auth);
@@ -80,6 +81,9 @@ fn items(items: &[Item], left_out: &mut Vec<Skipped>) -> Vec<Value> {
 fn folder_of(folder: &Folder, left_out: &mut Vec<Skipped>) -> Value {
     let mut object = Map::new();
     object.insert("name".into(), json!(folder.name));
+    if !folder.docs.trim().is_empty() {
+        object.insert("description".into(), json!(folder.docs));
+    }
     object.insert("item".into(), Value::Array(items(&folder.items, left_out)));
     insert_auth(&mut object, &folder.auth);
     insert_events(&mut object, &folder.scripts);
@@ -112,6 +116,9 @@ fn request_of(request: &Request, left_out: &mut Vec<Skipped>) -> Value {
         fields.insert("body".into(), body);
     }
     fields.insert("url".into(), url_of(request));
+    if !request.docs.trim().is_empty() {
+        fields.insert("description".into(), json!(request.docs));
+    }
     insert_auth(&mut fields, &request.auth);
 
     let mut object = Map::new();

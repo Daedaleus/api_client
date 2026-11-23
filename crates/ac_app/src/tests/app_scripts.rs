@@ -277,6 +277,7 @@ fn save_scripts(fixture: &Fixture, item_id: &str, pre: &str, post: &str) {
             pre_request: pre.into(),
             post_response: post.into(),
         },
+        docs: String::new(),
     });
 }
 

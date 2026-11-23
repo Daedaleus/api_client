@@ -439,3 +439,34 @@ fn oauth2_authorization_code_is_imported() {
     );
     assert_eq!(imported.skipped.len(), 0);
 }
+
+#[test]
+fn docs_blocks_become_docs() {
+    let imported = from_files(
+        Path::new("/bruno"),
+        &[
+            BrunoFile {
+                path: "bruno.json".into(),
+                text: "{\"name\": \"Docs\"}".into(),
+            },
+            BrunoFile {
+                path: "collection.bru".into(),
+                text: "docs {\n  # Shop\n  \n  The API.\n}".into(),
+            },
+            BrunoFile {
+                path: "orders/folder.bru".into(),
+                text: "meta {\n  name: Orders\n}\ndocs {\n  All about orders.\n}".into(),
+            },
+            BrunoFile {
+                path: "orders/list.bru".into(),
+                text: "meta {\n  name: List\n}\nget {\n  url: x\n}\ndocs {\n  Lists `orders`.\n}"
+                    .into(),
+            },
+        ],
+    );
+    let collection = &imported.collection;
+    assert_eq!(collection.docs, "# Shop\n\nThe API.");
+    let orders = folder(&collection.items, "Orders");
+    assert_eq!(orders.docs, "All about orders.");
+    assert_eq!(request(&orders.items, "List").docs, "Lists `orders`.");
+}

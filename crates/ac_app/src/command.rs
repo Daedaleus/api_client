@@ -140,6 +140,9 @@ pub enum Command {
         /// Scripts around the requests in it.
         #[serde(default)]
         scripts: ScriptsDraft,
+        /// Documentation in Markdown.
+        #[serde(default)]
+        docs: String,
         /// Redirects and time limit (`inherit` on the collection means the
         /// defaults).
         #[serde(default)]

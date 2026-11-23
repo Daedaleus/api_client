@@ -100,6 +100,7 @@ pub(super) fn request_of(resource: &Value, skipped: &mut Vec<Skipped>) -> Reques
     }
     request.auth = auth_with(resource.get("authentication"), &mut templates, skipped);
     request.scripts = scripts(resource);
+    request.docs = docs(resource);
     templates.report(skipped);
     request
 }
@@ -230,6 +231,11 @@ fn auth_with(auth: Option<&Value>, templates: &mut Templates, skipped: &mut Vec<
             Auth::Inherit
         }
     }
+}
+
+/// The description of a workspace, request group or request (Markdown).
+pub(super) fn docs(resource: &Value) -> String {
+    text_of(resource.get("description")).map_or_default(|text| text.trim().to_owned())
 }
 
 /// Scripts as written (`insomnia` is the same object as Postman's `pm`).
