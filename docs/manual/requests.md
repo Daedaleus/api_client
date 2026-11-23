@@ -112,4 +112,7 @@ the same request as code: JavaScript (`fetch` or axios), Python
 (`requests`), Go (`net/http`) or HTTPie. Redirects, the time limit and a
 switched-off certificate check carry over; files are referenced by their
 path. An OAuth 2 token is never fetched for this – the code contains a
-placeholder instead.
+placeholder instead. An AWS Signature v4 is made when copying, so the copied request is
+valid for a few minutes. Digest needs the server's challenge: cURL
+(`--digest`), HTTPie and Python (`HTTPDigestAuth`) answer it themselves;
+for JavaScript and Go a comment says that it has to be added.

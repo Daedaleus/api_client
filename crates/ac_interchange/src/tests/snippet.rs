@@ -32,7 +32,7 @@ fn request(body: Option<RequestBody>) -> ResolvedRequest {
 }
 
 fn snippet(request: &ResolvedRequest, language: SnippetLanguage) -> String {
-    to_snippet(request, language)
+    to_snippet(request, language, None)
 }
 
 #[test]
@@ -77,7 +77,7 @@ fn every_language_has_method_url_headers_and_body() {
     );
     assert_eq!(
         snippet(&json, SnippetLanguage::Curl),
-        crate::curl::to_curl(&json)
+        crate::curl::to_curl(&json, None)
     );
 }
 
@@ -181,4 +181,45 @@ fn redirects_certificate_check_and_time_limit_carry_over() {
         httpie.starts_with("http --verify=no --timeout=5"),
         "{httpie}"
     );
+}
+
+#[test]
+fn digest_is_left_to_tools_that_have_it() {
+    let digest = crate::curl::DigestCredentials {
+        username: "bob".into(),
+        password: "it's".into(),
+    };
+    let get = request(None);
+    let code = |language| to_snippet(&get, language, Some(&digest));
+    let curl = code(SnippetLanguage::Curl);
+    assert!(
+        curl.contains("--digest") && curl.contains("--user 'bob:it'\\''s'"),
+        "{curl}"
+    );
+    let httpie = code(SnippetLanguage::Httpie);
+    assert!(
+        httpie.starts_with("http --auth-type=digest --auth='bob:it'\\''s'"),
+        "{httpie}"
+    );
+    let python = code(SnippetLanguage::PythonRequests);
+    assert!(
+        python.starts_with("import requests\nfrom requests.auth import HTTPDigestAuth\n\n"),
+        "{python}"
+    );
+    assert!(
+        python.contains("auth=HTTPDigestAuth(\"bob\", \"it's\"),"),
+        "{python}"
+    );
+    for language in [
+        SnippetLanguage::JavaScriptFetch,
+        SnippetLanguage::JavaScriptAxios,
+        SnippetLanguage::GoNetHttp,
+    ] {
+        let code = code(language);
+        assert!(
+            code.starts_with("// Digest authentication is not built in here"),
+            "{code}"
+        );
+    }
+    assert!(!format!("{digest:?}").contains("it's"));
 }

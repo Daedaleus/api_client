@@ -257,6 +257,38 @@ fn authorization_code_and_exports_without_workspace() {
 }
 
 #[test]
+fn digest_and_aws_iam_auth_are_imported() {
+    let export = r#"{"_type": "export", "resources": [
+        {"_id": "w", "_type": "workspace", "name": "W"},
+        {"_id": "r1", "parentId": "w", "_type": "request", "name": "Digest", "metaSortKey": 1,
+         "authentication": {"type": "digest", "username": "bob", "password": "{{ _.pw }}"}},
+        {"_id": "r2", "parentId": "w", "_type": "request", "name": "Aws", "metaSortKey": 2,
+         "authentication": {"type": "iam", "accessKeyId": "AKID", "secretAccessKey": "{{ _.awsSecret }}",
+            "sessionToken": "", "region": "eu-central-1", "service": "s3"}}
+    ]}"#;
+    let imported = import_collection(export).unwrap();
+    let items = &imported.collection.items;
+    assert_eq!(
+        request(items, "Digest").auth,
+        Auth::Digest {
+            username: "bob".into(),
+            password: "{{pw}}".into(),
+        }
+    );
+    assert_eq!(
+        request(items, "Aws").auth,
+        Auth::AwsSigV4(ac_domain::auth::AwsSigV4 {
+            access_key_id: "AKID".into(),
+            secret_access_key: "{{awsSecret}}".into(),
+            session_token: String::new(),
+            region: "eu-central-1".into(),
+            service: "s3".into(),
+        })
+    );
+    assert_eq!(imported.skipped, []);
+}
+
+#[test]
 fn templates_convert_variables_and_find_tags() {
     assert_eq!(
         convert_template("{{ _.a }}/{{b}}/{% uuid 'v4' %}/{{ _.c"),

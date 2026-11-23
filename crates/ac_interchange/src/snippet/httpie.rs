@@ -5,6 +5,7 @@ use std::fmt::Write as _;
 use ac_domain::exchange::{PartContent, RequestBody, ResolvedRequest};
 
 use super::text_of;
+use crate::curl::DigestCredentials;
 
 /// Continues the command on the next line.
 const NEXT_LINE: &str = " \\\n  ";
@@ -15,8 +16,15 @@ fn quote(text: &str) -> String {
 }
 
 /// The `http` command that sends the request.
-pub(super) fn command(request: &ResolvedRequest) -> String {
+pub(super) fn command(request: &ResolvedRequest, digest: Option<&DigestCredentials>) -> String {
     let mut command = String::from("http");
+    if let Some(digest) = digest {
+        let _ = write!(
+            command,
+            " --auth-type=digest --auth={}",
+            quote(&format!("{}:{}", digest.username, digest.password))
+        );
+    }
     if request.transport.follow_redirects {
         command.push_str(" --follow");
     }

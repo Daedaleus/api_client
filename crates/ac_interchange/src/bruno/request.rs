@@ -2,7 +2,7 @@
 
 use std::path::Path;
 
-use ac_domain::auth::{Auth, KeyPlacement, OAuth2, OAuth2Grant};
+use ac_domain::auth::{Auth, AwsSigV4, KeyPlacement, OAuth2, OAuth2Grant};
 use ac_domain::collection::{Body, FormField, HeaderEntry, MultipartField, Request};
 use ac_domain::environment::Variable;
 use ac_domain::params::{PathParam, QueryParam, path_param_names};
@@ -221,6 +221,17 @@ fn auth(blocks: &[Block], mode: Option<&str>, item: &str, report: &mut Vec<Skipp
         Some("bearer") => Auth::Bearer {
             token: field("auth:bearer", "token"),
         },
+        Some("digest") => Auth::Digest {
+            username: field("auth:digest", "username"),
+            password: field("auth:digest", "password"),
+        },
+        Some("awsv4") => Auth::AwsSigV4(AwsSigV4 {
+            access_key_id: field("auth:awsv4", "accessKeyId"),
+            secret_access_key: field("auth:awsv4", "secretAccessKey"),
+            session_token: field("auth:awsv4", "sessionToken"),
+            region: field("auth:awsv4", "region"),
+            service: field("auth:awsv4", "service"),
+        }),
         Some("oauth2") if field("auth:oauth2", "grant_type") == CLIENT_CREDENTIALS => {
             Auth::OAuth2(OAuth2 {
                 token_url: field("auth:oauth2", "access_token_url"),
