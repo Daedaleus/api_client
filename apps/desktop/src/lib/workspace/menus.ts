@@ -50,6 +50,9 @@ export function collectionMenu(workspace: Workspace, collection: CollectionView)
     entry('new-request', i18n.t('collection.new_request'), () => workspace.newRequest(id, id)),
     entry('new-folder', i18n.t('collection.new_folder'), () => workspace.newFolder(id, id)),
     entry('settings', i18n.t('collection.variables'), () => workspace.defaults.open(id, id)),
+    entry('cookies', i18n.t('collection.cookies'), () =>
+      workspace.cookies.open(id, collection.name),
+    ),
     entry('export-postman', i18n.t('collection.export_postman'), () =>
       workspace.exportCollection(id),
     ),

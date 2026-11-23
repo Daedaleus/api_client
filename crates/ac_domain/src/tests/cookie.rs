@@ -180,6 +180,37 @@ fn cookies_can_be_edited_removed_and_cleared() {
 }
 
 #[test]
+fn cookies_entered_by_hand_are_checked() {
+    let good = Cookie {
+        name: "session".into(),
+        value: "a b".into(),
+        domain: "x.test".into(),
+        host_only: true,
+        path: "/".into(),
+        expires: None,
+        secure: false,
+        http_only: false,
+    };
+    assert_eq!(good.check(), Ok(()));
+    let with = |change: fn(&mut Cookie)| {
+        let mut cookie = good.clone();
+        change(&mut cookie);
+        cookie.check()
+    };
+    assert_eq!(with(|c| c.name.clear()), Err(CookieProblem::Name));
+    assert_eq!(with(|c| c.name = "a=b".into()), Err(CookieProblem::Name));
+    assert_eq!(with(|c| c.name = "a b".into()), Err(CookieProblem::Name));
+    assert_eq!(with(|c| c.value = "a;b".into()), Err(CookieProblem::Value));
+    assert_eq!(with(|c| c.domain.clear()), Err(CookieProblem::Domain));
+    assert_eq!(
+        with(|c| c.domain = "x.test/a".into()),
+        Err(CookieProblem::Domain)
+    );
+    assert_eq!(with(|c| c.path = "api".into()), Err(CookieProblem::Path));
+    assert_eq!(with(|c| c.path = "/a;b".into()), Err(CookieProblem::Path));
+}
+
+#[test]
 fn cookie_dates_are_read_leniently() {
     let expected = Some(784_111_777);
     assert_eq!(parse_cookie_date("Sun, 06 Nov 1994 08:49:37 GMT"), expected);

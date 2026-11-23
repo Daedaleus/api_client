@@ -7,6 +7,7 @@ import type {
   AppEvent_Serialize,
   CollectionView_Serialize,
   CommandAck_Serialize,
+  CookieView_Serialize,
   Command_Deserialize,
   EnvironmentDraft_Deserialize,
   EnvironmentDraft_Serialize,
@@ -42,6 +43,7 @@ export type {
   ProxyView,
   RedirectsView,
   CookiesView,
+  CookieKeyView,
   Query,
   RecipientsView,
   StatusClassView as StatusClass,
@@ -54,6 +56,7 @@ export type AppEvent = AppEvent_Serialize;
 export type Command = Command_Deserialize;
 export type CommandAck = CommandAck_Serialize;
 export type CollectionView = CollectionView_Serialize;
+export type CookieView = CookieView_Serialize;
 export type TreeItemView = TreeItemView_Serialize;
 /** An environment as the app reports it. */
 export type EnvironmentDraft = EnvironmentDraft_Serialize;

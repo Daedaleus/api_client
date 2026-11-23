@@ -10,9 +10,9 @@ use serde::{Deserialize, Serialize};
 use crate::text::UserText;
 
 use crate::view::{
-    AuthDraft, CertificateCheckView, CollectionView, EnvironmentDraft, ExportFormatView,
-    HistoryItemView, OutgoingRequest, RecipientsView, RequestDraft, RunOutcomeView, ScriptsDraft,
-    SettingsView, SnippetLanguageView, TransportDraft, VariableDraft,
+    AuthDraft, CertificateCheckView, CollectionView, CookieKeyView, CookieView, EnvironmentDraft,
+    ExportFormatView, HistoryItemView, OutgoingRequest, RecipientsView, RequestDraft,
+    RunOutcomeView, ScriptsDraft, SettingsView, SnippetLanguageView, TransportDraft, VariableDraft,
 };
 
 /// Something the user wants the application to do.
@@ -183,6 +183,31 @@ pub enum Command {
         /// Public keys (`age1…`, `ssh-ed25519 …`, `ssh-rsa …`).
         recipients: Vec<String>,
     },
+    /// Add a cookie to a jar, or replace `original` with it.
+    SaveCookie {
+        /// The collection; `null` for requests outside a collection.
+        #[serde(default)]
+        collection_id: Option<String>,
+        /// The cookie being edited; `null` to add one.
+        #[serde(default)]
+        original: Option<CookieKeyView>,
+        /// The cookie.
+        cookie: CookieView,
+    },
+    /// Remove one cookie from a jar.
+    DeleteCookie {
+        /// The collection; `null` for requests outside a collection.
+        #[serde(default)]
+        collection_id: Option<String>,
+        /// The cookie.
+        cookie: CookieKeyView,
+    },
+    /// Remove all cookies of a jar.
+    ClearCookies {
+        /// The collection; `null` for requests outside a collection.
+        #[serde(default)]
+        collection_id: Option<String>,
+    },
     /// Remove every entry of the request history.
     ClearHistory,
     /// Apply and save the app's settings (checked first: nothing is saved
@@ -226,6 +251,11 @@ pub enum CommandAck {
         collection: Box<CollectionView>,
         /// What could not be taken over, to show the user.
         skipped: Vec<UserText>,
+    },
+    /// A cookie jar changed.
+    CookiesChanged {
+        /// Its cookies now.
+        cookies: Vec<CookieView>,
     },
     /// A collection was exported.
     CollectionExported {
@@ -300,6 +330,12 @@ pub enum Query {
         /// The collection.
         collection_id: String,
     },
+    /// The cookies of a jar that have not expired.
+    Cookies {
+        /// The collection; `null` for requests outside a collection.
+        #[serde(default)]
+        collection_id: Option<String>,
+    },
 }
 
 /// Answer to a [`Query`].
@@ -361,5 +397,10 @@ pub enum QueryResult {
     Recipients {
         /// The recipients and the user's own key.
         recipients: RecipientsView,
+    },
+    /// The cookies of a jar.
+    Cookies {
+        /// In the order they were first set.
+        cookies: Vec<CookieView>,
     },
 }

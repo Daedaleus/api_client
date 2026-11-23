@@ -43,7 +43,61 @@ pub struct Cookie {
     pub http_only: bool,
 }
 
+/// Why a cookie entered by hand cannot be kept.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+pub enum CookieProblem {
+    /// Empty, or with spaces, `;`, `=` or control characters.
+    #[error("invalid cookie name")]
+    Name,
+    /// With `;` or control characters.
+    #[error("invalid cookie value")]
+    Value,
+    /// Empty, or with spaces or `/`.
+    #[error("invalid cookie domain")]
+    Domain,
+    /// Not starting with `/`, or with spaces or `;`.
+    #[error("invalid cookie path")]
+    Path,
+}
+
 impl Cookie {
+    /// Checks a cookie entered by hand: what a `Cookie` header and the
+    /// matching rules need.
+    ///
+    /// # Errors
+    /// The first [`CookieProblem`] found.
+    pub fn check(&self) -> Result<(), CookieProblem> {
+        let unsafe_char = |c: char| c.is_control() || c == ';';
+        if self.name.is_empty()
+            || self
+                .name
+                .chars()
+                .any(|c| unsafe_char(c) || c == '=' || c.is_whitespace())
+        {
+            return Err(CookieProblem::Name);
+        }
+        if self.value.chars().any(unsafe_char) {
+            return Err(CookieProblem::Value);
+        }
+        if self.domain.is_empty()
+            || self
+                .domain
+                .chars()
+                .any(|c| unsafe_char(c) || c == '/' || c.is_whitespace())
+        {
+            return Err(CookieProblem::Domain);
+        }
+        if !self.path.starts_with('/')
+            || self
+                .path
+                .chars()
+                .any(|c| unsafe_char(c) || c.is_whitespace())
+        {
+            return Err(CookieProblem::Path);
+        }
+        Ok(())
+    }
+
     fn is_expired(&self, now: UnixSeconds) -> bool {
         self.expires.is_some_and(|expires| expires <= now)
     }

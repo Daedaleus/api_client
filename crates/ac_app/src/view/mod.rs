@@ -15,6 +15,7 @@ pub mod assist;
 pub mod auth;
 pub mod body;
 pub mod collection;
+pub mod cookie;
 pub mod environment;
 pub mod history;
 pub mod outgoing;
@@ -35,6 +36,7 @@ pub use assist::{
 pub use auth::{AuthDraft, CertificateCheckView, KeyPlacementView, OAuth2GrantView};
 pub use body::BodyView;
 pub use collection::{CollectionView, HeaderDraft, RequestDraft, TreeItemView};
+pub use cookie::{CookieKeyView, CookieView};
 pub use environment::EnvironmentDraft;
 pub use history::HistoryItemView;
 pub use outgoing::OutgoingRequest;
