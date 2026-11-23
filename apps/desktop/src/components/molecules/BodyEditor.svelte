@@ -59,7 +59,7 @@
   {#if body.kind === 'none'}
     <p class="body-editor__note">{i18n.t('editor.body_none_note')}</p>
   {:else if body.kind === 'form'}
-    <RowsEditor bind:rows={body.fields} labels={FIELD_LABELS} />
+    <RowsEditor bind:rows={body.fields} labels={FIELD_LABELS} textMode />
   {:else if body.kind === 'multipart'}
     <MultipartEditor bind:fields={body.fields} {onpickfile} />
   {:else if body.kind === 'binary'}

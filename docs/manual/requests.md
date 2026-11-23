@@ -24,6 +24,12 @@ Rows of name and value; switched-off rows are kept but not sent. Names and
 values may contain `{{variables}}`. A JSON or text body gets a matching
 `Content-Type` automatically unless you set one.
 
+*Edit as text* turns the table into plain text with one `Name: value` per
+line – handy for pasting many headers at once, e.g. from the browser's
+developer tools. A line starting with `//` is switched off; `name=value`
+works too. *Edit as table* switches back. The same is offered for query
+parameters and form fields.
+
 ## Body
 
 | Type | What is sent |
