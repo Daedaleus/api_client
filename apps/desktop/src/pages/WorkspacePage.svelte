@@ -4,6 +4,7 @@
   import DialogHost from '../components/organisms/DialogHost.svelte';
   import EnvironmentEditor from '../components/organisms/EnvironmentEditor.svelte';
   import RecipientsDialog from '../components/organisms/RecipientsDialog.svelte';
+  import CookiesDialog from '../components/organisms/CookiesDialog.svelte';
   import CurlImportDialog from '../components/organisms/CurlImportDialog.svelte';
   import DefaultsDialog from '../components/organisms/DefaultsDialog.svelte';
   import QuickSearch from '../components/organisms/QuickSearch.svelte';
@@ -144,6 +145,7 @@
   {#if workspace.recipients.editing}
     <RecipientsDialog recipients={workspace.recipients} />
   {/if}
+  <CookiesDialog cookies={workspace.cookies} />
   <DialogHost dialogs={workspace.dialogs} />
 </div>
 

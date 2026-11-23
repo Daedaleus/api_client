@@ -93,6 +93,10 @@ and are gone when the collection is closed or the app ends. A `Cookie`
 header you set on a request yourself replaces the jar's cookies for that
 request.
 
+*Cookies …* in a collection's menu shows its cookies – name, value,
+domain, path and when they expire – and lets you add, edit and delete them
+or delete all (for example to sign in again).
+
 ## Scripts
 
 TypeScript or JavaScript before the request and after the response, with

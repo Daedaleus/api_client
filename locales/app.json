@@ -26,6 +26,44 @@
     "de": "„{item}“: Body-Art {mode}",
     "en": "“{item}”: body type {mode}"
   },
+  "collection.cookies": { "de": "Cookies …", "en": "Cookies …" },
+  "cookies.title": { "de": "Cookies – {name}", "en": "Cookies – {name}" },
+  "cookies.intro": {
+    "de": "Cookies, die Server gesetzt haben. Sie liegen nur im Speicher und sind weg, wenn die Collection geschlossen wird.",
+    "en": "Cookies servers have set. They are kept in memory only and are gone when the collection is closed."
+  },
+  "cookies.empty": { "de": "Noch keine Cookies.", "en": "No cookies yet." },
+  "cookies.name": { "de": "Name", "en": "Name" },
+  "cookies.value": { "de": "Wert", "en": "Value" },
+  "cookies.domain": { "de": "Domain", "en": "Domain" },
+  "cookies.path": { "de": "Pfad", "en": "Path" },
+  "cookies.expires": { "de": "Läuft ab", "en": "Expires" },
+  "cookies.actions": { "de": "Aktionen", "en": "Actions" },
+  "cookies.session": { "de": "Sitzung", "en": "Session" },
+  "cookies.edit": { "de": "„{name}“ bearbeiten", "en": "Edit “{name}”" },
+  "cookies.delete": { "de": "„{name}“ löschen", "en": "Delete “{name}”" },
+  "cookies.add": { "de": "Cookie hinzufügen", "en": "Add cookie" },
+  "cookies.add_title": { "de": "Neues Cookie", "en": "New cookie" },
+  "cookies.edit_title": { "de": "Cookie bearbeiten", "en": "Edit cookie" },
+  "cookies.subdomains": { "de": "Auch für Subdomains", "en": "Also for subdomains" },
+  "cookies.secure": { "de": "Nur über HTTPS (Secure)", "en": "Only over HTTPS (Secure)" },
+  "cookies.clear": { "de": "Alle löschen", "en": "Delete all" },
+  "cookies.close": { "de": "Schließen", "en": "Close" },
+  "cookies.clear_title": { "de": "Alle Cookies löschen?", "en": "Delete all cookies?" },
+  "cookies.clear_message": {
+    "de": "Alle Cookies dieser Collection werden entfernt; eine Anmeldung muss danach evtl. wiederholt werden.",
+    "en": "All cookies of this collection are removed; you may have to sign in again afterwards."
+  },
+  "error.cookie_name": {
+    "de": "Der Name darf nicht leer sein und keine Leerzeichen, „;“ oder „=“ enthalten.",
+    "en": "The name must not be empty or contain spaces, “;” or “=”."
+  },
+  "error.cookie_value": { "de": "Der Wert darf kein „;“ enthalten.", "en": "The value must not contain “;”." },
+  "error.cookie_domain": {
+    "de": "Die Domain darf nicht leer sein und keine Leerzeichen oder „/“ enthalten.",
+    "en": "The domain must not be empty or contain spaces or “/”."
+  },
+  "error.cookie_path": { "de": "Der Pfad muss mit „/“ beginnen.", "en": "The path must start with “/”." },
   "collection.export_postman": { "de": "Als Postman-Collection exportieren …", "en": "Export as Postman collection …" },
   "export.title_postman": { "de": "Als Postman-Collection exportieren", "en": "Export as Postman collection" },
   "export.done": { "de": "Export abgeschlossen", "en": "Export finished" },
