@@ -2,8 +2,10 @@
 //!
 //! Taken over: folders and requests in order, methods, URLs, headers,
 //! bodies (raw JSON/text, URL-encoded, form data with files, binary file),
-//! auth (Basic, Bearer, API key, none, inherit) and variables of the
-//! collection and of folders. Postman's `{{variable}}` syntax is the same.
+//! auth (Basic, Bearer, API key, OAuth 2, none, inherit), variables of the
+//! collection, folders and requests (secret ones without their value) and
+//! the redirect and certificate settings (`protocolProfileBehavior`).
+//! Postman's `{{variable}}` syntax is the same.
 //! Scripts are taken over as written (they run with the `pm` object of the
 //! script API). What has no counterpart – other auth types, GraphQL bodies – is
 //! reported in [`Imported::skipped`](crate::import::Imported::skipped).
@@ -20,6 +22,7 @@ use ac_domain::params::{PathParam, QueryParam};
 use ac_domain::protocol::grant_type::{AUTHORIZATION_CODE, CLIENT_CREDENTIALS};
 use ac_domain::script::Scripts;
 use ac_domain::tls::CertificateCheck;
+use ac_domain::transport::{Cookies, Redirects, TransportSettings};
 use serde_json::Value;
 
 use crate::import::{Imported, Skipped, SkippedKind, loopback_redirect, text_of};
@@ -41,7 +44,7 @@ pub(crate) fn from_value(root: &Value) -> Option<Imported> {
     let mut skipped = Vec::new();
     let auth = auth(root.get("auth"), &name, &mut skipped);
     let collection = Collection {
-        transport: ac_domain::transport::TransportSettings::default(),
+        transport: TransportSettings::default(),
         scripts: scripts(root),
         id: ItemId::new(),
         items: items_of(items, &mut skipped),
@@ -67,20 +70,50 @@ fn items_of(items: &Value, skipped: &mut Vec<Skipped>) -> Vec<Item> {
 fn item_of(item: &Value, skipped: &mut Vec<Skipped>) -> Item {
     let name = text_of(item.get("name")).unwrap_or_default();
     if let Some(children) = item.get("item") {
+        let (transport, certificate_check) = behavior(item);
         return Item::Folder(Folder {
-            transport: ac_domain::transport::TransportSettings::default(),
+            transport,
             scripts: scripts(item),
             id: ItemId::new(),
             items: items_of(children, skipped),
             variables: variables(item.get("variable")),
             auth: auth(item.get("auth"), &name, skipped),
-            certificate_check: CertificateCheck::Inherit,
+            certificate_check,
             name,
         });
     }
     let mut request = request_of(item.get("request"), name, skipped);
     request.scripts = scripts(item);
+    request.variables = variables(item.get("variable"));
+    (request.transport, request.certificate_check) = behavior(item);
     Item::Request(request)
+}
+
+/// Redirect, certificate and cookie settings (`protocolProfileBehavior`).
+fn behavior(item: &Value) -> (TransportSettings, CertificateCheck) {
+    let flag = |name: &str| {
+        item.pointer(&format!("/protocolProfileBehavior/{name}"))
+            .and_then(Value::as_bool)
+    };
+    let transport = TransportSettings {
+        redirects: match flag("followRedirects") {
+            Some(true) => Redirects::Follow,
+            Some(false) => Redirects::Stop,
+            None => Redirects::Inherit,
+        },
+        cookies: match flag("disableCookies") {
+            Some(true) => Cookies::Off,
+            Some(false) => Cookies::On,
+            None => Cookies::Inherit,
+        },
+        ..TransportSettings::default()
+    };
+    let certificate_check = match flag("strictSSL") {
+        Some(true) => CertificateCheck::On,
+        Some(false) => CertificateCheck::Off,
+        None => CertificateCheck::Inherit,
+    };
+    (transport, certificate_check)
 }
 
 fn request_of(request: Option<&Value>, name: String, skipped: &mut Vec<Skipped>) -> Request {
@@ -266,14 +299,27 @@ fn auth(auth: Option<&Value>, item: &str, skipped: &mut Vec<Skipped>) -> Auth {
 /// Postman's names of the authorization code grant.
 const AUTHORIZATION_CODE_GRANTS: [&str; 2] = [AUTHORIZATION_CODE, "authorization_code_with_pkce"];
 
+/// Variables; secret ones (`"type": "secret"`) without their value – it
+/// is never stored in plain text.
 fn variables(variables: Option<&Value>) -> Vec<Variable> {
+    let secrets: Vec<bool> = variables
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .map(|row| row.get("type").and_then(Value::as_str) == Some(SECRET_TYPE))
+        .collect();
     list(variables)
-        .map(|(name, value, enabled)| Variable {
+        .zip(secrets)
+        .map(|((name, value, enabled), secret)| Variable {
             enabled,
-            ..Variable::plain(name, value)
+            secret,
+            ..Variable::plain(name, if secret { String::new() } else { value })
         })
         .collect()
 }
+
+/// `type` of a secret variable.
+const SECRET_TYPE: &str = "secret";
 
 /// `[{key, value, disabled}]` rows as (key, value, enabled).
 fn list(rows: Option<&Value>) -> impl Iterator<Item = (String, String, bool)> + '_ {

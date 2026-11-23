@@ -1,4 +1,5 @@
-//! Languages of the code snippets the editor copies.
+//! Languages of the code snippets the editor copies, and formats a
+//! collection can be exported to.
 
 use ac_interchange::snippet::SnippetLanguage;
 use serde::{Deserialize, Serialize};
@@ -35,4 +36,13 @@ impl SnippetLanguageView {
             Self::Httpie => SnippetLanguage::Httpie,
         }
     }
+}
+
+/// A format a collection can be exported to (serialized in camelCase).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(rename_all = "camelCase")]
+pub enum ExportFormatView {
+    /// A Postman collection (v2.1).
+    Postman,
 }

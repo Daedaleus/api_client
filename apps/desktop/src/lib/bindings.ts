@@ -307,6 +307,10 @@ createdId?: string | null } |
 collection: CollectionView_Deserialize; 
 /**  What could not be taken over, to show the user. */
 skipped: UserText[] } | 
+/**  A collection was exported. */
+{ type: "collectionExported"; 
+/**  What the format has no place for, to show the user. */
+leftOut: UserText[] } | 
 /**  A collection was closed. */
 { type: "collectionClosed"; 
 /**  The collection. */
@@ -334,6 +338,10 @@ createdId: string | null } |
 collection: CollectionView_Serialize; 
 /**  What could not be taken over, to show the user. */
 skipped: UserText[] } | 
+/**  A collection was exported. */
+{ type: "collectionExported"; 
+/**  What the format has no place for, to show the user. */
+leftOut: UserText[] } | 
 /**  A collection was closed. */
 { type: "collectionClosed"; 
 /**  The collection. */
@@ -352,23 +360,23 @@ export type Command_Deserialize =
 /**  Open the collection in a folder. */
 ({ type: "openCollection"; 
 /**  The collection folder. */
-path: string }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; file?: never; index?: never; itemId?: never; name?: never; parentId?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+path: string }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; file?: never; format?: never; index?: never; itemId?: never; name?: never; parentId?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**  Create a new collection in a folder and open it. */
 ({ type: "createCollection"; 
 /**  The folder (created if needed). */
 path: string; 
 /**  Display name. */
-name: string }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; file?: never; index?: never; itemId?: never; parentId?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+name: string }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; file?: never; format?: never; index?: never; itemId?: never; parentId?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**  Close an open collection (nothing is written). */
 ({ type: "closeCollection"; 
 /**  The collection. */
-collectionId: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; index?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+collectionId: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; format?: never; index?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**  Save a request edited in the editor. */
 ({ type: "saveRequest"; 
 /**  The collection it belongs to. */
 collectionId: string; 
 /**  The edited request (identified by its id). */
-request: RequestDraft_Deserialize }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; index?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+request: RequestDraft_Deserialize }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; format?: never; index?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**  Create a new, empty request. */
 ({ type: "createRequest"; 
 /**  The collection. */
@@ -376,7 +384,7 @@ collectionId: string;
 /**  The collection itself or a folder in it. */
 parentId: string; 
 /**  Display name. */
-name: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; index?: never; itemId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+name: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; format?: never; index?: never; itemId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**  Create a new folder. */
 ({ type: "createFolder"; 
 /**  The collection. */
@@ -384,7 +392,7 @@ collectionId: string;
 /**  The collection itself or a folder in it. */
 parentId: string; 
 /**  Display name. */
-name: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; index?: never; itemId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+name: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; format?: never; index?: never; itemId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**
  *  Copy a folder (with everything in it) or request as `name`, placed
  *  right after it; the copy gets new ids.
@@ -395,7 +403,7 @@ collectionId: string;
 /**  The folder or request. */
 itemId: string; 
 /**  Name of the copy. */
-name: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; index?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+name: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; format?: never; index?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**
  *  Move a folder or request into the collection or one of its folders,
  *  or to another place in the same folder.
@@ -408,7 +416,7 @@ itemId: string;
 /**  The collection or folder it goes into. */
 parentId: string; 
 /**  Its position there among the other items (0 = first). */
-index: number }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; name?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+index: number }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; format?: never; name?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**  Rename a folder or request (its file keeps its name). */
 ({ type: "renameItem"; 
 /**  The collection. */
@@ -416,25 +424,25 @@ collectionId: string;
 /**  The folder or request. */
 itemId: string; 
 /**  New display name. */
-name: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; index?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+name: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; format?: never; index?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**  Move a folder, request or environment to the trash. */
 ({ type: "deleteItem"; 
 /**  The collection. */
 collectionId: string; 
 /**  The folder, request or environment. */
-itemId: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; index?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+itemId: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; format?: never; index?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**  Create a new, empty environment. */
 ({ type: "createEnvironment"; 
 /**  The collection. */
 collectionId: string; 
 /**  Display name. */
-name: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; index?: never; itemId?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+name: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; format?: never; index?: never; itemId?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**  Save an environment edited in the editor (name and variables). */
 ({ type: "saveEnvironment"; 
 /**  The collection. */
 collectionId: string; 
 /**  The edited environment (identified by its id). */
-environment: EnvironmentDraft_Deserialize }) & { auth?: never; certificateCheck?: never; file?: never; index?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+environment: EnvironmentDraft_Deserialize }) & { auth?: never; certificateCheck?: never; file?: never; format?: never; index?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**
  *  Save what the collection or one of its folders passes on to its
  *  requests: variables and authentication.
@@ -456,7 +464,7 @@ scripts?: ScriptsDraft_Deserialize;
  *  Redirects and time limit (`inherit` on the collection means the
  *  defaults).
  */
-transport?: TransportDraft_Deserialize }) & { environment?: never; file?: never; index?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; settings?: never } | 
+transport?: TransportDraft_Deserialize }) & { environment?: never; file?: never; format?: never; index?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; settings?: never } | 
 /**
  *  Import another tool's collection as a new collection and open it:
  *  a Postman collection (v2.1, v2.0) or an `OpenAPI` 3 description (JSON
@@ -469,7 +477,18 @@ file: string;
  *  The folder for the new collection (created if needed); without
  *  one the collection stays unsaved until `SaveCollectionAs`.
  */
-path?: string | null }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; index?: never; itemId?: never; name?: never; parentId?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+path?: string | null }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; format?: never; index?: never; itemId?: never; name?: never; parentId?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+/**
+ *  Write a collection in another tool's format to `file` (replacing
+ *  it); what the format has no place for is listed.
+ */
+({ type: "exportCollection"; 
+/**  The collection. */
+collectionId: string; 
+/**  The format. */
+format: ExportFormatView; 
+/**  The file to write. */
+file: string }) & { auth?: never; certificateCheck?: never; environment?: never; index?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**
  *  Save an unsaved collection: move it to `path` (which must not exist
  *  or be an empty folder).
@@ -478,7 +497,7 @@ path?: string | null }) & { auth?: never; certificateCheck?: never; collectionId
 /**  The collection. */
 collectionId: string; 
 /**  Where it goes. */
-path: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; index?: never; itemId?: never; name?: never; parentId?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+path: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; format?: never; index?: never; itemId?: never; name?: never; parentId?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**
  *  Set who the collection's secrets are encrypted for and re-encrypt
  *  the secrets of every environment. Nothing changes if any of them
@@ -488,16 +507,16 @@ path: string }) & { auth?: never; certificateCheck?: never; environment?: never;
 /**  The collection. */
 collectionId: string; 
 /**  Public keys (`age1…`, `ssh-ed25519 …`, `ssh-rsa …`). */
-recipients: string[] }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; index?: never; itemId?: never; name?: never; parentId?: never; path?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+recipients: string[] }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; format?: never; index?: never; itemId?: never; name?: never; parentId?: never; path?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**  Remove every entry of the request history. */
-({ type: "clearHistory" }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; file?: never; index?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+({ type: "clearHistory" }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; file?: never; format?: never; index?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**
  *  Apply and save the app's settings (checked first: nothing is saved
  *  if they cannot be applied).
  */
 ({ type: "saveSettings"; 
 /**  The settings. */
-settings: SettingsView_Deserialize }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; file?: never; index?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; transport?: never; variables?: never };
+settings: SettingsView_Deserialize }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; file?: never; format?: never; index?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; transport?: never; variables?: never };
 
 /**  Something the user wants the application to do. */
 export type Command_Serialize = 
@@ -508,23 +527,23 @@ export type Command_Serialize =
 /**  Open the collection in a folder. */
 ({ type: "openCollection"; 
 /**  The collection folder. */
-path: string }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; file?: never; index?: never; itemId?: never; name?: never; parentId?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+path: string }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; file?: never; format?: never; index?: never; itemId?: never; name?: never; parentId?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**  Create a new collection in a folder and open it. */
 ({ type: "createCollection"; 
 /**  The folder (created if needed). */
 path: string; 
 /**  Display name. */
-name: string }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; file?: never; index?: never; itemId?: never; parentId?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+name: string }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; file?: never; format?: never; index?: never; itemId?: never; parentId?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**  Close an open collection (nothing is written). */
 ({ type: "closeCollection"; 
 /**  The collection. */
-collectionId: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; index?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+collectionId: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; format?: never; index?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**  Save a request edited in the editor. */
 ({ type: "saveRequest"; 
 /**  The collection it belongs to. */
 collectionId: string; 
 /**  The edited request (identified by its id). */
-request: RequestDraft_Serialize }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; index?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+request: RequestDraft_Serialize }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; format?: never; index?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**  Create a new, empty request. */
 ({ type: "createRequest"; 
 /**  The collection. */
@@ -532,7 +551,7 @@ collectionId: string;
 /**  The collection itself or a folder in it. */
 parentId: string; 
 /**  Display name. */
-name: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; index?: never; itemId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+name: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; format?: never; index?: never; itemId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**  Create a new folder. */
 ({ type: "createFolder"; 
 /**  The collection. */
@@ -540,7 +559,7 @@ collectionId: string;
 /**  The collection itself or a folder in it. */
 parentId: string; 
 /**  Display name. */
-name: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; index?: never; itemId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+name: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; format?: never; index?: never; itemId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**
  *  Copy a folder (with everything in it) or request as `name`, placed
  *  right after it; the copy gets new ids.
@@ -551,7 +570,7 @@ collectionId: string;
 /**  The folder or request. */
 itemId: string; 
 /**  Name of the copy. */
-name: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; index?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+name: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; format?: never; index?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**
  *  Move a folder or request into the collection or one of its folders,
  *  or to another place in the same folder.
@@ -564,7 +583,7 @@ itemId: string;
 /**  The collection or folder it goes into. */
 parentId: string; 
 /**  Its position there among the other items (0 = first). */
-index: number }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; name?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+index: number }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; format?: never; name?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**  Rename a folder or request (its file keeps its name). */
 ({ type: "renameItem"; 
 /**  The collection. */
@@ -572,25 +591,25 @@ collectionId: string;
 /**  The folder or request. */
 itemId: string; 
 /**  New display name. */
-name: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; index?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+name: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; format?: never; index?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**  Move a folder, request or environment to the trash. */
 ({ type: "deleteItem"; 
 /**  The collection. */
 collectionId: string; 
 /**  The folder, request or environment. */
-itemId: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; index?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+itemId: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; format?: never; index?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**  Create a new, empty environment. */
 ({ type: "createEnvironment"; 
 /**  The collection. */
 collectionId: string; 
 /**  Display name. */
-name: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; index?: never; itemId?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+name: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; format?: never; index?: never; itemId?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**  Save an environment edited in the editor (name and variables). */
 ({ type: "saveEnvironment"; 
 /**  The collection. */
 collectionId: string; 
 /**  The edited environment (identified by its id). */
-environment: EnvironmentDraft_Serialize }) & { auth?: never; certificateCheck?: never; file?: never; index?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+environment: EnvironmentDraft_Serialize }) & { auth?: never; certificateCheck?: never; file?: never; format?: never; index?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**
  *  Save what the collection or one of its folders passes on to its
  *  requests: variables and authentication.
@@ -612,7 +631,7 @@ scripts: ScriptsDraft_Serialize;
  *  Redirects and time limit (`inherit` on the collection means the
  *  defaults).
  */
-transport: TransportDraft_Serialize }) & { environment?: never; file?: never; index?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; settings?: never } | 
+transport: TransportDraft_Serialize }) & { environment?: never; file?: never; format?: never; index?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; settings?: never } | 
 /**
  *  Import another tool's collection as a new collection and open it:
  *  a Postman collection (v2.1, v2.0) or an `OpenAPI` 3 description (JSON
@@ -625,7 +644,18 @@ file: string;
  *  The folder for the new collection (created if needed); without
  *  one the collection stays unsaved until `SaveCollectionAs`.
  */
-path: string | null }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; index?: never; itemId?: never; name?: never; parentId?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+path: string | null }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; format?: never; index?: never; itemId?: never; name?: never; parentId?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+/**
+ *  Write a collection in another tool's format to `file` (replacing
+ *  it); what the format has no place for is listed.
+ */
+({ type: "exportCollection"; 
+/**  The collection. */
+collectionId: string; 
+/**  The format. */
+format: ExportFormatView; 
+/**  The file to write. */
+file: string }) & { auth?: never; certificateCheck?: never; environment?: never; index?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**
  *  Save an unsaved collection: move it to `path` (which must not exist
  *  or be an empty folder).
@@ -634,7 +664,7 @@ path: string | null }) & { auth?: never; certificateCheck?: never; collectionId?
 /**  The collection. */
 collectionId: string; 
 /**  Where it goes. */
-path: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; index?: never; itemId?: never; name?: never; parentId?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+path: string }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; format?: never; index?: never; itemId?: never; name?: never; parentId?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**
  *  Set who the collection's secrets are encrypted for and re-encrypt
  *  the secrets of every environment. Nothing changes if any of them
@@ -644,16 +674,16 @@ path: string }) & { auth?: never; certificateCheck?: never; environment?: never;
 /**  The collection. */
 collectionId: string; 
 /**  Public keys (`age1…`, `ssh-ed25519 …`, `ssh-rsa …`). */
-recipients: string[] }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; index?: never; itemId?: never; name?: never; parentId?: never; path?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+recipients: string[] }) & { auth?: never; certificateCheck?: never; environment?: never; file?: never; format?: never; index?: never; itemId?: never; name?: never; parentId?: never; path?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**  Remove every entry of the request history. */
-({ type: "clearHistory" }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; file?: never; index?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
+({ type: "clearHistory" }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; file?: never; format?: never; index?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; settings?: never; transport?: never; variables?: never } | 
 /**
  *  Apply and save the app's settings (checked first: nothing is saved
  *  if they cannot be applied).
  */
 ({ type: "saveSettings"; 
 /**  The settings. */
-settings: SettingsView_Serialize }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; file?: never; index?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; transport?: never; variables?: never };
+settings: SettingsView_Serialize }) & { auth?: never; certificateCheck?: never; collectionId?: never; environment?: never; file?: never; format?: never; index?: never; itemId?: never; name?: never; parentId?: never; path?: never; recipients?: never; request?: never; scripts?: never; transport?: never; variables?: never };
 
 /**  What a suggestion is (`CodeMirror`'s completion types). */
 export type CompletionKindView = 
@@ -725,6 +755,11 @@ export type EnvironmentDraft_Serialize = {
 	/**  The file is never written (set by the app, ignored when saving). */
 	readOnly: boolean,
 };
+
+/**  A format a collection can be exported to (serialized in camelCase). */
+export type ExportFormatView = 
+/**  A Postman collection (v2.1). */
+"postman";
 
 /**  A field of a URL-encoded form. */
 export type FormFieldDraft = {

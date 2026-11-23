@@ -1,7 +1,7 @@
 // A fake backend for UI tests: records what the UI asks for and answers
 // from a queue, or with sensible defaults.
 
-import type { Api, PickOptions } from '../lib/api';
+import type { Api, PickOptions, SaveOptions } from '../lib/api';
 import type {
   AppEvent,
   AssistRequest,
@@ -189,7 +189,7 @@ export class FakeApi implements Api {
   }
 
   /** The options of every file and folder dialog opened. */
-  picks: { kind: 'file' | 'folder'; options: PickOptions | undefined }[] = [];
+  picks: { kind: 'file' | 'folder' | 'save'; options: PickOptions | undefined }[] = [];
 
   async pickFolder(options?: PickOptions): Promise<string | null> {
     this.picks.push({ kind: 'folder', options });
@@ -202,6 +202,14 @@ export class FakeApi implements Api {
   async pickFile(options?: PickOptions): Promise<string | null> {
     this.picks.push({ kind: 'file', options });
     return this.file;
+  }
+
+  /** What the save dialog returns. */
+  saveFile: string | null = null;
+
+  async pickSaveFile(options?: SaveOptions): Promise<string | null> {
+    this.picks.push({ kind: 'save', options });
+    return this.saveFile;
   }
 
   emit(runId: number, outcome: RunOutcome) {

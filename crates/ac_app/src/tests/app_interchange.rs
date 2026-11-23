@@ -551,3 +551,74 @@ async fn snippets_are_what_would_be_sent_in_every_language() {
         .unwrap_err();
     assert_eq!(error.user_text().key, keys::VARIABLE_UNKNOWN);
 }
+
+#[tokio::test]
+async fn collections_export_as_postman_collections() {
+    use crate::command::{Command, CommandAck};
+    use crate::ports::{CollectionStore, StoreError, StoreErrorKind};
+    use crate::view::ExportFormatView;
+
+    let fixture = Fixture::new();
+    let export = |file: &str| {
+        fixture.app.execute(Command::ExportCollection {
+            collection_id: fixture.collection.clone(),
+            format: ExportFormatView::Postman,
+            file: file.into(),
+        })
+    };
+    let CommandAck::CollectionExported { left_out } = export("shop.postman.json").unwrap() else {
+        panic!("expected an export");
+    };
+    assert_eq!(left_out, []);
+    let text = fixture
+        .store
+        .read_text(std::path::Path::new("shop.postman.json"))
+        .unwrap();
+    let imported = ac_interchange::import_collection(&text).unwrap();
+    assert_eq!(imported.collection.name, fixture.tree().name);
+
+    fixture.store.fail_next(StoreError {
+        kind: StoreErrorKind::Io,
+        path: "out.json".into(),
+        detail: "disk full".into(),
+    });
+    assert_eq!(
+        export("out.json").unwrap_err().user_text().key,
+        keys::STORE_IO
+    );
+    let error = fixture
+        .app
+        .execute(Command::ExportCollection {
+            collection_id: "nope".into(),
+            format: ExportFormatView::Postman,
+            file: "x.json".into(),
+        })
+        .unwrap_err();
+    assert_eq!(error.user_text().key, keys::UNKNOWN_COLLECTION);
+
+    let secret = skipped_text(&Skipped {
+        item: "Shop".into(),
+        what: SkippedKind::SecretValue("token".into()),
+    });
+    assert_eq!(secret.key, keys::EXPORT_SECRET_VALUE);
+    assert_eq!(secret.args["name"], "token");
+    for (setting, key) in [
+        (ac_interchange::ItemSetting::Timeout, keys::EXPORT_TIMEOUT),
+        (
+            ac_interchange::ItemSetting::Redirects,
+            keys::EXPORT_REDIRECTS,
+        ),
+        (
+            ac_interchange::ItemSetting::CertificateCheck,
+            keys::EXPORT_CERTIFICATE_CHECK,
+        ),
+        (ac_interchange::ItemSetting::Cookies, keys::EXPORT_COOKIES),
+    ] {
+        let text = skipped_text(&Skipped {
+            item: "Login".into(),
+            what: SkippedKind::Setting(setting),
+        });
+        assert_eq!(text.key, key);
+        assert_eq!(text.args["item"], "Login");
+    }
+}

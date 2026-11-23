@@ -57,6 +57,23 @@ pub enum SkippedKind {
     /// served, e.g. `/api/v3`: the host is unknown, so `baseUrl` got
     /// `http://localhost` in front.
     RelativeServer(String),
+    /// Export: a secret variable written without its value, e.g. `token`.
+    SecretValue(String),
+    /// Export: a setting the other tool has no place for.
+    Setting(ItemSetting),
+}
+
+/// Settings of a request, folder or collection, as reported.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ItemSetting {
+    /// The time limit.
+    Timeout,
+    /// Following redirects.
+    Redirects,
+    /// The certificate check.
+    CertificateCheck,
+    /// Using the cookie jar.
+    Cookies,
 }
 
 /// Why a file cannot be imported.
