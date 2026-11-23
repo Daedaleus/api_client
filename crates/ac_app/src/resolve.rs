@@ -19,6 +19,8 @@ use crate::history::Masking;
 use crate::oauth::OAuthClient;
 use crate::ports::SharedCookieJar;
 use crate::resolve_body::resolve_body;
+use crate::signing::Signer;
+use crate::signing::aws::AwsCredentials;
 
 /// Scheme assumed when the user enters a URL without one, as other API
 /// clients do.
@@ -48,6 +50,9 @@ pub(crate) struct Prepared {
     pub request: ResolvedRequest,
     /// Obtain a token with these and send it as bearer authorization.
     pub oauth: Option<OAuthClient>,
+    /// Sign the request (AWS) or answer the server's challenge (Digest)
+    /// when sending.
+    pub signer: Option<Signer>,
     /// What the history must not keep (set by the caller, which knows the
     /// secrets).
     pub masking: Masking,
@@ -99,6 +104,20 @@ pub(crate) fn resolve_request(
         Auth::OAuth2(oauth) => Some(OAuthClient::resolve(oauth, &fill)?),
         _ => None,
     };
+    let signer = match entered.auth {
+        Auth::Digest { username, password } => Some(Signer::Digest {
+            username: fill(username)?,
+            password: fill(password)?,
+        }),
+        Auth::AwsSigV4(aws) => Some(Signer::Aws(AwsCredentials {
+            access_key_id: fill(&aws.access_key_id)?.trim().to_owned(),
+            secret_access_key: fill(&aws.secret_access_key)?.trim().to_owned(),
+            session_token: fill(&aws.session_token)?.trim().to_owned(),
+            region: fill(&aws.region)?.trim().to_owned(),
+            service: fill(&aws.service)?.trim().to_owned(),
+        })),
+        _ => None,
+    };
     Ok(Prepared {
         request: ResolvedRequest {
             transport: entered.transport,
@@ -109,6 +128,7 @@ pub(crate) fn resolve_request(
             verify_tls: entered.verify_tls,
         },
         oauth,
+        signer,
         masking: Masking::default(),
         cookies: None,
     })
@@ -156,8 +176,11 @@ fn apply_auth(
     fill: &impl Fn(&str) -> Result<String, UnresolvedVariable>,
 ) -> Result<(), AppError> {
     let (name, value) = match auth {
-        // The OAuth 2 token is fetched and added when sending.
-        Auth::Inherit | Auth::None | Auth::OAuth2(_) => return Ok(()),
+        // The OAuth 2 token is fetched, the signature or Digest answer
+        // computed when sending.
+        Auth::Inherit | Auth::None | Auth::OAuth2(_) | Auth::Digest { .. } | Auth::AwsSigV4(_) => {
+            return Ok(());
+        }
         Auth::Basic { username, password } => {
             let credentials = format!("{}:{}", fill(username)?, fill(password)?);
             let value = format!("{} {}", auth_scheme::BASIC, BASE64.encode(credentials));

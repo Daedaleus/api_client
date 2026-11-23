@@ -89,7 +89,9 @@ describe('DefaultsDialog', () => {
       'Basic',
       'Bearer token',
       'API key',
+      'Digest',
       'OAuth 2',
+      'AWS Signature v4',
     ]);
     await userEvent.selectOptions(kind, 'Bearer token');
     await userEvent.type(screen.getByLabelText('Token'), 'abc');

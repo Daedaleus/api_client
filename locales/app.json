@@ -177,6 +177,25 @@
   "auth.kind_bearer": { "de": "Bearer-Token", "en": "Bearer token" },
   "auth.kind_apiKey": { "de": "API-Key", "en": "API key" },
   "auth.kind_oauth2": { "de": "OAuth 2", "en": "OAuth 2" },
+  "auth.kind_digest": { "de": "Digest", "en": "Digest" },
+  "auth.kind_awsSigV4": { "de": "AWS Signature v4", "en": "AWS Signature v4" },
+  "auth.badge_digest": { "de": "Digest", "en": "Digest" },
+  "auth.badge_awsSigV4": { "de": "AWS", "en": "AWS" },
+  "auth.digest_note": {
+    "de": "Der Request geht zuerst ohne Anmeldung raus; verlangt der Server Digest (401), wird er mit der passenden Antwort wiederholt.",
+    "en": "The request is sent without credentials first; if the server asks for Digest (401), it is repeated with the matching answer."
+  },
+  "auth.aws_access_key": { "de": "Access Key ID", "en": "Access key ID" },
+  "auth.aws_secret_key": { "de": "Secret Access Key", "en": "Secret access key" },
+  "auth.aws_session_token": { "de": "Session-Token", "en": "Session token" },
+  "auth.aws_region": { "de": "Region", "en": "Region" },
+  "auth.aws_service": { "de": "Service", "en": "Service" },
+  "auth.aws_service_placeholder": { "de": "z. B. execute-api oder s3", "en": "e.g. execute-api or s3" },
+  "auth.optional": { "de": "optional", "en": "optional" },
+  "auth.aws_note": {
+    "de": "Der Request wird direkt vor dem Senden signiert. Den Secret Key am besten als Secret einer Umgebung eintragen, z. B. {{awsSecret}}. Datei- und Multipart-Bodies werden nicht mitsigniert (UNSIGNED-PAYLOAD, z. B. für S3).",
+    "en": "The request is signed right before it is sent. Best put the secret key into an environment secret, e.g. {{awsSecret}}. File and multipart bodies are not signed (UNSIGNED-PAYLOAD, e.g. for S3)."
+  },
   "auth.badge_none": { "de": "aus", "en": "off" },
   "auth.badge_basic": { "de": "Basic", "en": "Basic" },
   "auth.badge_bearer": { "de": "Bearer", "en": "Bearer" },

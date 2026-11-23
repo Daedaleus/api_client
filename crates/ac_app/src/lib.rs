@@ -27,6 +27,7 @@ pub mod ports;
 mod resolve;
 mod resolve_body;
 pub mod settings;
+mod signing;
 #[cfg(test)]
 #[path = "tests/support.rs"]
 mod test_support;

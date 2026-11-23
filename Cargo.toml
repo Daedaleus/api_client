@@ -36,8 +36,11 @@ oxc_span = "0.159"
 oxc_transformer = "0.159"
 # rquickjs: the QuickJS engine (quickjs-ng) that runs request scripts (ADR S1).
 rquickjs = "0.14"
-# getrandom and sha2: the PKCE verifier and challenge of the OAuth 2 sign-in.
+# getrandom and sha2: the PKCE verifier and challenge of the OAuth 2 sign-in;
+# sha2, hmac and md-5 also sign requests (AWS Signature v4, HTTP Digest).
 getrandom = "0.3"
+hmac = "0.12"
+md-5 = "0.10"
 sha2 = "0.10"
 reqwest = "0.13"
 serde = { version = "1", features = ["derive"] }

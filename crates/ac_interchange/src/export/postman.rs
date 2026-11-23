@@ -234,6 +234,23 @@ fn insert_auth(object: &mut Map<String, Value>, auth: &Auth) {
     let value = match auth {
         Auth::Inherit => return,
         Auth::None => json!({ "type": "noauth" }),
+        Auth::Digest { username, password } => pairs(
+            "digest",
+            &[
+                ("username", username.as_str()),
+                ("password", password.as_str()),
+            ],
+        ),
+        Auth::AwsSigV4(aws) => pairs(
+            "awsv4",
+            &[
+                ("accessKey", aws.access_key_id.as_str()),
+                ("secretKey", aws.secret_access_key.as_str()),
+                ("sessionToken", aws.session_token.as_str()),
+                ("region", aws.region.as_str()),
+                ("service", aws.service.as_str()),
+            ],
+        ),
         Auth::Basic { username, password } => pairs(
             "basic",
             &[

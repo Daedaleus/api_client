@@ -1,7 +1,7 @@
 //! Authentication and the certificate check as the editors show and return
 //! them.
 
-use ac_domain::auth::{Auth, KeyPlacement, OAuth2, OAuth2Grant};
+use ac_domain::auth::{Auth, AwsSigV4, KeyPlacement, OAuth2, OAuth2Grant};
 use ac_domain::tls::CertificateCheck;
 use serde::{Deserialize, Serialize};
 
@@ -57,6 +57,26 @@ pub enum AuthDraft {
         value: String,
         /// Where it goes.
         placement: KeyPlacementView,
+    },
+    /// HTTP Digest.
+    Digest {
+        /// User name.
+        username: String,
+        /// Password.
+        password: String,
+    },
+    /// AWS Signature Version 4.
+    AwsSigV4 {
+        /// Access key id.
+        access_key_id: String,
+        /// Secret access key.
+        secret_access_key: String,
+        /// Session token; empty if none.
+        session_token: String,
+        /// Region.
+        region: String,
+        /// Service.
+        service: String,
     },
 }
 
@@ -134,6 +154,17 @@ impl AuthDraft {
             Auth::Bearer { token } => Self::Bearer {
                 token: token.clone(),
             },
+            Auth::Digest { username, password } => Self::Digest {
+                username: username.clone(),
+                password: password.clone(),
+            },
+            Auth::AwsSigV4(aws) => Self::AwsSigV4 {
+                access_key_id: aws.access_key_id.clone(),
+                secret_access_key: aws.secret_access_key.clone(),
+                session_token: aws.session_token.clone(),
+                region: aws.region.clone(),
+                service: aws.service.clone(),
+            },
             Auth::OAuth2(oauth) => Self::OAuth2 {
                 grant: match oauth.grant {
                     OAuth2Grant::ClientCredentials => OAuth2GrantView::ClientCredentials,
@@ -174,6 +205,23 @@ impl AuthDraft {
             Self::Bearer { token } => Auth::Bearer {
                 token: token.clone(),
             },
+            Self::Digest { username, password } => Auth::Digest {
+                username: username.clone(),
+                password: password.clone(),
+            },
+            Self::AwsSigV4 {
+                access_key_id,
+                secret_access_key,
+                session_token,
+                region,
+                service,
+            } => Auth::AwsSigV4(AwsSigV4 {
+                access_key_id: access_key_id.clone(),
+                secret_access_key: secret_access_key.clone(),
+                session_token: session_token.clone(),
+                region: region.clone(),
+                service: service.clone(),
+            }),
             Self::OAuth2 {
                 grant,
                 token_url,

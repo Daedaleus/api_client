@@ -27,11 +27,29 @@ describe('remembered tabs', () => {
       { kind: 'bearer', token: '{{token}}' },
       { kind: 'apiKey', name: 'X-Key', value: 'k', placement: 'header' },
       { kind: 'inherit' },
+      { kind: 'digest', username: 'bob', password: 'pw' },
+      {
+        kind: 'awsSigV4',
+        accessKeyId: 'AKID',
+        secretAccessKey: 's3cret',
+        sessionToken: '{{awsToken}}',
+        region: 'eu-central-1',
+        service: 's3',
+      },
     ] as const;
     expect(kinds.map((auth) => withoutCredentials(draft('x', 'X', { auth })).auth)).toEqual([
       { kind: 'bearer', token: '{{token}}' },
       { kind: 'apiKey', name: 'X-Key', value: '', placement: 'header' },
       { kind: 'inherit' },
+      { kind: 'digest', username: 'bob', password: '' },
+      {
+        kind: 'awsSigV4',
+        accessKeyId: 'AKID',
+        secretAccessKey: '',
+        sessionToken: '{{awsToken}}',
+        region: 'eu-central-1',
+        service: 's3',
+      },
     ]);
   });
 

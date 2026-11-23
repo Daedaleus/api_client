@@ -26,6 +26,24 @@ fn every_kind_round_trips() {
         Auth::Bearer {
             token: "{{token}}".into(),
         },
+        Auth::Digest {
+            username: "bob".into(),
+            password: "{{password}}".into(),
+        },
+        Auth::AwsSigV4(ac_domain::auth::AwsSigV4 {
+            access_key_id: "AKID".into(),
+            secret_access_key: "{{awsSecret}}".into(),
+            session_token: "{{awsToken}}".into(),
+            region: "eu-central-1".into(),
+            service: "execute-api".into(),
+        }),
+        Auth::AwsSigV4(ac_domain::auth::AwsSigV4 {
+            access_key_id: "AKID".into(),
+            secret_access_key: "s".into(),
+            region: "us-east-1".into(),
+            service: "s3".into(),
+            ..Default::default()
+        }),
         Auth::ApiKey {
             name: "X-API-Key".into(),
             value: "k".into(),

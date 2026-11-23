@@ -110,6 +110,9 @@ pub enum StatusClass {
 }
 
 impl StatusCode {
+    /// `401 Unauthorized`: the server asks for (other) credentials.
+    pub const UNAUTHORIZED: Self = Self(401);
+
     /// Creates a status code; fails outside `100`–`999`.
     ///
     /// # Errors
@@ -196,6 +199,10 @@ pub mod header {
     pub const AUTHORIZATION: &str = "authorization";
     /// `Accept`
     pub const ACCEPT: &str = "accept";
+    /// `Host`
+    pub const HOST: &str = "host";
+    /// `WWW-Authenticate`: the challenge of a 401 response.
+    pub const WWW_AUTHENTICATE: &str = "www-authenticate";
 
     /// Whether `value` can be sent as a header value: no line breaks or NUL,
     /// which would split or end the header (RFC 9110, section 5.5).
@@ -223,6 +230,8 @@ pub mod auth_scheme {
     pub const BASIC: &str = "Basic";
     /// Bearer token.
     pub const BEARER: &str = "Bearer";
+    /// HTTP Digest (RFC 7616).
+    pub const DIGEST: &str = "Digest";
 }
 
 /// OAuth 2 grant types (RFC 6749).
