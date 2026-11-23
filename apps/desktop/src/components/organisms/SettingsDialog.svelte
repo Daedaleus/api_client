@@ -2,6 +2,7 @@
   import Button from '../atoms/Button.svelte';
   import IconButton from '../atoms/IconButton.svelte';
   import Alert from '../molecules/Alert.svelte';
+  import ClientCertificatesField from '../molecules/ClientCertificatesField.svelte';
   import { LOCALES, i18n, isLocale } from '../../lib/i18n/i18n.svelte';
   import type { ProxyView } from '../../lib/types';
   import type { SettingsState } from '../../lib/workspace/settings.svelte';
@@ -129,6 +130,13 @@
               <Button onclick={() => settings.addCertificate()}>{i18n.t('settings.ca_add')}</Button>
             </div>
           </div>
+        </section>
+
+        <section class="settings-dialog__group" aria-labelledby="settings-client">
+          <h3 id="settings-client" class="settings-dialog__heading">
+            {i18n.t('settings.client')}
+          </h3>
+          <ClientCertificatesField certificates={editing.clientCertificates} {settings} />
         </section>
 
         {#if settings.error}

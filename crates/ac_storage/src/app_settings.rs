@@ -12,7 +12,16 @@
 //!
 //! [tls]
 //! ca_certificates = ["C:/certs/company-ca.pem"]
+//!
+//! [[tls.client_certificates]]
+//! host = "api.internal"            # or "api.internal:8443", "*.internal"
+//! certificate = "C:/certs/me.p12"  # PEM or PKCS#12
+//! key = "C:/certs/me.key"          # optional: PEM key file
+//! passphrase = "YWdlLWVu…"         # optional: age-encrypted, base64
 //! ```
+//!
+//! The passphrase is encrypted for the user's own age key by the app; this
+//! file never holds it in plain text.
 //!
 //! A file that cannot be read is reported and kept: saving moves it aside
 //! (`settings.toml.<time>.bak`) instead of overwriting it.
@@ -21,8 +30,10 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use ac_app::ports::{SettingsError, SettingsStore};
-use ac_app::settings::{AppSettings, NetworkSettings, ProxySetting};
-use toml_edit::{Array, DocumentMut, Item, Table, value};
+use ac_app::settings::{
+    AppSettings, ClientCertificate, EncryptedPassphrase, HostPattern, NetworkSettings, ProxySetting,
+};
+use toml_edit::{Array, ArrayOfTables, DocumentMut, Item, Table, value};
 
 use crate::document;
 use crate::format::CURRENT_VERSION;
@@ -37,6 +48,11 @@ const URL: &str = "url";
 const NO_PROXY: &str = "no_proxy";
 const TLS: &str = "tls";
 const CA_CERTIFICATES: &str = "ca_certificates";
+const CLIENT_CERTIFICATES: &str = "client_certificates";
+const HOST: &str = "host";
+const CERTIFICATE: &str = "certificate";
+const KEY: &str = "key";
+const PASSPHRASE: &str = "passphrase";
 const MODE_SYSTEM: &str = "system";
 const MODE_NONE: &str = "none";
 const MODE_MANUAL: &str = "manual";
@@ -129,10 +145,34 @@ fn settings_from(doc: &DocumentMut) -> Result<AppSettings, String> {
             })
             .collect::<Result<_, _>>()?,
     };
+    let client_certificates = match doc
+        .get(TLS)
+        .and_then(Item::as_table)
+        .and_then(|table| table.get(CLIENT_CERTIFICATES))
+    {
+        None => Vec::new(),
+        Some(item) => item
+            .as_array_of_tables()
+            .ok_or_else(|| format!("{CLIENT_CERTIFICATES} must be a list of tables"))?
+            .iter()
+            .map(|table| {
+                let optional = |key: &str| -> Result<Option<String>, String> {
+                    Ok(Some(text(table, key)?).filter(|value| !value.is_empty()))
+                };
+                Ok(ClientCertificate {
+                    host: HostPattern::new(&text(table, HOST)?),
+                    certificate: PathBuf::from(text(table, CERTIFICATE)?),
+                    key: optional(KEY)?.map(PathBuf::from),
+                    passphrase: optional(PASSPHRASE)?.map(EncryptedPassphrase),
+                })
+            })
+            .collect::<Result<_, String>>()?,
+    };
     Ok(AppSettings {
         network: NetworkSettings {
             proxy,
             ca_certificates,
+            client_certificates,
         },
     })
 }
@@ -164,6 +204,25 @@ fn document_of(settings: &AppSettings) -> DocumentMut {
         .collect();
     let mut tls = Table::new();
     tls.insert(CA_CERTIFICATES, value(certificates));
+    let mut clients = ArrayOfTables::new();
+    for certificate in &settings.network.client_certificates {
+        let mut table = Table::new();
+        table.insert(HOST, value(certificate.host.as_str()));
+        table.insert(
+            CERTIFICATE,
+            value(certificate.certificate.to_string_lossy().into_owned()),
+        );
+        if let Some(key) = &certificate.key {
+            table.insert(KEY, value(key.to_string_lossy().into_owned()));
+        }
+        if let Some(passphrase) = &certificate.passphrase {
+            table.insert(PASSPHRASE, value(passphrase.0.as_str()));
+        }
+        clients.push(table);
+    }
+    if !clients.is_empty() {
+        tls.insert(CLIENT_CERTIFICATES, Item::ArrayOfTables(clients));
+    }
     doc.insert(TLS, Item::Table(tls));
     doc
 }

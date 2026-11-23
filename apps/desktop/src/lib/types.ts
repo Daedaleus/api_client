@@ -19,6 +19,7 @@ import type {
   RunOutcomeView_Serialize,
   ScriptsDraft_Serialize,
   SettingsView_Serialize,
+  ClientCertificateView_Serialize,
   TreeItemView_Serialize,
   UserText,
   VariableDraft_Serialize,
@@ -74,6 +75,7 @@ export type RunOutcome = RunOutcomeView_Serialize;
 export type ScriptsDraft = ScriptsDraft_Serialize;
 export type HistoryItemView = HistoryItemView_Serialize;
 export type SettingsView = SettingsView_Serialize;
+export type ClientCertificateView = ClientCertificateView_Serialize;
 
 /** The collection in a `collectionChanged` acknowledgement. */
 export type ChangedCollection = { collection: CollectionView; createdId: string | null };

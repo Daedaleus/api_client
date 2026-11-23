@@ -23,7 +23,8 @@ code. No account, no cloud: everything stays on your machine.
    Insomnia, HAR, Bruno, OpenAPI, cURL.
 7. [History](history.md) – every request you sent.
 8. [Keyboard shortcuts](shortcuts.md)
-9. [Settings](settings.md) – language, proxy, extra CA certificates.
+9. [Settings](settings.md) – language, proxy, extra CA certificates,
+   client certificates.
 10. [Command line runner](../cli.md) – running a collection in CI.
 
 Reference: [collection file format](../format/v1.md).

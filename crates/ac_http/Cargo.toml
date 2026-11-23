@@ -17,10 +17,14 @@ ac_domain.workspace = true
 reqwest = { workspace = true, features = ["multipart", "cookies"] }
 # shell-words: splitting the BROWSER command.
 shell-words.workspace = true
+p12-keystore.workspace = true
+pkcs8.workspace = true
 tokio = { workspace = true, features = ["fs", "io-util", "net", "rt", "time"] }
 url.workspace = true
 
 [dev-dependencies]
+rcgen.workspace = true
+tokio-rustls.workspace = true
 tempfile.workspace = true
 tokio = { workspace = true, features = ["macros", "rt", "net"] }
 wiremock.workspace = true

@@ -41,6 +41,10 @@ rquickjs = "0.14"
 getrandom = "0.3"
 hmac = "0.12"
 md-5 = "0.10"
+# p12-keystore and pkcs8: client certificates as PKCS#12 files or with an
+# encrypted PEM key (rustls reads only unencrypted PEM itself).
+p12-keystore = "0.4"
+pkcs8 = { version = "0.10", features = ["encryption", "pem", "3des", "std"] }
 sha2 = "0.10"
 reqwest = "0.13"
 serde = { version = "1", features = ["derive"] }
@@ -67,6 +71,10 @@ tokio = "1"
 url = "2"
 uuid = { version = "1", features = ["v5", "v7"] }
 wiremock = "0.6"
+# rcgen and tokio-rustls: test certificates and a TLS server for the
+# client certificate (mTLS) tests.
+rcgen = "0.14"
+tokio-rustls = "0.26"
 tempfile = "3"
 
 [workspace.lints.rust]
