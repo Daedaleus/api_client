@@ -93,7 +93,7 @@
 <div class="params-editor">
   <section class="params-editor__group" aria-label={i18n.t('params.query')}>
     <h3 class="params-editor__title">{i18n.t('params.query')}</h3>
-    <RowsEditor bind:rows labels={QUERY_LABELS} {variables} />
+    <RowsEditor bind:rows labels={QUERY_LABELS} {variables} textMode />
   </section>
 
   <section class="params-editor__group" aria-label={i18n.t('params.path')}>

@@ -208,6 +208,13 @@
   "defaults.variables": { "de": "Variablen", "en": "Variables" },
   "defaults.auth": { "de": "Auth", "en": "Auth" },
   "defaults.scripts": { "de": "Skripte", "en": "Scripts" },
+  "rows.as_text": { "de": "Als Text bearbeiten", "en": "Edit as text" },
+  "rows.as_table": { "de": "Als Tabelle bearbeiten", "en": "Edit as table" },
+  "rows.text_label": { "de": "Einträge als Text", "en": "Entries as text" },
+  "rows.text_hint": {
+    "de": "Eine Zeile pro Eintrag: „Name: Wert“ (auch „name=wert“). „//“ am Anfang schaltet eine Zeile aus.",
+    "en": "One line per entry: “Name: value” (also “name=value”). “//” at the start switches a line off."
+  },
   "auth.kind": { "de": "Art", "en": "Type" },
   "auth.kind_inherit": { "de": "Erben", "en": "Inherit" },
   "auth.kind_none": { "de": "Keine", "en": "None" },

@@ -239,7 +239,12 @@
         variables={variableInfo}
       />
     {:else if section === 'headers'}
-      <RowsEditor bind:rows={tab.draft.headers} labels={HEADER_LABELS} variables={variableInfo} />
+      <RowsEditor
+        bind:rows={tab.draft.headers}
+        labels={HEADER_LABELS}
+        variables={variableInfo}
+        textMode
+      />
     {:else if section === 'body'}
       <BodyEditor bind:body={tab.draft.body} {onpickfile} />
     {:else if section === 'auth'}

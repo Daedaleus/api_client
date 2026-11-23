@@ -31,6 +31,7 @@
   import Icon from '../atoms/Icon.svelte';
   import IconButton from '../atoms/IconButton.svelte';
   import { i18n } from '../../lib/i18n/i18n.svelte';
+  import { rowsToText, textToRows } from '../../lib/rows-text';
   import type { VariableInfo } from '../../lib/variables';
   import VariableField from './VariableField.svelte';
 
@@ -39,9 +40,31 @@
     labels: RowLabels;
     /** Variables for suggestions in the value fields (requests, not environments). */
     variables?: ReadonlyMap<string, VariableInfo> | undefined;
+    /**
+     * Offer editing as text (`Name: value` per line) – for headers,
+     * parameters and form fields, never for rows that may be secret.
+     */
+    textMode?: boolean;
   }
 
-  let { rows = $bindable(), labels, variables }: Props = $props();
+  let { rows = $bindable(), labels, variables, textMode = false }: Props = $props();
+
+  /** Editing as text, and the text as typed (rows are read from it live). */
+  let asText = $state(false);
+  let text = $state('');
+
+  /** Shown in the empty text field (protocol values, not translated). */
+  const TEXT_EXAMPLE = 'Accept: application/json\n// X-Debug: 1';
+
+  function toggleText() {
+    if (!asText) text = rowsToText(rows);
+    asText = !asText;
+  }
+
+  function typed(value: string) {
+    text = value;
+    rows = textToRows(value);
+  }
 
   function add() {
     rows.push(
@@ -57,7 +80,24 @@
 </script>
 
 <div class="rows-editor">
-  {#if rows.length > 0}
+  {#if textMode && !labels.secret}
+    <div class="rows-editor__mode">
+      <Button onclick={toggleText}>
+        {i18n.t(asText ? 'rows.as_table' : 'rows.as_text')}
+      </Button>
+    </div>
+  {/if}
+  {#if asText}
+    <textarea
+      class="rows-editor__text"
+      spellcheck="false"
+      rows={Math.max(6, text.split('\n').length + 1)}
+      aria-label={i18n.t('rows.text_label')}
+      placeholder={TEXT_EXAMPLE}
+      value={text}
+      oninput={(event) => typed(event.currentTarget.value)}></textarea>
+    <p class="rows-editor__hint">{i18n.t('rows.text_hint')}</p>
+  {:else if rows.length > 0}
     <table class="rows-editor__table">
       <thead>
         <tr>
@@ -140,9 +180,11 @@
   {:else}
     <p class="rows-editor__empty">{i18n.t(labels.empty)}</p>
   {/if}
-  <div>
-    <Button onclick={add}>{i18n.t(labels.add)}</Button>
-  </div>
+  {#if !asText}
+    <div>
+      <Button onclick={add}>{i18n.t(labels.add)}</Button>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -219,6 +261,28 @@
   .rows-editor__empty {
     margin: 0;
     color: var(--color-muted);
+  }
+
+  .rows-editor__mode {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .rows-editor__text {
+    width: 100%;
+    padding: var(--space-s);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-family: var(--font-mono);
+    resize: vertical;
+  }
+
+  .rows-editor__hint {
+    margin: 0;
+    color: var(--color-muted);
+    font-size: var(--font-size-s);
   }
 
   .rows-editor__hidden {
